@@ -24,8 +24,8 @@ export default function DashboardScreen() {
   const recentApps = applications.slice(0, 3);
 
   const handleCreate = async () => {
-    const app = await createApplication();
-    router.push({ pathname: "/new-application", params: { id: app.id } });
+    const { application } = await createApplication();
+    router.push({ pathname: "/new-application", params: { id: application.id } });
   };
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
@@ -35,7 +35,7 @@ export default function DashboardScreen() {
       style={styles.container}
       contentContainerStyle={[
         styles.content,
-        { paddingTop: topPadding + 16, paddingBottom: Platform.OS === "web" ? 100 : 100 },
+        { paddingTop: topPadding + 16, paddingBottom: 100 },
       ]}
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior="automatic"
@@ -55,9 +55,11 @@ export default function DashboardScreen() {
       <View style={styles.volumeCard}>
         <Text style={styles.volumeLabel}>Total Pipeline Volume</Text>
         <Text style={styles.volumeValue}>
-          {stats.totalVolume > 0 ? formatCurrency(stats.totalVolume.toString()) : "$0"}
+          {stats.totalVolumeUsd > 0 ? formatCurrency(stats.totalVolumeUsd) : "$0"}
         </Text>
-        <Text style={styles.volumeSub}>{stats.total} active application{stats.total !== 1 ? "s" : ""}</Text>
+        <Text style={styles.volumeSub}>
+          {stats.total} active application{stats.total !== 1 ? "s" : ""}
+        </Text>
       </View>
 
       {/* Stats Grid */}
@@ -167,10 +169,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   volumeLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: "Inter_500Medium",
     color: "rgba(255,255,255,0.7)",
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
     textTransform: "uppercase",
   },
   volumeValue: {

@@ -1,44 +1,55 @@
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import Colors from "@/constants/colors";
 import type { LOAApplication } from "@/context/ApplicationContext";
+import { useApplications } from "@/context/ApplicationContext";
 import { StatusBadge } from "@/components/StatusBadge";
-import { formatCurrency, formatDate, getPropertyShortAddress } from "@/utils/formatting";
+import {
+  formatCurrency,
+  formatDate,
+  getBorrowerDisplayName,
+  getPropertyShortAddress,
+  getPropertyCityState,
+} from "@/utils/formatting";
 
 type Props = {
   application: LOAApplication;
 };
 
 export function ApplicationCard({ application }: Props) {
-  const shortAddress = getPropertyShortAddress(application);
-  const hasLoanAmount = !!application.loanAmount;
+  const { getBorrower, getProperty } = useApplications();
+  const borrower = getBorrower(application.borrowerId);
+  const property = getProperty(application.propertyId);
 
   return (
     <TouchableOpacity
       style={styles.card}
       activeOpacity={0.7}
-      onPress={() => router.push({ pathname: "/application/[id]", params: { id: application.id } })}
+      onPress={() =>
+        router.push({ pathname: "/application/[id]", params: { id: application.id } })
+      }
     >
       <View style={styles.header}>
         <View style={styles.typeTag}>
-          <Text style={styles.typeText}>{application.propertyType || "CRE"}</Text>
+          <Text style={styles.typeText}>{property?.propertyType ?? "CRE"}</Text>
         </View>
         <StatusBadge status={application.status} size="sm" />
       </View>
 
       <Text style={styles.address} numberOfLines={1}>
-        {shortAddress || "Address not set"}
+        {getPropertyShortAddress(property)}
       </Text>
       <Text style={styles.cityState} numberOfLines={1}>
-        {[application.propertyCity, application.propertyState].filter(Boolean).join(", ") || "City, State"}
+        {getPropertyCityState(property) || "City, State"}
+      </Text>
+
+      <Text style={styles.borrowerLine} numberOfLines={1}>
+        <Feather name="user" size={11} color={Colors.light.textTertiary} />{" "}
+        {getBorrowerDisplayName(borrower)}
+        {borrower?.entityName ? ` · ${borrower.entityName}` : ""}
       </Text>
 
       <View style={styles.divider} />
@@ -47,7 +58,7 @@ export function ApplicationCard({ application }: Props) {
         <View style={styles.footerItem}>
           <Text style={styles.footerLabel}>Loan Amount</Text>
           <Text style={styles.footerValue}>
-            {hasLoanAmount ? formatCurrency(application.loanAmount) : "—"}
+            {application.loanAmountUsd ? formatCurrency(application.loanAmountUsd) : "—"}
           </Text>
         </View>
         <View style={styles.footerDivider} />
@@ -61,6 +72,23 @@ export function ApplicationCard({ application }: Props) {
           <Text style={styles.footerValue}>{formatDate(application.updatedAt)}</Text>
         </View>
       </View>
+
+      {(application.comments.length > 0 || application.attachments.length > 0) && (
+        <View style={styles.metaRow}>
+          {application.comments.length > 0 && (
+            <View style={styles.metaBadge}>
+              <Feather name="message-circle" size={11} color={Colors.light.textTertiary} />
+              <Text style={styles.metaBadgeText}>{application.comments.length}</Text>
+            </View>
+          )}
+          {application.attachments.length > 0 && (
+            <View style={styles.metaBadge}>
+              <Feather name="paperclip" size={11} color={Colors.light.textTertiary} />
+              <Text style={styles.metaBadgeText}>{application.attachments.length}</Text>
+            </View>
+          )}
+        </View>
+      )}
 
       <View style={styles.chevron}>
         <Feather name="chevron-right" size={16} color={Colors.light.textTertiary} />
@@ -108,9 +136,16 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   cityState: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
     color: Colors.light.textSecondary,
+    marginBottom: 4,
+  },
+  borrowerLine: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textTertiary,
+    marginBottom: 2,
   },
   divider: {
     height: 1,
@@ -125,7 +160,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   footerLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: "Inter_500Medium",
     color: Colors.light.textTertiary,
     marginBottom: 2,
@@ -142,6 +177,21 @@ const styles = StyleSheet.create({
     height: 28,
     backgroundColor: Colors.light.border,
     marginHorizontal: 10,
+  },
+  metaRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 10,
+  },
+  metaBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  metaBadgeText: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textTertiary,
   },
   chevron: {
     position: "absolute",

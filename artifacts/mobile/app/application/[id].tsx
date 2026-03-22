@@ -9,23 +9,27 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AttachmentList } from "@/components/AttachmentList";
+import { CommentThread } from "@/components/CommentThread";
 import { DetailRow } from "@/components/DetailRow";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import Colors from "@/constants/colors";
-import type { ApplicationStatus, LOAApplication } from "@/context/ApplicationContext";
+import type { ApplicationStatus } from "@/context/ApplicationContext";
 import { useApplications } from "@/context/ApplicationContext";
 import {
   formatCurrencyFull,
   formatFullDate,
-  formatPercent,
-  formatSF,
+  formatPct,
+  formatSqFt,
+  getBorrowerDisplayName,
+  getPropertyCityState,
+  getPropertyShortAddress,
 } from "@/utils/formatting";
 
 const STATUS_OPTIONS: ApplicationStatus[] = [
@@ -36,15 +40,28 @@ const STATUS_OPTIONS: ApplicationStatus[] = [
   "Declined",
 ];
 
+type Tab = "Property" | "Loan" | "Borrower" | "Comments" | "Docs";
+const TABS: Tab[] = ["Property", "Loan", "Borrower", "Comments", "Docs"];
+
 export default function ApplicationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getApplication, updateApplication, deleteApplication, addNote } = useApplications();
+  const {
+    getApplication,
+    getBorrower,
+    getProperty,
+    updateApplication,
+    deleteApplication,
+    addComment,
+    addAttachment,
+    deleteAttachment,
+  } = useApplications();
   const insets = useSafeAreaInsets();
+  const [activeTab, setActiveTab] = useState<Tab>("Property");
   const [statusModal, setStatusModal] = useState(false);
-  const [noteModal, setNoteModal] = useState(false);
-  const [noteText, setNoteText] = useState("");
 
   const app = getApplication(id);
+  const borrower = getBorrower(app?.borrowerId ?? "");
+  const property = getProperty(app?.propertyId ?? "");
 
   if (!app) {
     return (
@@ -60,7 +77,7 @@ export default function ApplicationDetailScreen() {
   const handleDelete = () => {
     Alert.alert(
       "Delete Application",
-      "This cannot be undone. Are you sure you want to delete this application?",
+      "This cannot be undone. Are you sure?",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -80,24 +97,14 @@ export default function ApplicationDetailScreen() {
     setStatusModal(false);
   };
 
-  const handleAddNote = async () => {
-    if (!noteText.trim()) return;
-    await addNote(id, noteText.trim());
-    setNoteText("");
-    setNoteModal(false);
-  };
-
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   return (
     <>
+      {/* ── Fixed header ── */}
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
           <Feather name="arrow-left" size={20} color={Colors.light.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
@@ -111,161 +118,254 @@ export default function ApplicationDetailScreen() {
             }
             activeOpacity={0.7}
           >
-            <Feather name="edit-2" size={18} color={Colors.light.tint} />
+            <Feather name="edit-2" size={17} color={Colors.light.tint} />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.deleteBtn}
-            onPress={handleDelete}
-            activeOpacity={0.7}
-          >
-            <Feather name="trash-2" size={18} color={Colors.light.error} />
+          <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete} activeOpacity={0.7}>
+            <Feather name="trash-2" size={17} color={Colors.light.error} />
           </TouchableOpacity>
         </View>
       </View>
 
+      {/* ── Hero card ── */}
+      <View style={styles.heroCard}>
+        <View style={styles.heroTop}>
+          <View>
+            <View style={styles.typeTag}>
+              <Text style={styles.typeTagText}>{property?.propertyType ?? "CRE"}</Text>
+            </View>
+            <Text style={styles.heroAddress}>
+              {getPropertyShortAddress(property)}
+            </Text>
+            <Text style={styles.heroCity}>{getPropertyCityState(property)}</Text>
+          </View>
+        </View>
+
+        {/* Key metrics row */}
+        <View style={styles.metricsRow}>
+          <View style={styles.metric}>
+            <Text style={styles.metricValue}>
+              {app.loanAmountUsd ? formatCurrencyFull(app.loanAmountUsd) : "—"}
+            </Text>
+            <Text style={styles.metricLabel}>Loan Amount</Text>
+          </View>
+          <View style={styles.metricDiv} />
+          <View style={styles.metric}>
+            <Text style={styles.metricValue}>{app.ltvPct ? `${app.ltvPct}%` : "—"}</Text>
+            <Text style={styles.metricLabel}>LTV</Text>
+          </View>
+          <View style={styles.metricDiv} />
+          <View style={styles.metric}>
+            <Text style={styles.metricValue}>{app.dscrRatio ? `${app.dscrRatio}×` : "—"}</Text>
+            <Text style={styles.metricLabel}>DSCR</Text>
+          </View>
+        </View>
+
+        {/* Status + change */}
+        <View style={styles.heroFooter}>
+          <StatusBadge status={app.status} />
+          <TouchableOpacity
+            style={styles.changeStatusBtn}
+            onPress={() => setStatusModal(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.changeStatusText}>Change Status</Text>
+            <Feather name="chevron-right" size={14} color={Colors.light.tint} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Meta */}
+        <Text style={styles.metaText}>
+          Created {formatFullDate(app.createdAt)} · Updated {formatFullDate(app.updatedAt)}
+        </Text>
+      </View>
+
+      {/* ── Tab bar ── */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabBar}
+        contentContainerStyle={styles.tabBarContent}
+      >
+        {TABS.map((tab) => {
+          const badge =
+            tab === "Comments"
+              ? app.comments.length
+              : tab === "Docs"
+              ? app.attachments.length
+              : 0;
+          return (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.tab, activeTab === tab && styles.tabActive]}
+              onPress={() => setActiveTab(tab)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                {tab}
+              </Text>
+              {badge > 0 && (
+                <View style={styles.tabBadge}>
+                  <Text style={styles.tabBadgeText}>{badge}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* ── Tab content ── */}
       <ScrollView
         style={styles.container}
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: bottomPad + 40 },
-        ]}
+        contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
-        {/* Hero Card */}
-        <View style={styles.heroCard}>
-          <View style={styles.heroTop}>
-            <View style={styles.heroLeft}>
-              <View style={styles.typeTag}>
-                <Text style={styles.typeTagText}>{app.propertyType}</Text>
-              </View>
-              <Text style={styles.heroAddress}>{app.propertyAddress || "No address set"}</Text>
-              <Text style={styles.heroCity}>
-                {[app.propertyCity, app.propertyState, app.propertyZip]
-                  .filter(Boolean)
-                  .join(", ") || "City, State"}
-              </Text>
-            </View>
+        {/* Property tab */}
+        {activeTab === "Property" && (
+          <View style={styles.card}>
+            <SectionHeader title="Location" />
+            <DetailRow label="Street Address" value={property?.streetAddress} />
+            <DetailRow label="City" value={property?.city} />
+            <DetailRow label="State" value={property?.state} />
+            <DetailRow label="ZIP Code" value={property?.zipCode} last />
+
+            <SectionHeader title="Physical Attributes" />
+            <DetailRow label="Property Type" value={property?.propertyType} />
+            <DetailRow
+              label="Gross Sq Ft"
+              value={property?.grossSqFt ? formatSqFt(property.grossSqFt) : undefined}
+            />
+            <DetailRow label="Rentable Units" value={property?.numberOfUnits} />
+            <DetailRow label="Year Built" value={property?.yearBuilt} last />
+
+            <SectionHeader title="Occupancy" subtitle="Two distinct performance measures" />
+            <DetailRow
+              label="Physical Occupancy"
+              value={
+                property?.physicalOccupancyPct
+                  ? `${formatPct(property.physicalOccupancyPct)} (unit-based)`
+                  : undefined
+              }
+            />
+            <DetailRow
+              label="Economic Occupancy"
+              value={
+                property?.economicOccupancyPct
+                  ? `${formatPct(property.economicOccupancyPct)} (rent-based)`
+                  : undefined
+              }
+              last
+            />
           </View>
+        )}
 
-          <View style={styles.heroStats}>
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatValue}>
-                {app.loanAmount ? formatCurrencyFull(app.loanAmount) : "—"}
-              </Text>
-              <Text style={styles.heroStatLabel}>Loan Amount</Text>
-            </View>
-            <View style={styles.heroStatDivider} />
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatValue}>{app.ltv ? `${app.ltv}%` : "—"}</Text>
-              <Text style={styles.heroStatLabel}>LTV</Text>
-            </View>
-            <View style={styles.heroStatDivider} />
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatValue}>{app.dscr ? `${app.dscr}x` : "—"}</Text>
-              <Text style={styles.heroStatLabel}>DSCR</Text>
-            </View>
+        {/* Loan tab */}
+        {activeTab === "Loan" && (
+          <View style={styles.card}>
+            <SectionHeader title="Loan Structure" />
+            <DetailRow label="Loan Type" value={app.loanType} />
+            <DetailRow
+              label="Loan Amount (USD)"
+              value={app.loanAmountUsd ? formatCurrencyFull(app.loanAmountUsd) : undefined}
+            />
+            <DetailRow
+              label="LTV (%)"
+              value={app.ltvPct ? `${app.ltvPct}%` : undefined}
+            />
+            <DetailRow
+              label="DSCR (×)"
+              value={app.dscrRatio ? `${app.dscrRatio}×` : undefined}
+            />
+            <DetailRow label="Interest Type" value={app.interestType} />
+            <DetailRow
+              label="Interest Rate (%)"
+              value={app.interestRatePct ? `${app.interestRatePct}% per annum` : undefined}
+            />
+            <DetailRow
+              label="Loan Term"
+              value={app.loanTermYears ? `${app.loanTermYears} years` : undefined}
+            />
+            <DetailRow label="Amortization" value={app.amortizationType} />
+            <DetailRow label="Target Closing" value={app.targetClosingDate} last />
           </View>
+        )}
 
-          <View style={styles.heroFooter}>
-            <StatusBadge status={app.status} />
-            <TouchableOpacity
-              style={styles.changeStatusBtn}
-              onPress={() => setStatusModal(true)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.changeStatusText}>Change Status</Text>
-              <Feather name="chevron-right" size={14} color={Colors.light.tint} />
-            </TouchableOpacity>
+        {/* Borrower tab */}
+        {activeTab === "Borrower" && (
+          <View style={styles.card}>
+            <SectionHeader title="Identity" />
+            <DetailRow label="First Name" value={borrower?.firstName} />
+            <DetailRow label="Last Name" value={borrower?.lastName} />
+            <DetailRow label="Entity / Company" value={borrower?.entityName} last />
+
+            <SectionHeader title="Contact" />
+            <DetailRow label="Email" value={borrower?.email} />
+            <DetailRow label="Phone" value={borrower?.phone} last />
+
+            <SectionHeader title="Financial Profile" />
+            <DetailRow
+              label="CRE Experience"
+              value={
+                borrower?.creExperienceYears
+                  ? `${borrower.creExperienceYears} years`
+                  : undefined
+              }
+            />
+            <DetailRow
+              label="Net Worth (USD)"
+              value={
+                borrower?.netWorthUsd
+                  ? formatCurrencyFull(borrower.netWorthUsd)
+                  : undefined
+              }
+            />
+            <DetailRow
+              label="Liquid Assets (USD)"
+              value={
+                borrower?.liquidityUsd
+                  ? formatCurrencyFull(borrower.liquidityUsd)
+                  : undefined
+              }
+            />
+            <DetailRow
+              label="FICO Credit Score"
+              value={borrower?.creditScore}
+              last
+            />
           </View>
-        </View>
+        )}
 
-        {/* Dates */}
-        <View style={styles.metaRow}>
-          <Feather name="calendar" size={13} color={Colors.light.textTertiary} />
-          <Text style={styles.metaText}>
-            Created {formatFullDate(app.createdAt)} · Updated {formatFullDate(app.updatedAt)}
-          </Text>
-        </View>
-
-        {/* Property Details */}
-        <View style={styles.card}>
-          <SectionHeader title="Property Details" />
-          <DetailRow label="Address" value={app.propertyAddress} />
-          <DetailRow label="City" value={app.propertyCity} />
-          <DetailRow label="State" value={app.propertyState} />
-          <DetailRow label="ZIP Code" value={app.propertyZip} />
-          <DetailRow label="Property Type" value={app.propertyType} />
-          <DetailRow label="Square Footage" value={app.propertySquareFeet ? formatSF(app.propertySquareFeet) : undefined} />
-          <DetailRow label="Units" value={app.propertyUnits} />
-          <DetailRow label="Year Built" value={app.yearBuilt} />
-          <DetailRow label="Occupancy Rate" value={app.occupancyRate ? `${app.occupancyRate}%` : undefined} last />
-        </View>
-
-        {/* Loan Terms */}
-        <View style={styles.card}>
-          <SectionHeader title="Loan Terms" />
-          <DetailRow label="Loan Type" value={app.loanType} />
-          <DetailRow label="Loan Amount" value={app.loanAmount ? formatCurrencyFull(app.loanAmount) : undefined} />
-          <DetailRow label="LTV" value={app.ltv ? `${app.ltv}%` : undefined} />
-          <DetailRow label="DSCR" value={app.dscr ? `${app.dscr}x` : undefined} />
-          <DetailRow label="Interest Type" value={app.interestType} />
-          <DetailRow label="Interest Rate" value={app.interestRate ? `${app.interestRate}%` : undefined} />
-          <DetailRow label="Loan Term" value={app.loanTerm ? `${app.loanTerm} years` : undefined} />
-          <DetailRow label="Amortization" value={app.amortizationType} />
-          <DetailRow label="Closing Date" value={app.closingDate} last />
-        </View>
-
-        {/* Borrower */}
-        <View style={styles.card}>
-          <SectionHeader title="Borrower" />
-          <DetailRow label="Name" value={app.borrowerName} />
-          <DetailRow label="Entity" value={app.borrowerEntity} />
-          <DetailRow label="Email" value={app.borrowerEmail} />
-          <DetailRow label="Phone" value={app.borrowerPhone} />
-          <DetailRow label="CRE Experience" value={app.borrowerExperience} />
-          <DetailRow label="Net Worth" value={app.netWorth ? formatCurrencyFull(app.netWorth) : undefined} />
-          <DetailRow label="Liquidity" value={app.liquidity ? formatCurrencyFull(app.liquidity) : undefined} />
-          <DetailRow label="Credit Score" value={app.creditScore} last />
-        </View>
-
-        {/* Notes */}
-        <View style={styles.card}>
-          <View style={styles.notesHeader}>
-            <SectionHeader title={`Notes (${app.notes.length})`} />
-            <TouchableOpacity
-              style={styles.addNoteBtn}
-              onPress={() => setNoteModal(true)}
-              activeOpacity={0.7}
-            >
-              <Feather name="plus" size={16} color={Colors.light.tint} />
-              <Text style={styles.addNoteBtnText}>Add Note</Text>
-            </TouchableOpacity>
+        {/* Comments tab */}
+        {activeTab === "Comments" && (
+          <View style={styles.card}>
+            <SectionHeader
+              title={`Comments (${app.comments.length})`}
+              subtitle="Threaded discussion on this application"
+            />
+            <CommentThread
+              application={app}
+              onAddComment={(text, parentId) => addComment(app.id, text, parentId)}
+            />
           </View>
+        )}
 
-          {app.notes.length === 0 ? (
-            <View style={styles.notesEmpty}>
-              <Feather name="message-square" size={28} color={Colors.light.textTertiary} />
-              <Text style={styles.notesEmptyText}>No notes yet</Text>
-            </View>
-          ) : (
-            app.notes.map((note, i) => (
-              <View
-                key={note.id}
-                style={[styles.note, i === app.notes.length - 1 && styles.noteLast]}
-              >
-                <View style={styles.noteHeader}>
-                  <Text style={styles.noteAuthor}>{note.author}</Text>
-                  <Text style={styles.noteDate}>{formatFullDate(note.createdAt)}</Text>
-                </View>
-                <Text style={styles.noteText}>{note.text}</Text>
-              </View>
-            ))
-          )}
-        </View>
+        {/* Docs tab */}
+        {activeTab === "Docs" && (
+          <View style={styles.card}>
+            <SectionHeader
+              title={`Documents (${app.attachments.length})`}
+              subtitle="Attached files for this application"
+            />
+            <AttachmentList
+              attachments={app.attachments}
+              onAdd={(att) => addAttachment(app.id, att)}
+              onDelete={(attId) => deleteAttachment(app.id, attId)}
+            />
+          </View>
+        )}
       </ScrollView>
 
-      {/* Status Modal */}
+      {/* ── Status modal ── */}
       <Modal
         visible={statusModal}
         transparent
@@ -298,50 +398,6 @@ export default function ApplicationDetailScreen() {
           ))}
         </View>
       </Modal>
-
-      {/* Note Modal */}
-      <Modal
-        visible={noteModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setNoteModal(false)}
-      >
-        <Pressable style={styles.overlay} onPress={() => setNoteModal(false)} />
-        <View style={[styles.sheet, { paddingBottom: bottomPad + 16 }]}>
-          <View style={styles.sheetHandle} />
-          <Text style={styles.sheetTitle}>Add Note</Text>
-          <TextInput
-            style={styles.noteInput}
-            multiline
-            placeholder="Type your note here..."
-            placeholderTextColor={Colors.light.textTertiary}
-            value={noteText}
-            onChangeText={setNoteText}
-            autoFocus
-            textAlignVertical="top"
-          />
-          <View style={styles.noteModalActions}>
-            <TouchableOpacity
-              style={styles.cancelNoteBtn}
-              onPress={() => {
-                setNoteText("");
-                setNoteModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.cancelNoteText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.saveNoteBtn, !noteText.trim() && styles.saveNoteBtnDisabled]}
-              onPress={handleAddNote}
-              disabled={!noteText.trim()}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.saveNoteText}>Save Note</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </>
   );
 }
@@ -367,13 +423,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingBottom: 10,
     backgroundColor: Colors.light.background,
-    gap: 12,
+    gap: 10,
   },
   backBtn: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 10,
@@ -392,34 +448,27 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   editBtn: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 10,
     backgroundColor: Colors.light.tint + "12",
   },
   deleteBtn: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 10,
     backgroundColor: Colors.light.errorBg,
   },
-  container: {
-    flex: 1,
-    backgroundColor: Colors.light.background,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 4,
-  },
   heroCard: {
     backgroundColor: Colors.light.backgroundCard,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 8,
+    marginHorizontal: 16,
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
@@ -427,62 +476,60 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   heroTop: {
-    marginBottom: 16,
-  },
-  heroLeft: {
-    gap: 4,
+    marginBottom: 12,
   },
   typeTag: {
     backgroundColor: Colors.light.tint + "15",
     borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     alignSelf: "flex-start",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   typeTagText: {
     color: Colors.light.tint,
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: "Inter_600SemiBold",
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
   heroAddress: {
-    fontSize: 20,
+    fontSize: 19,
     fontFamily: "Inter_700Bold",
     color: Colors.light.text,
     letterSpacing: -0.3,
   },
   heroCity: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
     color: Colors.light.textSecondary,
+    marginTop: 1,
   },
-  heroStats: {
+  metricsRow: {
     flexDirection: "row",
     backgroundColor: Colors.light.backgroundSecondary,
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
+    padding: 12,
+    marginBottom: 12,
   },
-  heroStat: {
+  metric: {
     flex: 1,
     alignItems: "center",
   },
-  heroStatValue: {
-    fontSize: 15,
+  metricValue: {
+    fontSize: 14,
     fontFamily: "Inter_700Bold",
     color: Colors.light.text,
     marginBottom: 2,
   },
-  heroStatLabel: {
-    fontSize: 11,
+  metricLabel: {
+    fontSize: 10,
     fontFamily: "Inter_500Medium",
     color: Colors.light.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 0.3,
   },
-  heroStatDivider: {
+  metricDiv: {
     width: 1,
     backgroundColor: Colors.light.border,
     marginVertical: 4,
@@ -491,95 +538,85 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginBottom: 8,
   },
   changeStatusBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 3,
   },
   changeStatusText: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
     color: Colors.light.tint,
   },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 4,
-    marginBottom: 16,
-    marginTop: 4,
-  },
   metaText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: "Inter_400Regular",
     color: Colors.light.textTertiary,
+  },
+  tabBar: {
+    backgroundColor: Colors.light.background,
+    maxHeight: 44,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  tabBarContent: {
+    paddingHorizontal: 16,
+    gap: 4,
+    alignItems: "center",
+  },
+  tab: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 5,
+  },
+  tabActive: {
+    backgroundColor: Colors.light.tint + "12",
+  },
+  tabText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: Colors.light.textSecondary,
+  },
+  tabTextActive: {
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.tint,
+  },
+  tabBadge: {
+    backgroundColor: Colors.light.tint,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  tabBadgeText: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    color: "#fff",
+  },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.light.background,
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
   card: {
     backgroundColor: Colors.light.backgroundCard,
     borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 1,
-  },
-  notesHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-  },
-  addNoteBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingTop: 2,
-  },
-  addNoteBtnText: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: Colors.light.tint,
-  },
-  notesEmpty: {
-    alignItems: "center",
-    paddingVertical: 24,
-    gap: 8,
-  },
-  notesEmptyText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.textTertiary,
-  },
-  note: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.borderLight,
-  },
-  noteLast: {
-    borderBottomWidth: 0,
-  },
-  noteHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
-  noteAuthor: {
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.light.tint,
-  },
-  noteDate: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.textTertiary,
-  },
-  noteText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.text,
-    lineHeight: 20,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -595,7 +632,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingTop: 12,
     paddingHorizontal: 16,
-    maxHeight: "70%",
   },
   sheetHandle: {
     width: 36,
@@ -633,49 +669,5 @@ const styles = StyleSheet.create({
   statusOptionTextActive: {
     fontFamily: "Inter_600SemiBold",
     color: Colors.light.tint,
-  },
-  noteInput: {
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderRadius: 12,
-    padding: 14,
-    minHeight: 100,
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.text,
-    marginBottom: 16,
-  },
-  noteModalActions: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  cancelNoteBtn: {
-    flex: 1,
-    height: 46,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: Colors.light.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cancelNoteText: {
-    fontSize: 15,
-    fontFamily: "Inter_500Medium",
-    color: Colors.light.textSecondary,
-  },
-  saveNoteBtn: {
-    flex: 2,
-    height: 46,
-    borderRadius: 12,
-    backgroundColor: Colors.light.tint,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  saveNoteBtnDisabled: {
-    opacity: 0.5,
-  },
-  saveNoteText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: "#fff",
   },
 });

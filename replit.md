@@ -91,6 +91,34 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
 
+### `artifacts/mobile` (`@workspace/mobile`)
+
+Expo React Native app for LOA (Letter of Authorization) origination in commercial real estate.
+
+**Design**: Navy blue `#1B3A6B` primary, golden amber `#C8963E` accent, `#F4F6FA` background.
+
+**Data Model (3NF-compliant)**:
+- `Borrower` — `firstName` + `lastName` (separate fields), `entityName`, contact, financial profile (`netWorthUsd`, `liquidityUsd`, `creditScore`, `creExperienceYears`)
+- `Property` — location (street/city/state/zip), `propertyType`, `grossSqFt` (SF), `numberOfUnits`, `yearBuilt`, **two occupancy fields**:
+  - `physicalOccupancyPct` — unit-based (occupied units ÷ total rentable units)
+  - `economicOccupancyPct` — rent-based (collected rent ÷ potential gross rent)
+- `LOAApplication` — loan terms only (`loanAmountUsd`, `ltvPct`, `dscrRatio`, `interestRatePct`, `loanTermYears`, etc.) + foreign keys `borrowerId` + `propertyId`. No data duplicated.
+- `Comment` — threaded via `parentCommentId: string | null` (null = root, string = reply)
+- `Attachment` — document metadata (uri, name, mimeType, sizeBytes) via expo-document-picker
+
+**Storage**: AsyncStorage keys `loa_applications_v2`, `loa_borrowers_v2`, `loa_properties_v2`
+
+**Key screens**:
+- `app/(tabs)/index.tsx` — Dashboard with pipeline stats and recent applications
+- `app/(tabs)/applications.tsx` — Full list with search and status filters
+- `app/new-application.tsx` — 5-step wizard: Property → Occupancy → Loan Terms → Borrower → Review
+- `app/application/[id].tsx` — Detail view with tabs: Property, Loan, Borrower, Comments, Docs
+
+**Key components**:
+- `CommentThread.tsx` — Threaded comments with inline reply forms, collapse/expand
+- `AttachmentList.tsx` — Document picker integration with file metadata display
+- `ApplicationCard.tsx` — Card with live borrower/property lookups from context
+
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.

@@ -15,8 +15,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ApplicationCard } from "@/components/ApplicationCard";
 import Colors from "@/constants/colors";
-import { useApplications } from "@/context/ApplicationContext";
 import type { ApplicationStatus } from "@/context/ApplicationContext";
+import { useApplications } from "@/context/ApplicationContext";
+import { getBorrowerDisplayName, getPropertyShortAddress } from "@/utils/formatting";
 
 const STATUS_FILTERS: (ApplicationStatus | "All")[] = [
   "All",
@@ -28,7 +29,7 @@ const STATUS_FILTERS: (ApplicationStatus | "All")[] = [
 ];
 
 export default function ApplicationsScreen() {
-  const { applications, loading, createApplication } = useApplications();
+  const { applications, loading, createApplication, getBorrower, getProperty } = useApplications();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "All">("All");
@@ -36,26 +37,27 @@ export default function ApplicationsScreen() {
   const filtered = applications.filter((app) => {
     const matchStatus = statusFilter === "All" || app.status === statusFilter;
     const q = search.toLowerCase();
+    if (!q) return matchStatus;
+    const borrower = getBorrower(app.borrowerId);
+    const property = getProperty(app.propertyId);
     const matchSearch =
-      !q ||
-      app.propertyAddress.toLowerCase().includes(q) ||
-      app.propertyCity.toLowerCase().includes(q) ||
-      app.borrowerName.toLowerCase().includes(q) ||
-      app.borrowerEntity.toLowerCase().includes(q) ||
-      app.propertyType.toLowerCase().includes(q);
+      getBorrowerDisplayName(borrower).toLowerCase().includes(q) ||
+      (borrower?.entityName ?? "").toLowerCase().includes(q) ||
+      getPropertyShortAddress(property).toLowerCase().includes(q) ||
+      (property?.city ?? "").toLowerCase().includes(q) ||
+      (property?.propertyType ?? "").toLowerCase().includes(q);
     return matchStatus && matchSearch;
   });
 
   const handleCreate = async () => {
-    const app = await createApplication();
-    router.push({ pathname: "/new-application", params: { id: app.id } });
+    const { application } = await createApplication();
+    router.push({ pathname: "/new-application", params: { id: application.id } });
   };
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={[styles.header, { paddingTop: topPadding + 16 }]}>
         <Text style={styles.title}>Applications</Text>
         <TouchableOpacity style={styles.newBtn} onPress={handleCreate} activeOpacity={0.8}>
@@ -65,7 +67,7 @@ export default function ApplicationsScreen() {
 
       {/* Search */}
       <View style={styles.searchContainer}>
-        <Feather name="search" size={16} color={Colors.light.textTertiary} style={styles.searchIcon} />
+        <Feather name="search" size={16} color={Colors.light.textTertiary} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by address, borrower..."
@@ -91,10 +93,7 @@ export default function ApplicationsScreen() {
         showsHorizontalScrollIndicator={false}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={[
-              styles.filterChip,
-              item === statusFilter && styles.filterChipActive,
-            ]}
+            style={[styles.filterChip, item === statusFilter && styles.filterChipActive]}
             onPress={() => setStatusFilter(item)}
             activeOpacity={0.7}
           >
@@ -110,14 +109,10 @@ export default function ApplicationsScreen() {
         )}
       />
 
-      {/* List */}
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingBottom: Platform.OS === "web" ? 100 : 100 },
-        ]}
+        contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           loading ? (
@@ -128,9 +123,7 @@ export default function ApplicationsScreen() {
             <View style={styles.emptyState}>
               <Feather name="inbox" size={44} color={Colors.light.textTertiary} />
               <Text style={styles.emptyTitle}>
-                {search || statusFilter !== "All"
-                  ? "No matching applications"
-                  : "No applications yet"}
+                {search || statusFilter !== "All" ? "No matching applications" : "No applications yet"}
               </Text>
               <Text style={styles.emptyText}>
                 {search || statusFilter !== "All"
@@ -191,7 +184,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.light.border,
     gap: 8,
   },
-  searchIcon: {},
   searchInput: {
     flex: 1,
     fontSize: 15,

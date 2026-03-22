@@ -57,6 +57,7 @@
   },
   "dependencies": {
     "@nkzw/create-context-hook": "^1.1.0",
-    "date-fns": "^3.6.0"
+    "date-fns": "^3.6.0",
+    "expo-document-picker": "^14.0.8"
   }
 }

@@ -16,15 +16,17 @@ import { FormField } from "@/components/FormField";
 import { SelectField } from "@/components/SelectField";
 import { SectionHeader } from "@/components/SectionHeader";
 import Colors from "@/constants/colors";
-import { useApplications } from "@/context/ApplicationContext";
 import type {
-  PropertyType,
-  LoanType,
-  InterestType,
   AmortizationType,
+  InterestType,
+  LoanType,
+  PropertyType,
 } from "@/context/ApplicationContext";
+import { useApplications } from "@/context/ApplicationContext";
 
-const STEPS = ["Property", "Loan Terms", "Borrower", "Review"];
+// ─── Step definitions ────────────────────────────────────────────────────────
+
+const STEPS = ["Property", "Occupancy", "Loan Terms", "Borrower", "Review"];
 
 const PROPERTY_TYPES: PropertyType[] = [
   "Office",
@@ -37,7 +39,6 @@ const PROPERTY_TYPES: PropertyType[] = [
   "Healthcare",
   "Land",
 ];
-
 const LOAN_TYPES: LoanType[] = [
   "Acquisition",
   "Refinance",
@@ -45,67 +46,96 @@ const LOAN_TYPES: LoanType[] = [
   "Bridge",
   "Permanent",
 ];
-
 const INTEREST_TYPES: InterestType[] = ["Fixed", "Floating", "Hybrid"];
-
 const AMORT_TYPES: AmortizationType[] = [
   "Full Amortizing",
   "Interest Only",
   "Partial IO",
 ];
 
+// ─── Screen ──────────────────────────────────────────────────────────────────
+
 export default function NewApplicationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getApplication, updateApplication } = useApplications();
+  const { getApplication, getBorrower, getProperty, updateApplication, updateBorrower, updateProperty } =
+    useApplications();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
 
   const app = getApplication(id);
+  const borrower = getBorrower(app?.borrowerId ?? "");
+  const property = getProperty(app?.propertyId ?? "");
 
-  if (!app) {
+  // ── Property form state ──────────────────────────────────────────────────
+  const [propForm, setPropForm] = useState({
+    streetAddress: property?.streetAddress ?? "",
+    city: property?.city ?? "",
+    state: property?.state ?? "",
+    zipCode: property?.zipCode ?? "",
+    propertyType: property?.propertyType ?? ("Office" as PropertyType),
+    grossSqFt: property?.grossSqFt ?? "",
+    numberOfUnits: property?.numberOfUnits ?? "",
+    yearBuilt: property?.yearBuilt ?? "",
+  });
+
+  // ── Occupancy form state (split from property for clarity) ───────────────
+  const [occForm, setOccForm] = useState({
+    physicalOccupancyPct: property?.physicalOccupancyPct ?? "",
+    economicOccupancyPct: property?.economicOccupancyPct ?? "",
+  });
+
+  // ── Loan form state ──────────────────────────────────────────────────────
+  const [loanForm, setLoanForm] = useState({
+    loanType: app?.loanType ?? ("Acquisition" as LoanType),
+    loanAmountUsd: app?.loanAmountUsd ?? "",
+    loanTermYears: app?.loanTermYears ?? "",
+    interestType: app?.interestType ?? ("Fixed" as InterestType),
+    interestRatePct: app?.interestRatePct ?? "",
+    amortizationType: app?.amortizationType ?? ("Full Amortizing" as AmortizationType),
+    ltvPct: app?.ltvPct ?? "",
+    dscrRatio: app?.dscrRatio ?? "",
+    targetClosingDate: app?.targetClosingDate ?? "",
+  });
+
+  // ── Borrower form state ──────────────────────────────────────────────────
+  const [borForm, setBorForm] = useState({
+    firstName: borrower?.firstName ?? "",
+    lastName: borrower?.lastName ?? "",
+    entityName: borrower?.entityName ?? "",
+    email: borrower?.email ?? "",
+    phone: borrower?.phone ?? "",
+    creExperienceYears: borrower?.creExperienceYears ?? "",
+    netWorthUsd: borrower?.netWorthUsd ?? "",
+    liquidityUsd: borrower?.liquidityUsd ?? "",
+    creditScore: borrower?.creditScore ?? "",
+  });
+
+  if (!app || !borrower || !property) {
     return (
       <View style={styles.center}>
-        <Text>Application not found</Text>
+        <Text>Loading...</Text>
       </View>
     );
   }
 
-  const [form, setForm] = useState({
-    propertyAddress: app.propertyAddress,
-    propertyCity: app.propertyCity,
-    propertyState: app.propertyState,
-    propertyZip: app.propertyZip,
-    propertyType: app.propertyType,
-    propertySquareFeet: app.propertySquareFeet,
-    propertyUnits: app.propertyUnits,
-    yearBuilt: app.yearBuilt,
-    occupancyRate: app.occupancyRate,
-    loanType: app.loanType,
-    loanAmount: app.loanAmount,
-    loanTerm: app.loanTerm,
-    interestType: app.interestType,
-    interestRate: app.interestRate,
-    amortizationType: app.amortizationType,
-    ltv: app.ltv,
-    dscr: app.dscr,
-    closingDate: app.closingDate,
-    borrowerName: app.borrowerName,
-    borrowerEntity: app.borrowerEntity,
-    borrowerEmail: app.borrowerEmail,
-    borrowerPhone: app.borrowerPhone,
-    borrowerExperience: app.borrowerExperience,
-    netWorth: app.netWorth,
-    liquidity: app.liquidity,
-    creditScore: app.creditScore,
-  });
+  const updateProp = (key: string) => (val: string) =>
+    setPropForm((f) => ({ ...f, [key]: val }));
+  const updateOcc = (key: string) => (val: string) =>
+    setOccForm((f) => ({ ...f, [key]: val }));
+  const updateLoan = (key: string) => (val: string) =>
+    setLoanForm((f) => ({ ...f, [key]: val }));
+  const updateBor = (key: string) => (val: string) =>
+    setBorForm((f) => ({ ...f, [key]: val }));
 
-  const update = (key: string) => (val: string) => setForm((f) => ({ ...f, [key]: val }));
-
-  const saveAndExit = async (status?: "Draft" | "Submitted") => {
-    await updateApplication(id, {
-      ...form,
-      ...(status ? { status } : {}),
-    });
+  const saveAll = async (status?: "Draft" | "Submitted") => {
+    await Promise.all([
+      updateProperty(property.id, { ...propForm, ...occForm }),
+      updateBorrower(borrower.id, borForm),
+      updateApplication(app.id, {
+        ...loanForm,
+        ...(status ? { status } : {}),
+      }),
+    ]);
     router.dismiss();
   };
 
@@ -113,7 +143,7 @@ export default function NewApplicationScreen() {
     if (step < STEPS.length - 1) {
       setStep(step + 1);
     } else {
-      saveAndExit("Submitted");
+      saveAll("Submitted");
     }
   };
 
@@ -127,19 +157,11 @@ export default function NewApplicationScreen() {
     >
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
-        <TouchableOpacity
-          style={styles.cancelBtn}
-          onPress={() => saveAndExit("Draft")}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={styles.cancelBtn} onPress={() => saveAll("Draft")} activeOpacity={0.7}>
           <Text style={styles.cancelText}>Save Draft</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New LOA</Text>
-        <TouchableOpacity
-          style={styles.closeBtn}
-          onPress={() => saveAndExit("Draft")}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={styles.closeBtn} onPress={() => saveAll("Draft")} activeOpacity={0.7}>
           <Feather name="x" size={20} color={Colors.light.text} />
         </TouchableOpacity>
       </View>
@@ -164,14 +186,7 @@ export default function NewApplicationScreen() {
                 {i < step ? (
                   <Feather name="check" size={10} color="#fff" />
                 ) : (
-                  <Text
-                    style={[
-                      styles.stepNum,
-                      i === step && styles.stepNumActive,
-                    ]}
-                  >
-                    {i + 1}
-                  </Text>
+                  <Text style={[styles.stepNum, i === step && styles.stepNumActive]}>{i + 1}</Text>
                 )}
               </View>
               <Text
@@ -191,39 +206,43 @@ export default function NewApplicationScreen() {
         ))}
       </View>
 
-      {/* Form Content */}
+      {/* Form Body */}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Step 0: Property ── */}
         {step === 0 && (
           <>
-            <SectionHeader title="Property Information" />
+            <SectionHeader
+              title="Property Location"
+              subtitle="Physical location of the subject property"
+            />
             <FormField
-              label="Property Address"
-              value={form.propertyAddress}
-              onChangeText={update("propertyAddress")}
-              placeholder="123 Main Street"
+              label="Street Address"
+              value={propForm.streetAddress}
+              onChangeText={updateProp("streetAddress")}
+              placeholder="123 Commerce Drive"
               required
             />
             <View style={styles.row}>
               <View style={styles.flex2}>
                 <FormField
                   label="City"
-                  value={form.propertyCity}
-                  onChangeText={update("propertyCity")}
-                  placeholder="New York"
+                  value={propForm.city}
+                  onChangeText={updateProp("city")}
+                  placeholder="Chicago"
                 />
               </View>
               <View style={styles.gap} />
               <View style={styles.flex1}>
                 <FormField
                   label="State"
-                  value={form.propertyState}
-                  onChangeText={update("propertyState")}
-                  placeholder="NY"
+                  value={propForm.state}
+                  onChangeText={updateProp("state")}
+                  placeholder="IL"
                   maxLength={2}
                   autoCapitalize="characters"
                 />
@@ -231,135 +250,173 @@ export default function NewApplicationScreen() {
               <View style={styles.gap} />
               <View style={styles.flex1}>
                 <FormField
-                  label="ZIP"
-                  value={form.propertyZip}
-                  onChangeText={update("propertyZip")}
-                  placeholder="10001"
+                  label="ZIP Code"
+                  value={propForm.zipCode}
+                  onChangeText={updateProp("zipCode")}
+                  placeholder="60601"
                   keyboardType="number-pad"
                   maxLength={5}
                 />
               </View>
             </View>
+
+            <SectionHeader
+              title="Property Details"
+              subtitle="Physical and structural characteristics"
+            />
             <SelectField
               label="Property Type"
-              value={form.propertyType}
+              value={propForm.propertyType}
               options={PROPERTY_TYPES}
-              onChange={(v) => update("propertyType")(v)}
+              onChange={(v) => updateProp("propertyType")(v)}
               required
             />
             <View style={styles.row}>
               <View style={styles.flex1}>
                 <FormField
-                  label="Sq Footage"
-                  value={form.propertySquareFeet}
-                  onChangeText={update("propertySquareFeet")}
+                  label="Gross Sq Ft (SF)"
+                  value={propForm.grossSqFt}
+                  onChangeText={updateProp("grossSqFt")}
                   placeholder="25,000"
                   keyboardType="number-pad"
-                  suffix="SF"
+                  hint="Rentable square footage"
                 />
               </View>
               <View style={styles.gap} />
               <View style={styles.flex1}>
                 <FormField
-                  label="Units"
-                  value={form.propertyUnits}
-                  onChangeText={update("propertyUnits")}
+                  label="Rentable Units"
+                  value={propForm.numberOfUnits}
+                  onChangeText={updateProp("numberOfUnits")}
                   placeholder="0"
                   keyboardType="number-pad"
+                  hint="Multifamily/mixed use"
                 />
               </View>
             </View>
-            <View style={styles.row}>
-              <View style={styles.flex1}>
-                <FormField
-                  label="Year Built"
-                  value={form.yearBuilt}
-                  onChangeText={update("yearBuilt")}
-                  placeholder="2005"
-                  keyboardType="number-pad"
-                  maxLength={4}
-                />
-              </View>
-              <View style={styles.gap} />
-              <View style={styles.flex1}>
-                <FormField
-                  label="Occupancy"
-                  value={form.occupancyRate}
-                  onChangeText={update("occupancyRate")}
-                  placeholder="95"
-                  keyboardType="decimal-pad"
-                  suffix="%"
-                />
-              </View>
-            </View>
+            <FormField
+              label="Year Built"
+              value={propForm.yearBuilt}
+              onChangeText={updateProp("yearBuilt")}
+              placeholder="2005"
+              keyboardType="number-pad"
+              maxLength={4}
+            />
           </>
         )}
 
+        {/* ── Step 1: Occupancy ── */}
         {step === 1 && (
           <>
-            <SectionHeader title="Loan Terms" />
+            <SectionHeader
+              title="Occupancy Metrics"
+              subtitle="Two distinct measures of property performance"
+            />
+
+            <View style={styles.infoBox}>
+              <Feather name="info" size={14} color={Colors.light.statusSubmitted} />
+              <Text style={styles.infoText}>
+                <Text style={styles.infoBold}>Physical occupancy</Text> measures the percentage of rentable units that are currently occupied by a tenant, regardless of whether rent is being collected.
+              </Text>
+            </View>
+            <FormField
+              label="Physical Occupancy (%)"
+              value={occForm.physicalOccupancyPct}
+              onChangeText={updateOcc("physicalOccupancyPct")}
+              placeholder="95.0"
+              keyboardType="decimal-pad"
+              suffix="%"
+              hint="Unit-based: occupied units ÷ total rentable units"
+            />
+
+            <View style={[styles.infoBox, { marginTop: 4 }]}>
+              <Feather name="info" size={14} color={Colors.light.accent} />
+              <Text style={styles.infoText}>
+                <Text style={styles.infoBold}>Economic occupancy</Text> measures the percentage of potential gross income actually collected — accounts for concessions, vacancies, and non-payment.
+              </Text>
+            </View>
+            <FormField
+              label="Economic Occupancy (%)"
+              value={occForm.economicOccupancyPct}
+              onChangeText={updateOcc("economicOccupancyPct")}
+              placeholder="91.0"
+              keyboardType="decimal-pad"
+              suffix="%"
+              hint="Rent-based: collected rent ÷ scheduled gross potential rent"
+            />
+          </>
+        )}
+
+        {/* ── Step 2: Loan Terms ── */}
+        {step === 2 && (
+          <>
+            <SectionHeader title="Loan Structure" subtitle="Terms and parameters of the requested loan" />
             <SelectField
               label="Loan Type"
-              value={form.loanType}
+              value={loanForm.loanType}
               options={LOAN_TYPES}
-              onChange={(v) => update("loanType")(v)}
+              onChange={(v) => updateLoan("loanType")(v)}
               required
             />
             <FormField
-              label="Loan Amount"
-              value={form.loanAmount}
-              onChangeText={update("loanAmount")}
+              label="Loan Amount (USD)"
+              value={loanForm.loanAmountUsd}
+              onChangeText={updateLoan("loanAmountUsd")}
               placeholder="5,000,000"
               keyboardType="number-pad"
               prefix="$"
+              hint="Principal amount in US dollars"
               required
             />
             <View style={styles.row}>
               <View style={styles.flex1}>
                 <FormField
-                  label="LTV"
-                  value={form.ltv}
-                  onChangeText={update("ltv")}
-                  placeholder="65"
+                  label="LTV (%)"
+                  value={loanForm.ltvPct}
+                  onChangeText={updateLoan("ltvPct")}
+                  placeholder="65.0"
                   keyboardType="decimal-pad"
                   suffix="%"
+                  hint="Loan-to-value ratio"
                 />
               </View>
               <View style={styles.gap} />
               <View style={styles.flex1}>
                 <FormField
-                  label="DSCR"
-                  value={form.dscr}
-                  onChangeText={update("dscr")}
+                  label="DSCR (×)"
+                  value={loanForm.dscrRatio}
+                  onChangeText={updateLoan("dscrRatio")}
                   placeholder="1.25"
                   keyboardType="decimal-pad"
-                  suffix="x"
+                  suffix="×"
+                  hint="Debt service coverage"
                 />
               </View>
             </View>
             <SelectField
               label="Interest Type"
-              value={form.interestType}
+              value={loanForm.interestType}
               options={INTEREST_TYPES}
-              onChange={(v) => update("interestType")(v)}
+              onChange={(v) => updateLoan("interestType")(v)}
             />
             <View style={styles.row}>
               <View style={styles.flex1}>
                 <FormField
-                  label="Interest Rate"
-                  value={form.interestRate}
-                  onChangeText={update("interestRate")}
+                  label="Interest Rate (%)"
+                  value={loanForm.interestRatePct}
+                  onChangeText={updateLoan("interestRatePct")}
                   placeholder="6.50"
                   keyboardType="decimal-pad"
                   suffix="%"
+                  hint="Annual rate"
                 />
               </View>
               <View style={styles.gap} />
               <View style={styles.flex1}>
                 <FormField
-                  label="Loan Term"
-                  value={form.loanTerm}
-                  onChangeText={update("loanTerm")}
+                  label="Loan Term (years)"
+                  value={loanForm.loanTermYears}
+                  onChangeText={updateLoan("loanTermYears")}
                   placeholder="5"
                   keyboardType="number-pad"
                   suffix="yrs"
@@ -368,65 +425,88 @@ export default function NewApplicationScreen() {
             </View>
             <SelectField
               label="Amortization"
-              value={form.amortizationType}
+              value={loanForm.amortizationType}
               options={AMORT_TYPES}
-              onChange={(v) => update("amortizationType")(v)}
+              onChange={(v) => updateLoan("amortizationType")(v)}
             />
             <FormField
               label="Target Closing Date"
-              value={form.closingDate}
-              onChangeText={update("closingDate")}
+              value={loanForm.targetClosingDate}
+              onChangeText={updateLoan("targetClosingDate")}
               placeholder="MM/DD/YYYY"
             />
           </>
         )}
 
-        {step === 2 && (
+        {/* ── Step 3: Borrower ── */}
+        {step === 3 && (
           <>
-            <SectionHeader title="Borrower Information" />
+            <SectionHeader title="Borrower Identity" subtitle="Individual and entity details" />
+            <View style={styles.row}>
+              <View style={styles.flex1}>
+                <FormField
+                  label="First Name"
+                  value={borForm.firstName}
+                  onChangeText={updateBor("firstName")}
+                  placeholder="John"
+                  autoCapitalize="words"
+                  required
+                />
+              </View>
+              <View style={styles.gap} />
+              <View style={styles.flex1}>
+                <FormField
+                  label="Last Name"
+                  value={borForm.lastName}
+                  onChangeText={updateBor("lastName")}
+                  placeholder="Smith"
+                  autoCapitalize="words"
+                  required
+                />
+              </View>
+            </View>
             <FormField
-              label="Borrower Name"
-              value={form.borrowerName}
-              onChangeText={update("borrowerName")}
-              placeholder="John Smith"
-              autoCapitalize="words"
-              required
-            />
-            <FormField
-              label="Entity / Company"
-              value={form.borrowerEntity}
-              onChangeText={update("borrowerEntity")}
+              label="Entity / Company Name"
+              value={borForm.entityName}
+              onChangeText={updateBor("entityName")}
               placeholder="ABC Holdings LLC"
               autoCapitalize="words"
             />
             <FormField
-              label="Email"
-              value={form.borrowerEmail}
-              onChangeText={update("borrowerEmail")}
+              label="Email Address"
+              value={borForm.email}
+              onChangeText={updateBor("email")}
               placeholder="john@company.com"
               keyboardType="email-address"
               autoCapitalize="none"
             />
             <FormField
-              label="Phone"
-              value={form.borrowerPhone}
-              onChangeText={update("borrowerPhone")}
-              placeholder="(212) 555-0100"
+              label="Phone Number"
+              value={borForm.phone}
+              onChangeText={updateBor("phone")}
+              placeholder="(312) 555-0100"
               keyboardType="phone-pad"
             />
-            <SectionHeader title="Financial Profile" subtitle="Used for underwriting assessment" />
+
+            <SectionHeader
+              title="Financial Profile"
+              subtitle="Used for underwriting and credit assessment"
+            />
             <FormField
-              label="CRE Experience"
-              value={form.borrowerExperience}
-              onChangeText={update("borrowerExperience")}
-              placeholder="10 years"
+              label="CRE Experience (years)"
+              value={borForm.creExperienceYears}
+              onChangeText={updateBor("creExperienceYears")}
+              placeholder="10"
+              keyboardType="number-pad"
+              suffix="yrs"
+              hint="Years of commercial real estate experience"
             />
             <View style={styles.row}>
               <View style={styles.flex1}>
                 <FormField
-                  label="Net Worth"
-                  value={form.netWorth}
-                  onChangeText={update("netWorth")}
+                  label="Net Worth (USD)"
+                  value={borForm.netWorthUsd}
+                  onChangeText={updateBor("netWorthUsd")}
                   placeholder="5,000,000"
                   keyboardType="number-pad"
                   prefix="$"
@@ -435,9 +515,9 @@ export default function NewApplicationScreen() {
               <View style={styles.gap} />
               <View style={styles.flex1}>
                 <FormField
-                  label="Liquidity"
-                  value={form.liquidity}
-                  onChangeText={update("liquidity")}
+                  label="Liquid Assets (USD)"
+                  value={borForm.liquidityUsd}
+                  onChangeText={updateBor("liquidityUsd")}
                   placeholder="500,000"
                   keyboardType="number-pad"
                   prefix="$"
@@ -445,100 +525,105 @@ export default function NewApplicationScreen() {
               </View>
             </View>
             <FormField
-              label="Credit Score"
-              value={form.creditScore}
-              onChangeText={update("creditScore")}
+              label="FICO Credit Score"
+              value={borForm.creditScore}
+              onChangeText={updateBor("creditScore")}
               placeholder="740"
               keyboardType="number-pad"
               maxLength={3}
+              hint="FICO score, typically 300–850"
             />
           </>
         )}
 
-        {step === 3 && (
+        {/* ── Step 4: Review ── */}
+        {step === 4 && (
           <>
-            <SectionHeader title="Review & Submit" subtitle="Confirm your application details" />
+            <SectionHeader title="Review & Submit" subtitle="Confirm all details before submitting" />
+
             <View style={styles.reviewCard}>
               <Text style={styles.reviewSectionTitle}>Property</Text>
-              <View style={styles.reviewRow}>
-                <Text style={styles.reviewLabel}>Address</Text>
-                <Text style={styles.reviewValue}>{form.propertyAddress || "—"}</Text>
-              </View>
-              <View style={styles.reviewRow}>
-                <Text style={styles.reviewLabel}>City, State</Text>
-                <Text style={styles.reviewValue}>
-                  {[form.propertyCity, form.propertyState].filter(Boolean).join(", ") || "—"}
-                </Text>
-              </View>
-              <View style={styles.reviewRow}>
-                <Text style={styles.reviewLabel}>Type</Text>
-                <Text style={styles.reviewValue}>{form.propertyType}</Text>
-              </View>
-              <View style={styles.reviewRow}>
-                <Text style={styles.reviewLabel}>Sq Footage</Text>
-                <Text style={styles.reviewValue}>
-                  {form.propertySquareFeet ? `${form.propertySquareFeet} SF` : "—"}
-                </Text>
-              </View>
+              <ReviewRow label="Address" value={propForm.streetAddress} />
+              <ReviewRow
+                label="Location"
+                value={[propForm.city, propForm.state, propForm.zipCode]
+                  .filter(Boolean)
+                  .join(", ")}
+              />
+              <ReviewRow label="Type" value={propForm.propertyType} />
+              <ReviewRow
+                label="Gross Sq Ft"
+                value={propForm.grossSqFt ? `${propForm.grossSqFt} SF` : undefined}
+              />
+              <ReviewRow
+                label="Units"
+                value={propForm.numberOfUnits || undefined}
+              />
+              <ReviewRow label="Year Built" value={propForm.yearBuilt} />
+              <ReviewRow
+                label="Physical Occupancy"
+                value={occForm.physicalOccupancyPct ? `${occForm.physicalOccupancyPct}% (unit-based)` : undefined}
+              />
+              <ReviewRow
+                label="Economic Occupancy"
+                value={occForm.economicOccupancyPct ? `${occForm.economicOccupancyPct}% (rent-based)` : undefined}
+                last
+              />
             </View>
+
             <View style={styles.reviewCard}>
-              <Text style={styles.reviewSectionTitle}>Loan</Text>
-              <View style={styles.reviewRow}>
-                <Text style={styles.reviewLabel}>Type</Text>
-                <Text style={styles.reviewValue}>{form.loanType}</Text>
-              </View>
-              <View style={styles.reviewRow}>
-                <Text style={styles.reviewLabel}>Amount</Text>
-                <Text style={styles.reviewValue}>
-                  {form.loanAmount ? `$${form.loanAmount}` : "—"}
-                </Text>
-              </View>
-              <View style={styles.reviewRow}>
-                <Text style={styles.reviewLabel}>Rate / Term</Text>
-                <Text style={styles.reviewValue}>
-                  {[
-                    form.interestRate ? `${form.interestRate}%` : null,
-                    form.loanTerm ? `${form.loanTerm}yr` : null,
+              <Text style={styles.reviewSectionTitle}>Loan Terms</Text>
+              <ReviewRow label="Type" value={loanForm.loanType} />
+              <ReviewRow
+                label="Amount (USD)"
+                value={loanForm.loanAmountUsd ? `$${loanForm.loanAmountUsd}` : undefined}
+              />
+              <ReviewRow
+                label="LTV / DSCR"
+                value={
+                  [
+                    loanForm.ltvPct ? `${loanForm.ltvPct}%` : null,
+                    loanForm.dscrRatio ? `${loanForm.dscrRatio}×` : null,
                   ]
                     .filter(Boolean)
-                    .join(" / ") || "—"}
-                </Text>
-              </View>
-              <View style={styles.reviewRow}>
-                <Text style={styles.reviewLabel}>LTV / DSCR</Text>
-                <Text style={styles.reviewValue}>
-                  {[form.ltv ? `${form.ltv}%` : null, form.dscr ? `${form.dscr}x` : null]
+                    .join(" / ") || undefined
+                }
+              />
+              <ReviewRow
+                label="Rate / Term"
+                value={
+                  [
+                    loanForm.interestRatePct ? `${loanForm.interestRatePct}%` : null,
+                    loanForm.loanTermYears ? `${loanForm.loanTermYears} yrs` : null,
+                  ]
                     .filter(Boolean)
-                    .join(" / ") || "—"}
-                </Text>
-              </View>
+                    .join(" / ") || undefined
+                }
+              />
+              <ReviewRow label="Amortization" value={loanForm.amortizationType} last />
             </View>
+
             <View style={styles.reviewCard}>
               <Text style={styles.reviewSectionTitle}>Borrower</Text>
-              <View style={styles.reviewRow}>
-                <Text style={styles.reviewLabel}>Name</Text>
-                <Text style={styles.reviewValue}>{form.borrowerName || "—"}</Text>
-              </View>
-              <View style={styles.reviewRow}>
-                <Text style={styles.reviewLabel}>Entity</Text>
-                <Text style={styles.reviewValue}>{form.borrowerEntity || "—"}</Text>
-              </View>
-              <View style={styles.reviewRow}>
-                <Text style={styles.reviewLabel}>Credit Score</Text>
-                <Text style={styles.reviewValue}>{form.creditScore || "—"}</Text>
-              </View>
+              <ReviewRow
+                label="Name"
+                value={[borForm.firstName, borForm.lastName].filter(Boolean).join(" ")}
+              />
+              <ReviewRow label="Entity" value={borForm.entityName} />
+              <ReviewRow label="Email" value={borForm.email} />
+              <ReviewRow label="Phone" value={borForm.phone} />
+              <ReviewRow
+                label="CRE Experience"
+                value={borForm.creExperienceYears ? `${borForm.creExperienceYears} years` : undefined}
+              />
+              <ReviewRow label="FICO Score" value={borForm.creditScore} last />
             </View>
           </>
         )}
       </ScrollView>
 
       {/* Footer */}
-      <View
-        style={[
-          styles.footer,
-          { paddingBottom: bottomPad + 12 },
-        ]}
-      >
+      <View style={[styles.footer, { paddingBottom: bottomPad + 12 }]}>
         {step > 0 && (
           <TouchableOpacity
             style={styles.backBtn}
@@ -548,22 +633,54 @@ export default function NewApplicationScreen() {
             <Feather name="arrow-left" size={18} color={Colors.light.tint} />
           </TouchableOpacity>
         )}
-        <TouchableOpacity
-          style={styles.nextBtn}
-          onPress={handleNext}
-          activeOpacity={0.8}
-        >
+        <TouchableOpacity style={styles.nextBtn} onPress={handleNext} activeOpacity={0.8}>
           <Text style={styles.nextBtnText}>
             {step === STEPS.length - 1 ? "Submit Application" : "Continue"}
           </Text>
-          {step < STEPS.length - 1 && (
-            <Feather name="arrow-right" size={18} color="#fff" />
-          )}
+          {step < STEPS.length - 1 && <Feather name="arrow-right" size={18} color="#fff" />}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
+
+// ─── Small helper component ───────────────────────────────────────────────────
+
+function ReviewRow({ label, value, last }: { label: string; value?: string; last?: boolean }) {
+  return (
+    <View style={[rrStyles.row, last && rrStyles.last]}>
+      <Text style={rrStyles.label}>{label}</Text>
+      <Text style={rrStyles.value}>{value || "—"}</Text>
+    </View>
+  );
+}
+
+const rrStyles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.borderLight,
+    gap: 12,
+  },
+  last: { borderBottomWidth: 0 },
+  label: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textSecondary,
+    flex: 1,
+  },
+  value: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: Colors.light.text,
+    flex: 1.5,
+    textAlign: "right",
+  },
+});
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
@@ -588,9 +705,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     color: Colors.light.text,
   },
-  cancelBtn: {
-    paddingVertical: 4,
-  },
+  cancelBtn: { paddingVertical: 4 },
   cancelText: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
@@ -605,18 +720,15 @@ const styles = StyleSheet.create({
   stepRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 16,
     backgroundColor: Colors.light.background,
   },
-  stepItem: {
-    alignItems: "center",
-    gap: 4,
-  },
+  stepItem: { alignItems: "center", gap: 3 },
   stepDot: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: Colors.light.border,
     alignItems: "center",
@@ -632,15 +744,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.success,
   },
   stepNum: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: "Inter_600SemiBold",
     color: Colors.light.textTertiary,
   },
-  stepNumActive: {
-    color: "#fff",
-  },
+  stepNumActive: { color: "#fff" },
   stepLabel: {
-    fontSize: 9,
+    fontSize: 8,
     fontFamily: "Inter_500Medium",
     color: Colors.light.textTertiary,
     textAlign: "center",
@@ -649,33 +759,44 @@ const styles = StyleSheet.create({
     color: Colors.light.tint,
     fontFamily: "Inter_600SemiBold",
   },
-  stepLabelDone: {
-    color: Colors.light.success,
-  },
+  stepLabelDone: { color: Colors.light.success },
   stepLine: {
     flex: 1,
     height: 2,
     backgroundColor: Colors.light.border,
-    marginBottom: 16,
-    marginHorizontal: 4,
+    marginBottom: 14,
+    marginHorizontal: 3,
   },
-  stepLineDone: {
-    backgroundColor: Colors.light.success,
-  },
-  scroll: {
-    flex: 1,
-  },
+  stepLineDone: { backgroundColor: Colors.light.success },
+  scroll: { flex: 1 },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 24,
   },
-  row: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-  },
+  row: { flexDirection: "row", alignItems: "flex-end" },
   flex1: { flex: 1 },
   flex2: { flex: 2 },
   gap: { width: 10 },
+  infoBox: {
+    flexDirection: "row",
+    gap: 8,
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    alignItems: "flex-start",
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textSecondary,
+    lineHeight: 18,
+  },
+  infoBold: {
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.text,
+  },
   footer: {
     flexDirection: "row",
     alignItems: "center",
@@ -722,31 +843,11 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   reviewSectionTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Inter_600SemiBold",
     color: Colors.light.tint,
     textTransform: "uppercase",
     letterSpacing: 0.6,
-    marginBottom: 12,
-  },
-  reviewRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.borderLight,
-  },
-  reviewLabel: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.textSecondary,
-    flex: 1,
-  },
-  reviewValue: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    color: Colors.light.text,
-    flex: 1.5,
-    textAlign: "right",
+    marginBottom: 10,
   },
 });
