@@ -8,11 +8,18 @@ type Props = {
   value: string | number;
   color?: string;
   bg?: string;
+  border?: string;
 };
 
-export function StatCard({ label, value, color = Colors.light.text, bg = Colors.light.backgroundCard }: Props) {
+export function StatCard({
+  label,
+  value,
+  color = Colors.light.text,
+  bg = Colors.light.backgroundCard,
+  border = Colors.light.border,
+}: Props) {
   return (
-    <View style={[styles.card, { backgroundColor: bg }]}>
+    <View style={[styles.card, { backgroundColor: bg, borderColor: border }]}>
       <Text style={[styles.value, { color }]}>{value}</Text>
       <Text style={styles.label}>{label}</Text>
     </View>
@@ -22,23 +29,21 @@ export function StatCard({ label, value, color = Colors.light.text, bg = Colors.
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    borderRadius: 14,
-    padding: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+    borderRadius: 4,
+    padding: 16,
+    borderWidth: 1,
   },
   value: {
-    fontSize: 22,
-    fontFamily: "Inter_700Bold",
-    marginBottom: 2,
+    fontSize: 24,
+    fontFamily: "OpenSans_700Bold",
+    marginBottom: 4,
+    letterSpacing: -0.5,
   },
   label: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "OpenSans_600SemiBold",
     color: Colors.light.textSecondary,
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
   },
 });

@@ -3,9 +3,7 @@ import React, { useState } from "react";
 import {
   FlatList,
   Modal,
-  Platform,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -32,17 +30,17 @@ export function SelectField({ label, value, options, onChange, required }: Props
       <View style={styles.wrapper}>
         <View style={styles.labelRow}>
           <Text style={styles.label}>{label}</Text>
-          {required && <Text style={styles.required}>*</Text>}
+          {required && <Text style={styles.required}> *</Text>}
         </View>
         <TouchableOpacity
           style={styles.selector}
           onPress={() => setOpen(true)}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
           <Text style={[styles.selectorText, !value && styles.placeholder]}>
             {value || `Select ${label}`}
           </Text>
-          <Feather name="chevron-down" size={16} color={Colors.light.textSecondary} />
+          <Feather name="chevron-down" size={14} color={Colors.light.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -51,6 +49,7 @@ export function SelectField({ label, value, options, onChange, required }: Props
         <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
           <View style={styles.sheetHandle} />
           <Text style={styles.sheetTitle}>{label}</Text>
+          <View style={styles.divider} />
           <FlatList
             data={options}
             keyExtractor={(item) => item}
@@ -86,35 +85,35 @@ const styles = StyleSheet.create({
   labelRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6,
-    gap: 2,
+    marginBottom: 4,
   },
   label: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    fontFamily: "OpenSans_600SemiBold",
     color: Colors.light.textSecondary,
-    letterSpacing: 0.1,
+    letterSpacing: 0.2,
+    textTransform: "uppercase",
   },
   required: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.light.error,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "OpenSans_600SemiBold",
   },
   selector: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: Colors.light.backgroundCard,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: Colors.light.border,
-    borderRadius: 10,
+    borderRadius: 4,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    minHeight: 46,
+    minHeight: 44,
   },
   selectorText: {
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.text,
   },
   placeholder: {
@@ -122,7 +121,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
   sheet: {
     position: "absolute",
@@ -130,10 +129,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: Colors.light.backgroundCard,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     paddingTop: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     maxHeight: "60%",
   },
   sheetHandle: {
@@ -145,30 +144,38 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sheetTitle: {
-    fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+    fontFamily: "OpenSans_700Bold",
     color: Colors.light.text,
+    letterSpacing: 0.2,
     marginBottom: 12,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: Colors.light.border,
+    marginBottom: 4,
   },
   option: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 14,
-    paddingHorizontal: 4,
+    paddingHorizontal: 0,
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.borderLight,
   },
   optionSelected: {
-    backgroundColor: Colors.light.tint + "08",
+    backgroundColor: Colors.light.tintLight + "60",
+    paddingHorizontal: 8,
+    borderRadius: 4,
   },
   optionText: {
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.text,
   },
   optionTextSelected: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "OpenSans_700Bold",
     color: Colors.light.tint,
   },
 });

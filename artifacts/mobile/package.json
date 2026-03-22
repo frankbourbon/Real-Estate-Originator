@@ -56,6 +56,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
+    "@expo-google-fonts/open-sans": "^0.4.2",
     "@nkzw/create-context-hook": "^1.1.0",
     "date-fns": "^3.6.0",
     "expo-document-picker": "^14.0.8"

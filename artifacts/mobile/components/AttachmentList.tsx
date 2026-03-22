@@ -1,13 +1,7 @@
 import * as DocumentPicker from "expo-document-picker";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import {
-  Alert,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import Colors from "@/constants/colors";
 import type { Attachment } from "@/context/ApplicationContext";
@@ -23,10 +17,10 @@ function mimeIcon(mimeType: string): React.ComponentProps<typeof Feather>["name"
 
 function mimeColor(mimeType: string): string {
   if (mimeType.includes("pdf")) return Colors.light.error;
-  if (mimeType.includes("image")) return Colors.light.tintLight;
-  if (mimeType.includes("word") || mimeType.includes("doc")) return Colors.light.statusSubmitted;
+  if (mimeType.includes("image")) return Colors.light.statusSubmitted;
+  if (mimeType.includes("word") || mimeType.includes("doc")) return Colors.light.info;
   if (mimeType.includes("excel") || mimeType.includes("sheet") || mimeType.includes("csv")) return Colors.light.success;
-  return Colors.light.textSecondary;
+  return Colors.light.tint;
 }
 
 type Props = {
@@ -64,28 +58,26 @@ export function AttachmentList({ attachments, onAdd, onDelete }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* Upload button */}
       <TouchableOpacity style={styles.uploadBtn} onPress={handlePick} activeOpacity={0.7}>
-        <Feather name="upload" size={16} color={Colors.light.tint} />
+        <Feather name="upload" size={15} color={Colors.light.tint} />
         <Text style={styles.uploadText}>Attach Document</Text>
       </TouchableOpacity>
 
-      {/* List */}
       {attachments.length === 0 ? (
         <View style={styles.empty}>
-          <Feather name="folder" size={28} color={Colors.light.textTertiary} />
+          <Feather name="folder" size={24} color={Colors.light.textTertiary} />
           <Text style={styles.emptyText}>No documents attached</Text>
         </View>
       ) : (
         attachments.map((att) => (
           <View key={att.id} style={styles.item}>
-            <View style={[styles.iconBox, { backgroundColor: mimeColor(att.mimeType) + "18" }]}>
-              <Feather name={mimeIcon(att.mimeType)} size={18} color={mimeColor(att.mimeType)} />
+            <View style={[styles.iconBox, { borderColor: mimeColor(att.mimeType) + "40", backgroundColor: mimeColor(att.mimeType) + "12" }]}>
+              <Feather name={mimeIcon(att.mimeType)} size={16} color={mimeColor(att.mimeType)} />
             </View>
             <View style={styles.itemMeta}>
               <Text style={styles.itemName} numberOfLines={1}>{att.name}</Text>
               <Text style={styles.itemSub}>
-                {formatFileSize(att.sizeBytes)} · {formatDate(att.uploadedAt)}
+                {formatFileSize(att.sizeBytes)} · {formatDate(att.uploadedAt)} · {att.uploadedBy}
               </Text>
             </View>
             <TouchableOpacity
@@ -93,7 +85,7 @@ export function AttachmentList({ attachments, onAdd, onDelete }: Props) {
               style={styles.deleteBtn}
               activeOpacity={0.6}
             >
-              <Feather name="x" size={16} color={Colors.light.textTertiary} />
+              <Feather name="x" size={15} color={Colors.light.textTertiary} />
             </TouchableOpacity>
           </View>
         ))
@@ -103,68 +95,73 @@ export function AttachmentList({ attachments, onAdd, onDelete }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: 8,
-  },
+  container: { gap: 8 },
+
   uploadBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: Colors.light.tint,
     borderStyle: "dashed",
-    borderRadius: 10,
+    borderRadius: 4,
     paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingVertical: 12,
     marginBottom: 4,
+    backgroundColor: Colors.light.tintLight + "30",
   },
   uploadText: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    fontFamily: "OpenSans_600SemiBold",
     color: Colors.light.tint,
   },
+
   empty: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 20,
-    gap: 6,
+    gap: 8,
   },
   emptyText: {
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.textTertiary,
   },
+
   item: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderRadius: 10,
-    padding: 10,
+    backgroundColor: Colors.light.backgroundCard,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 4,
+    padding: 12,
   },
   iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 4,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  itemMeta: {
-    flex: 1,
-  },
+  itemMeta: { flex: 1 },
   itemName: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    fontFamily: "OpenSans_600SemiBold",
     color: Colors.light.text,
     marginBottom: 2,
   },
   itemSub: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.textTertiary,
   },
   deleteBtn: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     alignItems: "center",
     justifyContent: "center",
   },

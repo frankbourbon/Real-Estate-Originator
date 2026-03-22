@@ -1,7 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -20,7 +19,6 @@ type ReplyFormProps = {
 
 function ReplyForm({ onSubmit, onCancel }: ReplyFormProps) {
   const [text, setText] = useState("");
-
   return (
     <View style={styles.replyForm}>
       <TextInput
@@ -33,21 +31,18 @@ function ReplyForm({ onSubmit, onCancel }: ReplyFormProps) {
         autoFocus
       />
       <View style={styles.replyActions}>
-        <TouchableOpacity onPress={onCancel} style={styles.replyCancelBtn} activeOpacity={0.7}>
-          <Text style={styles.replyCancelText}>Cancel</Text>
+        <TouchableOpacity onPress={onCancel} style={styles.cancelBtn} activeOpacity={0.7}>
+          <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => {
-            if (text.trim()) {
-              onSubmit(text.trim());
-              setText("");
-            }
+            if (text.trim()) { onSubmit(text.trim()); setText(""); }
           }}
-          style={[styles.replySubmitBtn, !text.trim() && styles.replySubmitDisabled]}
+          style={[styles.replyBtn, !text.trim() && styles.replyBtnDisabled]}
           disabled={!text.trim()}
           activeOpacity={0.8}
         >
-          <Text style={styles.replySubmitText}>Reply</Text>
+          <Text style={styles.replyBtnText}>Reply</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -62,79 +57,71 @@ type CommentItemProps = {
 };
 
 function CommentItem({ comment, application, depth = 0, onReply }: CommentItemProps) {
-  const [showReplyForm, setShowReplyForm] = useState(false);
-  const [expanded, setExpanded] = useState(true);
+  const [showReply, setShowReply] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const replies = getReplies(application, comment.id);
 
   return (
-    <View style={[styles.commentItem, depth > 0 && styles.commentIndented]}>
-      {/* Thread line for replies */}
+    <View style={[styles.commentItem, depth > 0 && styles.commentNested]}>
       {depth > 0 && <View style={styles.threadLine} />}
 
-      <View style={styles.commentContent}>
-        {/* Avatar + author */}
+      <View style={styles.commentInner}>
+        {/* Header */}
         <View style={styles.commentHeader}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{comment.author.charAt(0).toUpperCase()}</Text>
           </View>
-          <View style={styles.commentMeta}>
-            <Text style={styles.commentAuthor}>{comment.author}</Text>
-            <Text style={styles.commentTime}>{formatTimeAgo(comment.createdAt)}</Text>
-          </View>
+          <Text style={styles.authorName}>{comment.author}</Text>
+          <Text style={styles.commentTime}>{formatTimeAgo(comment.createdAt)}</Text>
         </View>
 
         {/* Body */}
         <Text style={styles.commentText}>{comment.text}</Text>
 
         {/* Actions */}
-        <View style={styles.commentActions}>
+        <View style={styles.commentFooter}>
           <TouchableOpacity
-            onPress={() => setShowReplyForm(!showReplyForm)}
-            style={styles.commentAction}
+            style={styles.action}
+            onPress={() => setShowReply(!showReply)}
             activeOpacity={0.6}
           >
-            <Feather name="corner-down-right" size={12} color={Colors.light.textTertiary} />
-            <Text style={styles.commentActionText}>Reply</Text>
+            <Feather name="corner-down-right" size={12} color={Colors.light.tint} />
+            <Text style={styles.actionText}>Reply</Text>
           </TouchableOpacity>
           {replies.length > 0 && (
             <TouchableOpacity
-              onPress={() => setExpanded(!expanded)}
-              style={styles.commentAction}
+              style={styles.action}
+              onPress={() => setCollapsed(!collapsed)}
               activeOpacity={0.6}
             >
               <Feather
-                name={expanded ? "chevron-up" : "chevron-down"}
+                name={collapsed ? "chevron-down" : "chevron-up"}
                 size={12}
-                color={Colors.light.tint}
+                color={Colors.light.textTertiary}
               />
-              <Text style={[styles.commentActionText, { color: Colors.light.tint }]}>
-                {expanded ? "Collapse" : `${replies.length} repl${replies.length === 1 ? "y" : "ies"}`}
+              <Text style={[styles.actionText, { color: Colors.light.textTertiary }]}>
+                {collapsed ? `${replies.length} repl${replies.length === 1 ? "y" : "ies"}` : "Collapse"}
               </Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {showReplyForm && (
+        {showReply && (
           <ReplyForm
-            onSubmit={(text) => {
-              onReply(comment.id, text);
-              setShowReplyForm(false);
-            }}
-            onCancel={() => setShowReplyForm(false)}
+            onSubmit={(text) => { onReply(comment.id, text); setShowReply(false); }}
+            onCancel={() => setShowReply(false)}
           />
         )}
 
-        {/* Nested replies */}
-        {expanded &&
-          replies.map((reply) => (
-            <CommentItem
-              key={reply.id}
-              comment={reply}
-              application={application}
-              depth={depth + 1}
-              onReply={onReply}
-            />
-          ))}
+        {!collapsed && replies.map((r) => (
+          <CommentItem
+            key={r.id}
+            comment={r}
+            application={application}
+            depth={depth + 1}
+            onReply={onReply}
+          />
+        ))}
       </View>
     </View>
   );
@@ -146,32 +133,29 @@ type Props = {
 };
 
 export function CommentThread({ application, onAddComment }: Props) {
-  const [newComment, setNewComment] = useState("");
+  const [newText, setNewText] = useState("");
   const topLevel = application.comments.filter((c) => c.parentCommentId === null);
 
   return (
     <View style={styles.container}>
-      {/* New root comment */}
-      <View style={styles.newCommentRow}>
+      {/* New comment input */}
+      <View style={styles.newCommentBox}>
         <View style={styles.newCommentAvatar}>
           <Text style={styles.avatarText}>Y</Text>
         </View>
-        <View style={styles.newCommentInput}>
+        <View style={styles.newCommentField}>
           <TextInput
-            style={styles.newInput}
+            style={styles.newCommentInput}
             placeholder="Add a comment..."
             placeholderTextColor={Colors.light.textTertiary}
-            value={newComment}
-            onChangeText={setNewComment}
+            value={newText}
+            onChangeText={setNewText}
             multiline
           />
-          {newComment.trim().length > 0 && (
+          {newText.trim().length > 0 && (
             <TouchableOpacity
-              style={styles.submitBtn}
-              onPress={() => {
-                onAddComment(newComment.trim(), null);
-                setNewComment("");
-              }}
+              style={styles.sendBtn}
+              onPress={() => { onAddComment(newText.trim(), null); setNewText(""); }}
               activeOpacity={0.8}
             >
               <Feather name="send" size={14} color="#fff" />
@@ -180,17 +164,17 @@ export function CommentThread({ application, onAddComment }: Props) {
         </View>
       </View>
 
-      {/* Thread list */}
+      {/* Thread */}
       {topLevel.length === 0 ? (
-        <View style={styles.emptyComments}>
-          <Feather name="message-circle" size={28} color={Colors.light.textTertiary} />
-          <Text style={styles.emptyText}>No comments yet</Text>
+        <View style={styles.empty}>
+          <Feather name="message-circle" size={24} color={Colors.light.textTertiary} />
+          <Text style={styles.emptyText}>No comments yet. Start the discussion.</Text>
         </View>
       ) : (
-        topLevel.map((comment) => (
+        topLevel.map((c) => (
           <CommentItem
-            key={comment.id}
-            comment={comment}
+            key={c.id}
+            comment={c}
             application={application}
             depth={0}
             onReply={(parentId, text) => onAddComment(text, parentId)}
@@ -202,10 +186,9 @@ export function CommentThread({ application, onAddComment }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: 0,
-  },
-  newCommentRow: {
+  container: { gap: 0 },
+
+  newCommentBox: {
     flexDirection: "row",
     gap: 10,
     marginBottom: 16,
@@ -214,66 +197,74 @@ const styles = StyleSheet.create({
   newCommentAvatar: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 2,
     backgroundColor: Colors.light.tint,
     alignItems: "center",
     justifyContent: "center",
   },
-  newCommentInput: {
+  newCommentField: {
     flex: 1,
     flexDirection: "row",
     alignItems: "flex-end",
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    backgroundColor: Colors.light.background,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 4,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     gap: 8,
   },
-  newInput: {
+  newCommentInput: {
     flex: 1,
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.text,
     maxHeight: 80,
   },
-  submitBtn: {
+  sendBtn: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 4,
     backgroundColor: Colors.light.tint,
     alignItems: "center",
     justifyContent: "center",
   },
-  emptyComments: {
+
+  empty: {
     alignItems: "center",
     paddingVertical: 24,
     gap: 8,
+    flexDirection: "row",
+    justifyContent: "center",
   },
   emptyText: {
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.textTertiary,
   },
+
   commentItem: {
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.borderLight,
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
   },
-  commentIndented: {
-    marginLeft: 16,
-    borderBottomWidth: 0,
+  commentNested: {
+    marginLeft: 20,
+    borderTopWidth: 0,
     paddingVertical: 8,
+    position: "relative",
   },
   threadLine: {
     position: "absolute",
-    left: -16,
-    top: 16,
+    left: -12,
+    top: 0,
     bottom: 0,
     width: 2,
-    backgroundColor: Colors.light.border,
+    backgroundColor: Colors.light.tintLight,
     borderRadius: 1,
   },
-  commentContent: {},
+  commentInner: {},
+
   commentHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -281,69 +272,68 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.light.tint + "20",
+    width: 26,
+    height: 26,
+    borderRadius: 2,
+    backgroundColor: Colors.light.tintLight,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    fontFamily: "OpenSans_700Bold",
     color: Colors.light.tint,
   },
-  commentMeta: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 6,
-  },
-  commentAuthor: {
+  authorName: {
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "OpenSans_700Bold",
     color: Colors.light.text,
   },
   commentTime: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.textTertiary,
+    marginLeft: "auto",
   },
   commentText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.text,
     lineHeight: 20,
-    marginBottom: 6,
-    marginLeft: 36,
+    marginBottom: 8,
+    marginLeft: 34,
   },
-  commentActions: {
+  commentFooter: {
     flexDirection: "row",
-    gap: 14,
-    marginLeft: 36,
+    gap: 16,
+    marginLeft: 34,
   },
-  commentAction: {
+  action: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     paddingVertical: 2,
   },
-  commentActionText: {
+  actionText: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
-    color: Colors.light.textTertiary,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.tint,
   },
+
   replyForm: {
-    marginLeft: 36,
+    marginLeft: 34,
     marginTop: 8,
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderRadius: 10,
+    backgroundColor: Colors.light.background,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 4,
     padding: 10,
   },
   replyInput: {
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.text,
-    minHeight: 48,
+    minHeight: 44,
     textAlignVertical: "top",
   },
   replyActions: {
@@ -351,28 +341,26 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     gap: 8,
     marginTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
+    paddingTop: 8,
   },
-  replyCancelBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  replyCancelText: {
+  cancelBtn: { paddingHorizontal: 12, paddingVertical: 6 },
+  cancelText: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "OpenSans_600SemiBold",
     color: Colors.light.textSecondary,
   },
-  replySubmitBtn: {
+  replyBtn: {
     backgroundColor: Colors.light.tint,
-    borderRadius: 8,
+    borderRadius: 4,
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
-  replySubmitDisabled: {
-    opacity: 0.4,
-  },
-  replySubmitText: {
+  replyBtnDisabled: { opacity: 0.4 },
+  replyBtnText: {
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "OpenSans_700Bold",
     color: "#fff",
   },
 });

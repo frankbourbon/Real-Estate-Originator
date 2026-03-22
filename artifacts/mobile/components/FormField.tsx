@@ -26,7 +26,7 @@ export const FormField = forwardRef<TextInput, Props>(function FormField(
     <View style={styles.wrapper}>
       <View style={styles.labelRow}>
         <Text style={styles.label}>{label}</Text>
-        {required && <Text style={styles.required}>*</Text>}
+        {required && <Text style={styles.required}> *</Text>}
       </View>
       <View
         style={[
@@ -42,7 +42,7 @@ export const FormField = forwardRef<TextInput, Props>(function FormField(
           placeholderTextColor={Colors.light.textTertiary}
           {...props}
         />
-        {suffix ? <Text style={styles.affix}>{suffix}</Text> : null}
+        {suffix ? <Text style={styles.affixRight}>{suffix}</Text> : null}
       </View>
       {error ? (
         <Text style={styles.errorText}>{error}</Text>
@@ -60,58 +60,65 @@ const styles = StyleSheet.create({
   labelRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6,
-    gap: 2,
+    marginBottom: 4,
   },
   label: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    fontFamily: "OpenSans_600SemiBold",
     color: Colors.light.textSecondary,
-    letterSpacing: 0.1,
+    letterSpacing: 0.2,
+    textTransform: "uppercase",
   },
   required: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.light.error,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "OpenSans_600SemiBold",
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: Colors.light.backgroundCard,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: Colors.light.border,
-    borderRadius: 10,
+    borderRadius: 4,
     paddingHorizontal: 12,
-    minHeight: 46,
+    minHeight: 44,
   },
   inputError: {
     borderColor: Colors.light.error,
+    borderWidth: 2,
   },
   inputDisabled: {
-    backgroundColor: Colors.light.backgroundSecondary,
+    backgroundColor: Colors.light.background,
   },
   input: {
     flex: 1,
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.text,
     paddingVertical: 10,
   },
   affix: {
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.textSecondary,
-    marginRight: 4,
+    marginRight: 6,
+  },
+  affixRight: {
+    fontSize: 14,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textSecondary,
+    marginLeft: 6,
   },
   hint: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.textTertiary,
     marginTop: 4,
   },
   errorText: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.error,
     marginTop: 4,
   },

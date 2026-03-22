@@ -27,70 +27,83 @@ export function ApplicationCard({ application }: Props) {
   return (
     <TouchableOpacity
       style={styles.card}
-      activeOpacity={0.7}
+      activeOpacity={0.85}
       onPress={() =>
         router.push({ pathname: "/application/[id]", params: { id: application.id } })
       }
     >
-      <View style={styles.header}>
-        <View style={styles.typeTag}>
-          <Text style={styles.typeText}>{property?.propertyType ?? "CRE"}</Text>
+      {/* Left accent bar */}
+      <View style={styles.accentBar} />
+
+      <View style={styles.body}>
+        {/* Top row */}
+        <View style={styles.header}>
+          <View style={styles.typeTag}>
+            <Text style={styles.typeText}>{property?.propertyType ?? "CRE"}</Text>
+          </View>
+          <StatusBadge status={application.status} size="sm" />
         </View>
-        <StatusBadge status={application.status} size="sm" />
-      </View>
 
-      <Text style={styles.address} numberOfLines={1}>
-        {getPropertyShortAddress(property)}
-      </Text>
-      <Text style={styles.cityState} numberOfLines={1}>
-        {getPropertyCityState(property) || "City, State"}
-      </Text>
+        {/* Address */}
+        <Text style={styles.address} numberOfLines={1}>
+          {getPropertyShortAddress(property) || "Address not set"}
+        </Text>
+        <Text style={styles.cityState} numberOfLines={1}>
+          {getPropertyCityState(property) || "City, State"}
+        </Text>
 
-      <Text style={styles.borrowerLine} numberOfLines={1}>
-        <Feather name="user" size={11} color={Colors.light.textTertiary} />{" "}
-        {getBorrowerDisplayName(borrower)}
-        {borrower?.entityName ? ` · ${borrower.entityName}` : ""}
-      </Text>
-
-      <View style={styles.divider} />
-
-      <View style={styles.footer}>
-        <View style={styles.footerItem}>
-          <Text style={styles.footerLabel}>Loan Amount</Text>
-          <Text style={styles.footerValue}>
-            {application.loanAmountUsd ? formatCurrency(application.loanAmountUsd) : "—"}
+        {/* Borrower */}
+        <View style={styles.borrowerRow}>
+          <Feather name="user" size={11} color={Colors.light.textTertiary} />
+          <Text style={styles.borrowerText} numberOfLines={1}>
+            {getBorrowerDisplayName(borrower)}
+            {borrower?.entityName ? `  ·  ${borrower.entityName}` : ""}
           </Text>
         </View>
-        <View style={styles.footerDivider} />
-        <View style={styles.footerItem}>
-          <Text style={styles.footerLabel}>Type</Text>
-          <Text style={styles.footerValue}>{application.loanType || "—"}</Text>
+
+        {/* Divider */}
+        <View style={styles.divider} />
+
+        {/* Metrics row */}
+        <View style={styles.metricsRow}>
+          <View style={styles.metric}>
+            <Text style={styles.metricLabel}>Loan Amt</Text>
+            <Text style={styles.metricValue}>
+              {application.loanAmountUsd ? formatCurrency(application.loanAmountUsd) : "—"}
+            </Text>
+          </View>
+          <View style={styles.metricSep} />
+          <View style={styles.metric}>
+            <Text style={styles.metricLabel}>Type</Text>
+            <Text style={styles.metricValue}>{application.loanType || "—"}</Text>
+          </View>
+          <View style={styles.metricSep} />
+          <View style={styles.metric}>
+            <Text style={styles.metricLabel}>Updated</Text>
+            <Text style={styles.metricValue}>{formatDate(application.updatedAt)}</Text>
+          </View>
         </View>
-        <View style={styles.footerDivider} />
-        <View style={styles.footerItem}>
-          <Text style={styles.footerLabel}>Updated</Text>
-          <Text style={styles.footerValue}>{formatDate(application.updatedAt)}</Text>
-        </View>
+
+        {/* Footer badges */}
+        {(application.comments.length > 0 || application.attachments.length > 0) && (
+          <View style={styles.badges}>
+            {application.comments.length > 0 && (
+              <View style={styles.badge}>
+                <Feather name="message-circle" size={11} color={Colors.light.tint} />
+                <Text style={styles.badgeText}>{application.comments.length}</Text>
+              </View>
+            )}
+            {application.attachments.length > 0 && (
+              <View style={styles.badge}>
+                <Feather name="paperclip" size={11} color={Colors.light.tint} />
+                <Text style={styles.badgeText}>{application.attachments.length}</Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
-      {(application.comments.length > 0 || application.attachments.length > 0) && (
-        <View style={styles.metaRow}>
-          {application.comments.length > 0 && (
-            <View style={styles.metaBadge}>
-              <Feather name="message-circle" size={11} color={Colors.light.textTertiary} />
-              <Text style={styles.metaBadgeText}>{application.comments.length}</Text>
-            </View>
-          )}
-          {application.attachments.length > 0 && (
-            <View style={styles.metaBadge}>
-              <Feather name="paperclip" size={11} color={Colors.light.textTertiary} />
-              <Text style={styles.metaBadgeText}>{application.attachments.length}</Text>
-            </View>
-          )}
-        </View>
-      )}
-
-      <View style={styles.chevron}>
+      <View style={styles.chevronBox}>
         <Feather name="chevron-right" size={16} color={Colors.light.textTertiary} />
       </View>
     </TouchableOpacity>
@@ -100,102 +113,117 @@ export function ApplicationCard({ application }: Props) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.light.backgroundCard,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-    position: "relative",
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    marginBottom: 8,
+    flexDirection: "row",
+    overflow: "hidden",
+  },
+  accentBar: {
+    width: 4,
+    backgroundColor: Colors.light.tint,
+  },
+  body: {
+    flex: 1,
+    padding: 14,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   typeTag: {
-    backgroundColor: Colors.light.tint + "15",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    backgroundColor: Colors.light.tintLight,
+    borderRadius: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
   typeText: {
-    color: Colors.light.tint,
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-    letterSpacing: 0.5,
+    color: Colors.light.tintDark,
+    fontSize: 10,
+    fontFamily: "OpenSans_700Bold",
+    letterSpacing: 0.8,
     textTransform: "uppercase",
   },
   address: {
-    fontSize: 17,
-    fontFamily: "Inter_600SemiBold",
+    fontSize: 15,
+    fontFamily: "OpenSans_700Bold",
     color: Colors.light.text,
     marginBottom: 2,
+    letterSpacing: -0.2,
   },
   cityState: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.textSecondary,
-    marginBottom: 4,
-  },
-  borrowerLine: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.textTertiary,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textSecondary,
+    marginBottom: 6,
+  },
+  borrowerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
     marginBottom: 2,
+  },
+  borrowerText: {
+    fontSize: 11,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textTertiary,
+    flex: 1,
   },
   divider: {
     height: 1,
     backgroundColor: Colors.light.border,
-    marginVertical: 12,
+    marginVertical: 10,
   },
-  footer: {
+  metricsRow: {
     flexDirection: "row",
     alignItems: "center",
   },
-  footerItem: {
+  metric: {
     flex: 1,
   },
-  footerLabel: {
-    fontSize: 10,
-    fontFamily: "Inter_500Medium",
+  metricLabel: {
+    fontSize: 9,
+    fontFamily: "OpenSans_600SemiBold",
     color: Colors.light.textTertiary,
-    marginBottom: 2,
     textTransform: "uppercase",
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
-  footerValue: {
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
+  metricValue: {
+    fontSize: 12,
+    fontFamily: "OpenSans_600SemiBold",
     color: Colors.light.text,
   },
-  footerDivider: {
+  metricSep: {
     width: 1,
-    height: 28,
+    height: 24,
     backgroundColor: Colors.light.border,
     marginHorizontal: 10,
   },
-  metaRow: {
+  badges: {
     flexDirection: "row",
     gap: 10,
     marginTop: 10,
   },
-  metaBadge: {
+  badge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    backgroundColor: Colors.light.tintLight,
+    borderRadius: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
-  metaBadgeText: {
+  badgeText: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.textTertiary,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.tint,
   },
-  chevron: {
-    position: "absolute",
-    right: 16,
-    bottom: 16,
+  chevronBox: {
+    justifyContent: "center",
+    paddingRight: 12,
   },
 });

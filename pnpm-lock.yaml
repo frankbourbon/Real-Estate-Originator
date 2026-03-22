@@ -215,6 +215,9 @@ importers:
 
   artifacts/mobile:
     dependencies:
+      '@expo-google-fonts/open-sans':
+        specifier: ^0.4.2
+        version: 0.4.2
       '@nkzw/create-context-hook':
         specifier: ^1.1.0
         version: 1.1.0(react@19.1.0)
@@ -1129,6 +1132,9 @@ packages:
 
   '@expo-google-fonts/inter@0.4.2':
     resolution: {integrity: sha512-syfiImMaDmq7cFi0of+waE2M4uSCyd16zgyWxdPOY7fN2VBmSLKEzkfbZgeOjJq61kSqPBNNtXjggiQiSD6gMQ==}
+
+  '@expo-google-fonts/open-sans@0.4.2':
+    resolution: {integrity: sha512-gvhPqLXYnltWgll3iBwRGUwf5yN2HCh4mgQmFoQ8oU66LTs23oX4N7T3t0BDsKfP/1Z8F8+4c7wSkA11Nnk4kA==}
 
   '@expo/cli@54.0.23':
     resolution: {integrity: sha512-km0h72SFfQCmVycH/JtPFTVy69w6Lx1cHNDmfLfQqgKFYeeHTjx7LVDP4POHCtNxFP2UeRazrygJhlh4zz498g==}
@@ -6282,6 +6288,8 @@ snapshots:
     optional: true
 
   '@expo-google-fonts/inter@0.4.2': {}
+
+  '@expo-google-fonts/open-sans@0.4.2': {}
 
   '@expo/cli@54.0.23(expo-router@6.0.23)(expo@54.0.33)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))':
     dependencies:

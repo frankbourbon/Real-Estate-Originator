@@ -19,19 +19,22 @@ export function SectionHeader({ title, subtitle }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
-    marginTop: 4,
+    marginBottom: 12,
+    marginTop: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: Colors.light.tint,
   },
   title: {
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    fontFamily: "OpenSans_700Bold",
     color: Colors.light.tint,
-    letterSpacing: 0.8,
+    letterSpacing: 1.0,
     textTransform: "uppercase",
   },
   subtitle: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.textTertiary,
     marginTop: 2,
   },

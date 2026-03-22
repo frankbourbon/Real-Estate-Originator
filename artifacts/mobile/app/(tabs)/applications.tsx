@@ -20,12 +20,7 @@ import { useApplications } from "@/context/ApplicationContext";
 import { getBorrowerDisplayName, getPropertyShortAddress } from "@/utils/formatting";
 
 const STATUS_FILTERS: (ApplicationStatus | "All")[] = [
-  "All",
-  "Draft",
-  "Submitted",
-  "Under Review",
-  "Approved",
-  "Declined",
+  "All", "Draft", "Submitted", "Under Review", "Approved", "Declined",
 ];
 
 export default function ApplicationsScreen() {
@@ -58,19 +53,24 @@ export default function ApplicationsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: topPadding + 16 }]}>
-        <Text style={styles.title}>Applications</Text>
+      {/* ── Header bar ── */}
+      <View style={[styles.header, { paddingTop: topPadding + 12 }]}>
+        <View>
+          <Text style={styles.headerEyebrow}>Commercial Banking</Text>
+          <Text style={styles.headerTitle}>Applications</Text>
+        </View>
         <TouchableOpacity style={styles.newBtn} onPress={handleCreate} activeOpacity={0.8}>
-          <Feather name="plus" size={20} color="#fff" />
+          <Feather name="plus" size={16} color="#fff" />
+          <Text style={styles.newBtnText}>New</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <Feather name="search" size={16} color={Colors.light.textTertiary} />
+      {/* ── Search bar ── */}
+      <View style={styles.searchBar}>
+        <Feather name="search" size={15} color={Colors.light.textTertiary} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search by address, borrower..."
+          placeholder="Search address, borrower, entity..."
           placeholderTextColor={Colors.light.textTertiary}
           value={search}
           onChangeText={setSearch}
@@ -78,61 +78,74 @@ export default function ApplicationsScreen() {
         />
         {search ? (
           <Pressable onPress={() => setSearch("")}>
-            <Feather name="x" size={16} color={Colors.light.textTertiary} />
+            <Feather name="x" size={15} color={Colors.light.textTertiary} />
           </Pressable>
         ) : null}
       </View>
 
-      {/* Status Filters */}
+      {/* ── Filter chips ── */}
       <FlatList
         horizontal
         data={STATUS_FILTERS}
         keyExtractor={(item) => item}
-        style={styles.filterList}
-        contentContainerStyle={styles.filterContent}
+        style={styles.filterBar}
+        contentContainerStyle={styles.filterBarContent}
         showsHorizontalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.filterChip, item === statusFilter && styles.filterChipActive]}
-            onPress={() => setStatusFilter(item)}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                styles.filterChipText,
-                item === statusFilter && styles.filterChipTextActive,
-              ]}
+        renderItem={({ item }) => {
+          const active = item === statusFilter;
+          const count = item === "All"
+            ? applications.length
+            : applications.filter((a) => a.status === item).length;
+          return (
+            <TouchableOpacity
+              style={[styles.chip, active && styles.chipActive]}
+              onPress={() => setStatusFilter(item)}
+              activeOpacity={0.7}
             >
-              {item}
-            </Text>
-          </TouchableOpacity>
-        )}
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                {item}
+              </Text>
+              <Text style={[styles.chipCount, active && styles.chipCountActive]}>
+                {count}
+              </Text>
+            </TouchableOpacity>
+          );
+        }}
       />
 
+      {/* ── Results ── */}
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
+        contentContainerStyle={[styles.list, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          filtered.length > 0 ? (
+            <Text style={styles.resultsCount}>
+              {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+            </Text>
+          ) : null
+        }
         ListEmptyComponent={
           loading ? (
-            <View style={styles.emptyState}>
+            <View style={styles.emptyBox}>
               <Text style={styles.emptyText}>Loading...</Text>
             </View>
           ) : (
-            <View style={styles.emptyState}>
-              <Feather name="inbox" size={44} color={Colors.light.textTertiary} />
+            <View style={styles.emptyBox}>
+              <Feather name="inbox" size={32} color={Colors.light.textTertiary} />
               <Text style={styles.emptyTitle}>
                 {search || statusFilter !== "All" ? "No matching applications" : "No applications yet"}
               </Text>
               <Text style={styles.emptyText}>
                 {search || statusFilter !== "All"
-                  ? "Try adjusting your filters"
-                  : "Tap + to create your first LOA"}
+                  ? "Try adjusting your search or filter."
+                  : "Tap New to create your first LOA."}
               </Text>
               {!search && statusFilter === "All" && (
-                <TouchableOpacity style={styles.emptyBtn} onPress={handleCreate}>
-                  <Text style={styles.emptyBtnText}>Create Application</Text>
+                <TouchableOpacity style={styles.createBtn} onPress={handleCreate}>
+                  <Feather name="plus" size={15} color="#fff" />
+                  <Text style={styles.createBtnText}>Create Application</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -150,106 +163,148 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
   },
   header: {
+    backgroundColor: Colors.light.surface,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    backgroundColor: Colors.light.background,
   },
-  title: {
-    fontSize: 26,
-    fontFamily: "Inter_700Bold",
-    color: Colors.light.text,
-    letterSpacing: -0.5,
+  headerEyebrow: {
+    fontSize: 10,
+    fontFamily: "OpenSans_600SemiBold",
+    color: "rgba(255,255,255,0.5)",
+    letterSpacing: 1.0,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontFamily: "OpenSans_700Bold",
+    color: "#fff",
+    letterSpacing: -0.3,
   },
   newBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: Colors.light.tint,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 5,
+    backgroundColor: Colors.light.tint,
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  searchContainer: {
+  newBtnText: {
+    fontSize: 13,
+    fontFamily: "OpenSans_700Bold",
+    color: "#fff",
+  },
+
+  searchBar: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: Colors.light.backgroundCard,
-    borderRadius: 12,
-    marginHorizontal: 20,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    height: 44,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.text,
   },
-  filterList: {
+
+  filterBar: {
     maxHeight: 44,
-    marginBottom: 4,
-  },
-  filterContent: {
-    paddingHorizontal: 20,
-    gap: 8,
-    paddingRight: 20,
-  },
-  filterChip: {
     backgroundColor: Colors.light.backgroundCard,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  filterBarContent: {
+    paddingHorizontal: 12,
+    gap: 6,
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: Colors.light.background,
+    borderRadius: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderWidth: 1,
     borderColor: Colors.light.border,
   },
-  filterChipActive: {
+  chipActive: {
     backgroundColor: Colors.light.tint,
     borderColor: Colors.light.tint,
   },
-  filterChipText: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
+  chipText: {
+    fontSize: 12,
+    fontFamily: "OpenSans_600SemiBold",
     color: Colors.light.textSecondary,
   },
-  filterChipTextActive: {
+  chipTextActive: {
     color: "#fff",
-    fontFamily: "Inter_600SemiBold",
   },
-  listContent: {
-    paddingHorizontal: 20,
+  chipCount: {
+    fontSize: 11,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.textTertiary,
+    minWidth: 14,
+    textAlign: "center",
+  },
+  chipCountActive: {
+    color: "rgba(255,255,255,0.75)",
+  },
+
+  list: {
+    paddingHorizontal: 16,
     paddingTop: 12,
   },
-  emptyState: {
+  resultsCount: {
+    fontSize: 11,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.textTertiary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+
+  emptyBox: {
     alignItems: "center",
-    paddingVertical: 60,
+    paddingVertical: 48,
     gap: 8,
   },
   emptyTitle: {
-    fontSize: 17,
-    fontFamily: "Inter_600SemiBold",
+    fontSize: 16,
+    fontFamily: "OpenSans_700Bold",
     color: Colors.light.text,
     marginTop: 8,
   },
   emptyText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    fontFamily: "OpenSans_400Regular",
     color: Colors.light.textSecondary,
+    textAlign: "center",
   },
-  emptyBtn: {
+  createBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     marginTop: 12,
     backgroundColor: Colors.light.tint,
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    borderRadius: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
-  emptyBtnText: {
+  createBtnText: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "OpenSans_700Bold",
     color: "#fff",
   },
 });
