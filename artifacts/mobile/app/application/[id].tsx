@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AmortizationCalculator } from "@/components/AmortizationCalculator";
 import { AttachmentList } from "@/components/AttachmentList";
 import { CommentThread } from "@/components/CommentThread";
 import { DetailRow } from "@/components/DetailRow";
@@ -36,8 +37,8 @@ const STATUS_OPTIONS: ApplicationStatus[] = [
   "Draft", "Submitted", "Under Review", "Approved", "Declined",
 ];
 
-type Tab = "Property" | "Loan" | "Borrower" | "Comments" | "Docs";
-const TABS: Tab[] = ["Property", "Loan", "Borrower", "Comments", "Docs"];
+type Tab = "Property" | "Loan" | "Borrower" | "Comments" | "Docs" | "Amort";
+const TABS: Tab[] = ["Property", "Loan", "Borrower", "Comments", "Docs", "Amort"];
 
 export default function ApplicationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -266,6 +267,21 @@ export default function ApplicationDetailScreen() {
               onAdd={(att) => addAttachment(app.id, att)}
               onDelete={(attId) => deleteAttachment(app.id, attId)}
             />
+          </View>
+        )}
+
+        {activeTab === "Amort" && (
+          <View>
+            <View style={styles.amortHeader}>
+              <View style={styles.amortHeaderAccent} />
+              <View>
+                <Text style={styles.amortHeaderTitle}>Amortization Calculator</Text>
+                <Text style={styles.amortHeaderSub}>
+                  Build up the note rate and generate a full payment schedule
+                </Text>
+              </View>
+            </View>
+            <AmortizationCalculator application={app} />
           </View>
         )}
       </ScrollView>
@@ -510,5 +526,30 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.tintLight + "40",
     borderRadius: 4,
     paddingHorizontal: 8,
+  },
+
+  amortHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    marginBottom: 16,
+  },
+  amortHeaderAccent: {
+    width: 3,
+    height: 36,
+    backgroundColor: Colors.light.tint,
+    borderRadius: 2,
+    marginTop: 2,
+  },
+  amortHeaderTitle: {
+    fontSize: 15,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.text,
+    marginBottom: 2,
+  },
+  amortHeaderSub: {
+    fontSize: 12,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textSecondary,
   },
 });
