@@ -117,7 +117,7 @@ export default function NewApplicationScreen() {
           <Text style={styles.headerAction}>Save Draft</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>New LOA</Text>
+          <Text style={styles.headerTitle}>New Loan Application</Text>
           <Text style={styles.headerStep}>{STEPS[step]}</Text>
         </View>
         <TouchableOpacity onPress={() => saveAll("Draft")} activeOpacity={0.7}>

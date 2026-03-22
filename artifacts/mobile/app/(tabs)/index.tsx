@@ -43,11 +43,11 @@ export default function DashboardScreen() {
       <View style={styles.masthead}>
         <View>
           <Text style={styles.mastheadEyebrow}>J.P. Morgan Commercial Banking</Text>
-          <Text style={styles.mastheadTitle}>LOA Origination</Text>
+          <Text style={styles.mastheadTitle}>Loan Origination</Text>
         </View>
         <TouchableOpacity style={styles.newBtn} onPress={handleCreate} activeOpacity={0.8}>
           <Feather name="plus" size={18} color="#fff" />
-          <Text style={styles.newBtnText}>New LOA</Text>
+          <Text style={styles.newBtnText}>New Loan</Text>
         </TouchableOpacity>
       </View>
 
@@ -133,7 +133,7 @@ export default function DashboardScreen() {
           </View>
           <Text style={styles.emptyTitle}>No applications yet</Text>
           <Text style={styles.emptyBody}>
-            Create your first Letter of Authorization to get started.
+            Create your first loan application to get started.
           </Text>
           <TouchableOpacity style={styles.createBtn} onPress={handleCreate} activeOpacity={0.8}>
             <Feather name="plus" size={16} color="#fff" />

@@ -140,7 +140,7 @@ export default function ApplicationsScreen() {
               <Text style={styles.emptyText}>
                 {search || statusFilter !== "All"
                   ? "Try adjusting your search or filter."
-                  : "Tap New to create your first LOA."}
+                  : "Tap New Loan to create your first application."}
               </Text>
               {!search && statusFilter === "All" && (
                 <TouchableOpacity style={styles.createBtn} onPress={handleCreate}>

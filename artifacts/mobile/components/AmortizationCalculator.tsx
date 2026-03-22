@@ -430,7 +430,7 @@ export function AmortizationCalculator({ application }: Props) {
     if (!loanAmt || !termYrs) {
       Alert.alert(
         "Missing Loan Terms",
-        "Please enter a Loan Amount and Loan Term in the Loan tab before running the calculator."
+        "Please enter a Loan Amount and Loan Term in the Loan Terms section before running the calculator."
       );
       return;
     }
@@ -612,7 +612,7 @@ export function AmortizationCalculator({ application }: Props) {
           <Param label="LTV" value={application.ltvPct ? `${application.ltvPct}%` : "—"} />
         </View>
         <Text style={styles.editHint}>
-          Edit loan terms in the Loan tab to update these values.
+          Edit loan terms in the Loan Terms section to update these values.
         </Text>
       </View>
 
