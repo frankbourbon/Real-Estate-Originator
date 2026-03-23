@@ -192,15 +192,9 @@ export default function DashboardScreen() {
             <Text style={styles.mastheadEyebrow}>J.P. Morgan Commercial Banking</Text>
             <Text style={styles.mastheadTitle}>Loan Origination</Text>
           </View>
-          <View style={styles.mastheadRight}>
-            <TouchableOpacity style={styles.menuBtn} onPress={() => setMenuOpen(true)} activeOpacity={0.7}>
-              <Feather name="more-vertical" size={18} color="rgba(255,255,255,0.7)" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.newBtn} onPress={handleCreate} activeOpacity={0.8}>
-              <Feather name="plus" size={18} color="#fff" />
-              <Text style={styles.newBtnText}>New Loan</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.menuBtn} onPress={() => setMenuOpen(true)} activeOpacity={0.7}>
+            <Feather name="more-vertical" size={18} color="rgba(255,255,255,0.7)" />
+          </TouchableOpacity>
         </View>
 
         {/* ── Pipeline Volume Card ── */}
@@ -283,9 +277,21 @@ export default function DashboardScreen() {
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
         <Pressable style={styles.menuOverlay} onPress={() => setMenuOpen(false)} />
         <View style={[styles.menuSheet, { top: topPadding + 56 }]}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => { setMenuOpen(false); handleCreate(); }}
+            activeOpacity={0.7}
+          >
+            <Feather name="plus-circle" size={16} color={Colors.light.tint} />
+            <View style={styles.menuItemText}>
+              <Text style={styles.menuItemLabel}>New Loan Application</Text>
+              <Text style={styles.menuItemSub}>Start a blank 5-step origination wizard</Text>
+            </View>
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
           {!hasSeedData ? (
             <TouchableOpacity style={styles.menuItem} onPress={handleLoadSample} activeOpacity={0.7}>
-              <Feather name="database" size={16} color={Colors.light.tint} />
+              <Feather name="database" size={16} color={Colors.light.textSecondary} />
               <View style={styles.menuItemText}>
                 <Text style={styles.menuItemLabel}>Load Sample Data</Text>
                 <Text style={styles.menuItemSub}>Add 12 demo CRE loans across all 10 workflow stages</Text>
@@ -300,18 +306,6 @@ export default function DashboardScreen() {
               </View>
             </TouchableOpacity>
           )}
-          <View style={styles.menuDivider} />
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => { setMenuOpen(false); handleCreate(); }}
-            activeOpacity={0.7}
-          >
-            <Feather name="plus-circle" size={16} color={Colors.light.text} />
-            <View style={styles.menuItemText}>
-              <Text style={styles.menuItemLabel}>New Loan Application</Text>
-              <Text style={styles.menuItemSub}>Start a blank 5-step origination wizard</Text>
-            </View>
-          </TouchableOpacity>
         </View>
       </Modal>
     </>
@@ -351,22 +345,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     letterSpacing: -0.3,
   },
-  newBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: Colors.light.tint,
-    borderRadius: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginTop: 2,
-  },
-  newBtnText: {
-    fontSize: 13,
-    fontFamily: "OpenSans_700Bold",
-    color: "#fff",
-  },
-
   // Pipeline card
   pipelineCard: {
     backgroundColor: Colors.light.backgroundCard,
