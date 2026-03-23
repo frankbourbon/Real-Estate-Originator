@@ -20,7 +20,17 @@ import { useApplications } from "@/context/ApplicationContext";
 import { getBorrowerDisplayName, getPropertyShortAddress } from "@/utils/formatting";
 
 const STATUS_FILTERS: (ApplicationStatus | "All")[] = [
-  "All", "Draft", "Submitted", "Under Review", "Approved", "Declined",
+  "All",
+  "Inquiry",
+  "Letter of Interest",
+  "Application Start",
+  "Application Processing",
+  "Final Credit Review",
+  "Pre-close",
+  "Ready for Docs",
+  "Docs Drawn",
+  "Docs Back",
+  "Closing",
 ];
 
 export default function ApplicationsScreen() {

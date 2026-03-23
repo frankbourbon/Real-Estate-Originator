@@ -12,10 +12,123 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ApplicationCard } from "@/components/ApplicationCard";
-import { StatCard } from "@/components/StatCard";
 import Colors from "@/constants/colors";
 import { useApplications } from "@/context/ApplicationContext";
 import { formatCurrency } from "@/utils/formatting";
+import { PHASE_INFO, type Persona } from "@/utils/phases";
+
+type PhaseStats = Record<string, number>;
+
+const PERSONA_GROUPS: { persona: Persona; icon: string; color: string; bg: string; phases: string[] }[] = [
+  { persona: "Sales",        icon: "briefcase",    color: "#1B7F9E", bg: "#DBF5F7",
+    phases: ["Inquiry", "Application Start"] },
+  { persona: "Credit Risk",  icon: "shield",       color: "#0078CF", bg: "#EAF6FF",
+    phases: ["Letter of Interest", "Final Credit Review"] },
+  { persona: "Processing",   icon: "clipboard",    color: "#C75300", bg: "#FFECDC",
+    phases: ["Application Processing", "Pre-close"] },
+  { persona: "Closing",      icon: "check-circle", color: "#005C3C", bg: "#D0F0E5",
+    phases: ["Ready for Docs", "Docs Drawn", "Docs Back", "Closing"] },
+];
+
+function PipelineByPersona({ stats }: { stats: PhaseStats }) {
+  return (
+    <View style={pb.card}>
+      {PERSONA_GROUPS.map((group, gi) => (
+        <View key={group.persona} style={[pb.group, gi < PERSONA_GROUPS.length - 1 && pb.groupBorder]}>
+          {/* Persona header */}
+          <View style={pb.groupHeader}>
+            <View style={[pb.personaIcon, { backgroundColor: group.bg }]}>
+              <Feather name={group.icon as any} size={13} color={group.color} />
+            </View>
+            <Text style={[pb.personaLabel, { color: group.color }]}>{group.persona}</Text>
+          </View>
+          {/* Phase rows */}
+          {group.phases.map((phase, pi) => {
+            const info = PHASE_INFO[phase as any];
+            const count = stats[phase] ?? 0;
+            return (
+              <View key={phase} style={[pb.phaseRow, pi < group.phases.length - 1 && pb.phaseRowBorder]}>
+                <Text style={pb.phaseNum}>{info.phase}</Text>
+                <Text style={pb.phaseName}>{phase}</Text>
+                <View style={[pb.phaseBadge, count > 0 && { backgroundColor: info.bg }]}>
+                  <Text style={[pb.phaseBadgeText, count > 0 && { color: info.color }]}>{count}</Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const pb = StyleSheet.create({
+  card: {
+    backgroundColor: Colors.light.backgroundCard,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 4,
+    overflow: "hidden",
+    marginBottom: 0,
+  },
+  group: { paddingBottom: 4 },
+  groupBorder: { borderBottomWidth: 1, borderBottomColor: Colors.light.border, marginBottom: 0 },
+  groupHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 6,
+  },
+  personaIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  personaLabel: {
+    fontSize: 11,
+    fontFamily: "OpenSans_700Bold",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  phaseRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    paddingLeft: 46,
+  },
+  phaseRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.light.borderLight },
+  phaseNum: {
+    fontSize: 10,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.textTertiary,
+    width: 20,
+  },
+  phaseName: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.text,
+  },
+  phaseBadge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.light.background,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  phaseBadgeText: {
+    fontSize: 12,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.textTertiary,
+  },
+});
 
 export default function DashboardScreen() {
   const { applications, stats, loading, createApplication } = useApplications();
@@ -64,52 +177,30 @@ export default function DashboardScreen() {
         </View>
         <View style={styles.pipelineRight}>
           <View style={styles.pipelineStat}>
-            <Text style={styles.pipelineStatNum}>{stats.draft}</Text>
-            <Text style={styles.pipelineStatLabel}>Draft</Text>
+            <Text style={styles.pipelineStatNum}>
+              {(stats.byPhase["Inquiry"] ?? 0) + (stats.byPhase["Application Start"] ?? 0)}
+            </Text>
+            <Text style={styles.pipelineStatLabel}>Sales</Text>
           </View>
           <View style={styles.pipelineStatDivider} />
           <View style={styles.pipelineStat}>
-            <Text style={styles.pipelineStatNum}>{stats.approved}</Text>
-            <Text style={styles.pipelineStatLabel}>Approved</Text>
+            <Text style={styles.pipelineStatNum}>
+              {(stats.byPhase["Ready for Docs"] ?? 0) + (stats.byPhase["Docs Drawn"] ?? 0) +
+               (stats.byPhase["Docs Back"] ?? 0) + (stats.byPhase["Closing"] ?? 0)}
+            </Text>
+            <Text style={styles.pipelineStatLabel}>Closing</Text>
           </View>
         </View>
       </View>
 
-      {/* ── Status Grid ── */}
-      <View style={styles.gridRow}>
-        <StatCard
-          label="Submitted"
-          value={stats.submitted}
-          color={Colors.light.statusSubmitted}
-          bg={Colors.light.statusSubmittedBg}
-          border={Colors.light.statusSubmitted + "30"}
-        />
-        <View style={{ width: 8 }} />
-        <StatCard
-          label="Under Review"
-          value={stats.underReview}
-          color={Colors.light.statusReview}
-          bg={Colors.light.statusReviewBg}
-          border={Colors.light.statusReview + "30"}
-        />
+      {/* ── Pipeline by Phase ── */}
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionTitleRow}>
+          <View style={styles.sectionAccent} />
+          <Text style={styles.sectionTitle}>Pipeline by Phase</Text>
+        </View>
       </View>
-      <View style={[styles.gridRow, { marginTop: 8 }]}>
-        <StatCard
-          label="Approved"
-          value={stats.approved}
-          color={Colors.light.statusApproved}
-          bg={Colors.light.statusApprovedBg}
-          border={Colors.light.statusApproved + "30"}
-        />
-        <View style={{ width: 8 }} />
-        <StatCard
-          label="Declined"
-          value={stats.declined}
-          color={Colors.light.statusDeclined}
-          bg={Colors.light.statusDeclinedBg}
-          border={Colors.light.statusDeclined + "30"}
-        />
-      </View>
+      <PipelineByPersona stats={stats.byPhase} />
 
       {/* ── Recent Applications ── */}
       <View style={styles.sectionHeader}>

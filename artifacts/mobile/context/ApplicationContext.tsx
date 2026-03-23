@@ -29,74 +29,80 @@ export type AmortizationType =
   | "Interest Only"
   | "Partial IO";
 
+/**
+ * 10-stage workflow timeline. Each stage is owned by a specific persona.
+ * Order matters — status progresses forward through these stages.
+ */
 export type ApplicationStatus =
-  | "Draft"
-  | "Submitted"
-  | "Under Review"
-  | "Approved"
-  | "Declined";
+  | "Inquiry"
+  | "Letter of Interest"
+  | "Application Start"
+  | "Application Processing"
+  | "Final Credit Review"
+  | "Pre-close"
+  | "Ready for Docs"
+  | "Docs Drawn"
+  | "Docs Back"
+  | "Closing";
+
+/** Legacy status values from v2 — migrated on load. */
+const LEGACY_STATUS_MAP: Record<string, ApplicationStatus> = {
+  Draft: "Inquiry",
+  Submitted: "Letter of Interest",
+  "Under Review": "Application Processing",
+  Approved: "Final Credit Review",
+  Declined: "Closing",
+};
 
 // ─── 3NF Entities ────────────────────────────────────────────────────────────
 
 /**
- * Borrower entity — owns identity, contact, and financial profile.
- * Linked to LOAApplication by borrowerId (foreign key).
+ * Borrower entity — identity, contact, financial profile.
+ * NOTE: creditScore may only be populated at or after "Application Start"
+ * per ECOA / HMDA regulations (pulling it earlier triggers HMDA reporting).
  */
 export type Borrower = {
   id: string;
   createdAt: string;
   updatedAt: string;
 
-  // Identity
   firstName: string;
   lastName: string;
-  entityName: string;       // e.g. "ABC Holdings LLC"
+  entityName: string;
 
-  // Contact
   email: string;
   phone: string;
 
-  // Financial profile (all monetary values in USD)
-  creExperienceYears: string;   // years of CRE experience
-  netWorthUsd: string;          // net worth in USD
-  liquidityUsd: string;         // liquid assets in USD
-  creditScore: string;          // FICO credit score
+  creExperienceYears: string;
+  netWorthUsd: string;
+  liquidityUsd: string;
+  creditScore: string; // ECOA: do NOT pull before "Application Start"
 };
 
 /**
- * Property entity — owns location, physical, and occupancy attributes.
- * Linked to LOAApplication by propertyId (foreign key).
- *
- * Occupancy notes:
- *   physicalOccupancyPct = % of rentable units currently occupied (unit-based).
- *   economicOccupancyPct = % of potential gross income actually collected (rent-based).
+ * Property entity — location, physical attributes, occupancy.
+ * physicalOccupancyPct = % of units occupied (unit-based).
+ * economicOccupancyPct = % of potential gross income collected (rent-based).
  */
 export type Property = {
   id: string;
   createdAt: string;
   updatedAt: string;
 
-  // Location (atomic — no partial-key dependencies)
   streetAddress: string;
   city: string;
-  state: string;           // 2-letter abbreviation
+  state: string;
   zipCode: string;
 
-  // Physical attributes
   propertyType: PropertyType;
-  grossSqFt: string;            // rentable square footage
-  numberOfUnits: string;        // rentable units (0 for non-multifamily)
-  yearBuilt: string;            // 4-digit year
+  grossSqFt: string;
+  numberOfUnits: string;
+  yearBuilt: string;
 
-  // Occupancy (two distinct measures)
-  physicalOccupancyPct: string; // unit-based occupancy, e.g. "94.5"
-  economicOccupancyPct: string; // economic/rent-based occupancy, e.g. "91.0"
+  physicalOccupancyPct: string;
+  economicOccupancyPct: string;
 };
 
-/**
- * Attachment — a document file linked to an application.
- * Stores metadata only; the actual file remains at its local URI.
- */
 export type Attachment = {
   id: string;
   applicationId: string;
@@ -108,11 +114,6 @@ export type Attachment = {
   uploadedBy: string;
 };
 
-/**
- * Comment — a threaded comment on an application.
- * parentCommentId = null → top-level thread root.
- * parentCommentId = some id → reply within that thread.
- */
 export type Comment = {
   id: string;
   applicationId: string;
@@ -124,12 +125,8 @@ export type Comment = {
 
 /**
  * LOAApplication — the origination record.
- * Holds ONLY loan-term data and references to the Borrower and Property
- * by their IDs. All other data lives in the respective entity.
- *
- * This satisfies 3NF:
- *   - Every non-key attribute depends on the primary key (id) only.
- *   - No transitive dependencies (borrower/property data is NOT duplicated here).
+ * Contains loan terms + phase-specific workflow data collected at each stage.
+ * All borrower / property data lives in their own normalized entities.
  */
 export type LOAApplication = {
   id: string;
@@ -137,22 +134,82 @@ export type LOAApplication = {
   updatedAt: string;
   status: ApplicationStatus;
 
-  // Foreign keys
   borrowerId: string;
   propertyId: string;
 
-  // Loan Terms (functionally dependent only on this application's id)
+  // ── Core Loan Terms ────────────────────────────────────────────────────────
   loanType: LoanType;
-  loanAmountUsd: string;         // principal in USD
-  loanTermYears: string;         // loan term in whole years
+  loanAmountUsd: string;
+  loanTermYears: string;
   interestType: InterestType;
-  interestRatePct: string;       // annual interest rate, e.g. "6.50"
+  interestRatePct: string;
   amortizationType: AmortizationType;
-  ltvPct: string;                // loan-to-value ratio, e.g. "65.0"
-  dscrRatio: string;             // debt service coverage ratio, e.g. "1.25"
-  targetClosingDate: string;     // MM/DD/YYYY
+  ltvPct: string;
+  dscrRatio: string;
+  targetClosingDate: string;
 
-  // Related collections (owned by application, no independent existence)
+  // ── Inquiry Phase (Sales) ─────────────────────────────────────────────────
+  inquiryNotes: string;
+
+  // ── Letter of Interest Phase (Credit Risk) ────────────────────────────────
+  creditBoxNotes: string;
+  loiRecommended: boolean;
+  loiIssuedDate: string;
+  loiExpirationDate: string;
+
+  // ── Application Start Phase (Sales) ───────────────────────────────────────
+  applicationDepositAmountUsd: string;
+  applicationDepositDate: string;
+  signedLoiDate: string;
+  debitAuthorizationDate: string;
+  rateLockEnabled: boolean;
+  rateLockRatePct: string;
+  rateLockExpirationDate: string;
+
+  // ── Application Processing Phase (Processing / Sales) ────────────────────
+  appraisalOrderedDate: string;
+  appraisalCompletedDate: string;
+  appraisalValueUsd: string;
+  environmentalStatus: string; // "Ordered" | "In Progress" | "Clear" | "Issues Found"
+  borrowerFormsStatus: string; // "Not Started" | "Packaged" | "Sent" | "Received"
+
+  // ── Final Credit Review Phase (Credit Risk) ───────────────────────────────
+  commitmentLetterRecommended: boolean;
+  commitmentLetterIssuedDate: string;
+  conditionalApprovals: string;  // newline-separated list
+  creditRiskExceptions: string;  // newline-separated list
+
+  // ── Pre-close Phase (Processing) ─────────────────────────────────────────
+  hmdaComplete: boolean;
+  hmdaNotes: string;
+
+  // ── Ready for Docs Phase (Closing) ────────────────────────────────────────
+  insuranceCarrier: string;
+  insurancePolicyNumber: string;
+  insuranceEffectiveDate: string;
+  titleCompany: string;
+  escrowCompany: string;
+  floodZoneDesignation: string;
+  titleReportDate: string;
+
+  // ── Docs Drawn Phase (Closing) ────────────────────────────────────────────
+  docsDrawnDate: string;
+  settlementFeesUsd: string;
+  settlementStatementDate: string;
+
+  // ── Docs Back Phase (Closing) ─────────────────────────────────────────────
+  docsBackDate: string;
+  titleConfirmationDate: string;
+
+  // ── Closing Phase (Closing) ───────────────────────────────────────────────
+  wireAmountUsd: string;
+  wireBankName: string;
+  wireAbaNumber: string;
+  wireAccountNumber: string;
+  servicingLoanNumber: string;
+  bookingDate: string;
+
+  // ── Related collections ───────────────────────────────────────────────────
   comments: Comment[];
   attachments: Attachment[];
 };
@@ -160,9 +217,9 @@ export type LOAApplication = {
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 
 const KEYS = {
-  applications: "loa_applications_v2",
-  borrowers: "loa_borrowers_v2",
-  properties: "loa_properties_v2",
+  applications: "loan_applications_v3",
+  borrowers: "loan_borrowers_v3",
+  properties: "loan_properties_v3",
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -177,30 +234,18 @@ function now(): string {
 
 function emptyBorrower(): Omit<Borrower, "id" | "createdAt" | "updatedAt"> {
   return {
-    firstName: "",
-    lastName: "",
-    entityName: "",
-    email: "",
-    phone: "",
-    creExperienceYears: "",
-    netWorthUsd: "",
-    liquidityUsd: "",
-    creditScore: "",
+    firstName: "", lastName: "", entityName: "",
+    email: "", phone: "",
+    creExperienceYears: "", netWorthUsd: "", liquidityUsd: "", creditScore: "",
   };
 }
 
 function emptyProperty(): Omit<Property, "id" | "createdAt" | "updatedAt"> {
   return {
-    streetAddress: "",
-    city: "",
-    state: "",
-    zipCode: "",
+    streetAddress: "", city: "", state: "", zipCode: "",
     propertyType: "Office",
-    grossSqFt: "",
-    numberOfUnits: "",
-    yearBuilt: "",
-    physicalOccupancyPct: "",
-    economicOccupancyPct: "",
+    grossSqFt: "", numberOfUnits: "", yearBuilt: "",
+    physicalOccupancyPct: "", economicOccupancyPct: "",
   };
 }
 
@@ -209,21 +254,53 @@ function emptyApplication(
   propertyId: string
 ): Omit<LOAApplication, "id" | "createdAt" | "updatedAt"> {
   return {
-    status: "Draft",
+    status: "Inquiry",
     borrowerId,
     propertyId,
+
     loanType: "Acquisition",
-    loanAmountUsd: "",
-    loanTermYears: "",
-    interestType: "Fixed",
-    interestRatePct: "",
+    loanAmountUsd: "", loanTermYears: "",
+    interestType: "Fixed", interestRatePct: "",
     amortizationType: "Full Amortizing",
-    ltvPct: "",
-    dscrRatio: "",
-    targetClosingDate: "",
+    ltvPct: "", dscrRatio: "", targetClosingDate: "",
+
+    inquiryNotes: "",
+
+    creditBoxNotes: "", loiRecommended: false,
+    loiIssuedDate: "", loiExpirationDate: "",
+
+    applicationDepositAmountUsd: "", applicationDepositDate: "",
+    signedLoiDate: "", debitAuthorizationDate: "",
+    rateLockEnabled: false, rateLockRatePct: "", rateLockExpirationDate: "",
+
+    appraisalOrderedDate: "", appraisalCompletedDate: "",
+    appraisalValueUsd: "", environmentalStatus: "", borrowerFormsStatus: "",
+
+    commitmentLetterRecommended: false, commitmentLetterIssuedDate: "",
+    conditionalApprovals: "", creditRiskExceptions: "",
+
+    hmdaComplete: false, hmdaNotes: "",
+
+    insuranceCarrier: "", insurancePolicyNumber: "", insuranceEffectiveDate: "",
+    titleCompany: "", escrowCompany: "",
+    floodZoneDesignation: "", titleReportDate: "",
+
+    docsDrawnDate: "", settlementFeesUsd: "", settlementStatementDate: "",
+
+    docsBackDate: "", titleConfirmationDate: "",
+
+    wireAmountUsd: "", wireBankName: "", wireAbaNumber: "", wireAccountNumber: "",
+    servicingLoanNumber: "", bookingDate: "",
+
     comments: [],
     attachments: [],
   };
+}
+
+/** Migrate legacy status values to the new workflow stages. */
+function migrateStatus(status: string): ApplicationStatus {
+  if (LEGACY_STATUS_MAP[status]) return LEGACY_STATUS_MAP[status];
+  return status as ApplicationStatus;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -240,14 +317,19 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
       AsyncStorage.getItem(KEYS.borrowers),
       AsyncStorage.getItem(KEYS.properties),
     ]).then(([apps, bors, props]) => {
-      if (apps) setApplications(JSON.parse(apps));
+      if (apps) {
+        const parsed: LOAApplication[] = JSON.parse(apps);
+        setApplications(parsed.map((a) => ({
+          ...emptyApplication(a.borrowerId, a.propertyId),
+          ...a,
+          status: migrateStatus(a.status),
+        })));
+      }
       if (bors) setBorrowers(JSON.parse(bors));
       if (props) setProperties(JSON.parse(props));
       setLoading(false);
     });
   }, []);
-
-  // ── Persistence helpers ──────────────────────────────────────────────────
 
   const persistApps = useCallback(async (apps: LOAApplication[]) => {
     setApplications(apps);
@@ -264,7 +346,7 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
     await AsyncStorage.setItem(KEYS.properties, JSON.stringify(props));
   }, []);
 
-  // ── Application CRUD ────────────────────────────────────────────────────
+  // ── CRUD ─────────────────────────────────────────────────────────────────
 
   const createApplication = useCallback(async (): Promise<{
     application: LOAApplication;
@@ -275,9 +357,7 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
     const borrower: Borrower = { id: uid(), createdAt: t, updatedAt: t, ...emptyBorrower() };
     const property: Property = { id: uid(), createdAt: t, updatedAt: t, ...emptyProperty() };
     const application: LOAApplication = {
-      id: uid(),
-      createdAt: t,
-      updatedAt: t,
+      id: uid(), createdAt: t, updatedAt: t,
       ...emptyApplication(borrower.id, property.id),
     };
     await Promise.all([
@@ -336,12 +416,8 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
   const addComment = useCallback(
     async (applicationId: string, text: string, parentCommentId: string | null = null) => {
       const comment: Comment = {
-        id: uid(),
-        applicationId,
-        parentCommentId,
-        text,
-        author: "You",
-        createdAt: now(),
+        id: uid(), applicationId, parentCommentId,
+        text, author: "You", createdAt: now(),
       };
       const updated = applications.map((a) =>
         a.id === applicationId
@@ -358,10 +434,8 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
   const addAttachment = useCallback(
     async (applicationId: string, attachment: Omit<Attachment, "id" | "applicationId" | "uploadedAt" | "uploadedBy">) => {
       const full: Attachment = {
-        id: uid(),
-        applicationId,
-        uploadedAt: now(),
-        uploadedBy: "You",
+        id: uid(), applicationId,
+        uploadedAt: now(), uploadedBy: "You",
         ...attachment,
       };
       const updated = applications.map((a) =>
@@ -378,11 +452,7 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
     async (applicationId: string, attachmentId: string) => {
       const updated = applications.map((a) =>
         a.id === applicationId
-          ? {
-              ...a,
-              attachments: a.attachments.filter((at) => at.id !== attachmentId),
-              updatedAt: now(),
-            }
+          ? { ...a, attachments: a.attachments.filter((at) => at.id !== attachmentId), updatedAt: now() }
           : a
       );
       await persistApps(updated);
@@ -396,48 +466,35 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
     (id: string) => applications.find((a) => a.id === id),
     [applications]
   );
-
   const getBorrower = useCallback(
     (id: string) => borrowers.find((b) => b.id === id),
     [borrowers]
   );
-
   const getProperty = useCallback(
     (id: string) => properties.find((p) => p.id === id),
     [properties]
   );
 
-  // ── Pipeline Stats ───────────────────────────────────────────────────────
+  // ── Pipeline Stats ────────────────────────────────────────────────────────
 
   const stats = {
     total: applications.length,
-    draft: applications.filter((a) => a.status === "Draft").length,
-    submitted: applications.filter((a) => a.status === "Submitted").length,
-    underReview: applications.filter((a) => a.status === "Under Review").length,
-    approved: applications.filter((a) => a.status === "Approved").length,
-    declined: applications.filter((a) => a.status === "Declined").length,
     totalVolumeUsd: applications
       .filter((a) => a.loanAmountUsd)
       .reduce((sum, a) => sum + parseFloat(a.loanAmountUsd.replace(/[^0-9.]/g, "") || "0"), 0),
+    byPhase: Object.fromEntries(
+      [
+        "Inquiry", "Letter of Interest", "Application Start", "Application Processing",
+        "Final Credit Review", "Pre-close", "Ready for Docs", "Docs Drawn", "Docs Back", "Closing",
+      ].map((s) => [s, applications.filter((a) => a.status === s).length])
+    ) as Record<ApplicationStatus, number>,
   };
 
   return {
-    applications,
-    borrowers,
-    properties,
-    loading,
-    stats,
-    createApplication,
-    updateApplication,
-    updateBorrower,
-    updateProperty,
-    deleteApplication,
-    addComment,
-    addAttachment,
-    deleteAttachment,
-    getApplication,
-    getBorrower,
-    getProperty,
+    applications, borrowers, properties, loading, stats,
+    createApplication, updateApplication, updateBorrower, updateProperty, deleteApplication,
+    addComment, addAttachment, deleteAttachment,
+    getApplication, getBorrower, getProperty,
   };
 });
 
