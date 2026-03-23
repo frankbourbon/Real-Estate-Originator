@@ -2,6 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import React, { useCallback, useEffect, useState } from "react";
 
+import { SEED_APPLICATIONS, SEED_BORROWERS, SEED_PROPERTIES } from "@/utils/seedData";
+
 // ─── Domain Enums ────────────────────────────────────────────────────────────
 
 export type PropertyType =
@@ -448,6 +450,30 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
     [applications, persistApps]
   );
 
+  // ── Seed / Reset ─────────────────────────────────────────────────────────
+
+  const loadSampleData = useCallback(async () => {
+    await Promise.all([
+      persistBorrowers([...SEED_BORROWERS, ...borrowers.filter(b => !b.id.startsWith("seed_"))]),
+      persistProperties([...SEED_PROPERTIES, ...properties.filter(p => !p.id.startsWith("seed_"))]),
+      persistApps([...SEED_APPLICATIONS, ...applications.filter(a => !a.id.startsWith("seed_"))]),
+    ]);
+  }, [applications, borrowers, properties, persistApps, persistBorrowers, persistProperties]);
+
+  const clearAllData = useCallback(async () => {
+    const filteredApps = applications.filter((a) => !a.id.startsWith("seed_"));
+    const seedApps = applications.filter((a) => a.id.startsWith("seed_"));
+    const seedBorrowerIds = new Set(seedApps.map((a) => a.borrowerId));
+    const seedPropertyIds = new Set(seedApps.map((a) => a.propertyId));
+    const filteredBorrowers = borrowers.filter((b) => !seedBorrowerIds.has(b.id));
+    const filteredProperties = properties.filter((p) => !seedPropertyIds.has(p.id));
+    await Promise.all([
+      persistApps(filteredApps),
+      persistBorrowers(filteredBorrowers),
+      persistProperties(filteredProperties),
+    ]);
+  }, [applications, borrowers, properties, persistApps, persistBorrowers, persistProperties]);
+
   const deleteAttachment = useCallback(
     async (applicationId: string, attachmentId: string) => {
       const updated = applications.map((a) =>
@@ -495,6 +521,7 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
     createApplication, updateApplication, updateBorrower, updateProperty, deleteApplication,
     addComment, addAttachment, deleteAttachment,
     getApplication, getBorrower, getProperty,
+    loadSampleData, clearAllData,
   };
 });
 
