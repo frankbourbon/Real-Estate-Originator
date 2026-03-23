@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import React, { useCallback, useEffect, useState } from "react";
 
-import { SEED_APPLICATIONS, SEED_BORROWERS, SEED_PROPERTIES } from "@/utils/seedData";
+import { SEED_APPLICATIONS, SEED_BORROWERS, SEED_CONDITIONS, SEED_EXCEPTIONS, SEED_PROPERTIES } from "@/utils/seedData";
 
 // ─── Domain Enums ────────────────────────────────────────────────────────────
 
@@ -54,6 +54,70 @@ const LEGACY_STATUS_MAP: Record<string, ApplicationStatus> = {
   "Under Review": "Application Processing",
   Approved: "Final Credit Review",
   Declined: "Closing",
+};
+
+// ─── Condition entity (3NF) ───────────────────────────────────────────────────
+
+/**
+ * A condition that must be satisfied before the loan can advance.
+ * Conditions are cross-phase and can be added by any persona.
+ * appliesTo drives which entity the condition references.
+ */
+export type ConditionStatus = "Pending" | "Satisfied" | "Waived";
+export type ConditionAppliesTo = "Borrower" | "Property" | "Application";
+
+export type Condition = {
+  id: string;
+  applicationId: string;
+  createdAt: string;
+  updatedAt: string;
+
+  conditionType: string;       // free text: e.g. "Financial", "Legal", "Appraisal"
+  description: string;
+  status: ConditionStatus;
+  appliesTo: ConditionAppliesTo;
+
+  phaseAddedAt: ApplicationStatus; // which phase it was raised in
+  createdByPersona: string;        // e.g. "Credit Risk", "Processing"
+};
+
+// ─── Exception entity (3NF) ──────────────────────────────────────────────────
+
+/**
+ * A policy exception requiring approval at a defined authority level.
+ * W1 = lowest authority (Loan Officer); W30 = highest (Board).
+ */
+export type ExceptionStatus = "Pending Approval" | "Approved" | "Denied";
+
+/** W1 (lowest, weakest) through W30 (highest, strongest approval required). */
+export type ApprovalAuthorityLevel =
+  | "W1" | "W2" | "W3" | "W4" | "W5"
+  | "W6" | "W7" | "W8" | "W9" | "W10"
+  | "W11" | "W12" | "W13" | "W14" | "W15"
+  | "W16" | "W17" | "W18" | "W19" | "W20"
+  | "W21" | "W22" | "W23" | "W24" | "W25"
+  | "W26" | "W27" | "W28" | "W29" | "W30";
+
+export const APPROVAL_LEVELS: ApprovalAuthorityLevel[] = Array.from(
+  { length: 30 },
+  (_, i) => `W${i + 1}` as ApprovalAuthorityLevel
+);
+
+export type Exception = {
+  id: string;
+  applicationId: string;
+  createdAt: string;
+  updatedAt: string;
+
+  exceptionType: string;                  // free text: e.g. "LTV", "DSCR", "IO Structure"
+  description: string;
+  status: ExceptionStatus;
+  approvalAuthorityLevel: ApprovalAuthorityLevel;
+
+  phaseAddedAt: ApplicationStatus;
+  createdByPersona: string;               // e.g. "Credit Risk"
+  approvedBy: string;                     // populated when status = Approved
+  approvedAt: string;                     // ISO date string
 };
 
 // ─── 3NF Entities ────────────────────────────────────────────────────────────
@@ -129,6 +193,7 @@ export type Comment = {
  * LOAApplication — the origination record.
  * Contains loan terms + phase-specific workflow data collected at each stage.
  * All borrower / property data lives in their own normalized entities.
+ * Conditions and exceptions are separate 3NF entities (Condition, Exception).
  */
 export type LOAApplication = {
   id: string;
@@ -178,8 +243,8 @@ export type LOAApplication = {
   // ── Final Credit Review Phase (Credit Risk) ───────────────────────────────
   commitmentLetterRecommended: boolean;
   commitmentLetterIssuedDate: string;
-  conditionalApprovals: string;  // newline-separated list
-  creditRiskExceptions: string;  // newline-separated list
+  // NOTE: conditionalApprovals & creditRiskExceptions removed — now 3NF entities
+  // See: Condition[], Exception[] stored in separate collections
 
   // ── Pre-close Phase (Processing) ─────────────────────────────────────────
   hmdaComplete: boolean;
@@ -222,6 +287,8 @@ const KEYS = {
   applications: "loan_applications_v3",
   borrowers: "loan_borrowers_v3",
   properties: "loan_properties_v3",
+  conditions: "loan_conditions_v1",
+  exceptions: "loan_exceptions_v1",
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -279,7 +346,6 @@ function emptyApplication(
     appraisalValueUsd: "", environmentalStatus: "", borrowerFormsStatus: "",
 
     commitmentLetterRecommended: false, commitmentLetterIssuedDate: "",
-    conditionalApprovals: "", creditRiskExceptions: "",
 
     hmdaComplete: false, hmdaNotes: "",
 
@@ -311,6 +377,8 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
   const [applications, setApplications] = useState<LOAApplication[]>([]);
   const [borrowers, setBorrowers] = useState<Borrower[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
+  const [conditions, setConditions] = useState<Condition[]>([]);
+  const [exceptions, setExceptions] = useState<Exception[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -318,7 +386,9 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
       AsyncStorage.getItem(KEYS.applications),
       AsyncStorage.getItem(KEYS.borrowers),
       AsyncStorage.getItem(KEYS.properties),
-    ]).then(([apps, bors, props]) => {
+      AsyncStorage.getItem(KEYS.conditions),
+      AsyncStorage.getItem(KEYS.exceptions),
+    ]).then(([apps, bors, props, conds, excs]) => {
       if (apps) {
         const parsed: LOAApplication[] = JSON.parse(apps);
         setApplications(parsed.map((a) => ({
@@ -329,6 +399,8 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
       }
       if (bors) setBorrowers(JSON.parse(bors));
       if (props) setProperties(JSON.parse(props));
+      if (conds) setConditions(JSON.parse(conds));
+      if (excs) setExceptions(JSON.parse(excs));
       setLoading(false);
     });
   }, []);
@@ -348,7 +420,17 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
     await AsyncStorage.setItem(KEYS.properties, JSON.stringify(props));
   }, []);
 
-  // ── CRUD ─────────────────────────────────────────────────────────────────
+  const persistConditions = useCallback(async (conds: Condition[]) => {
+    setConditions(conds);
+    await AsyncStorage.setItem(KEYS.conditions, JSON.stringify(conds));
+  }, []);
+
+  const persistExceptions = useCallback(async (excs: Exception[]) => {
+    setExceptions(excs);
+    await AsyncStorage.setItem(KEYS.exceptions, JSON.stringify(excs));
+  }, []);
+
+  // ── Application CRUD ─────────────────────────────────────────────────────
 
   const createApplication = useCallback(async (): Promise<{
     application: LOAApplication;
@@ -408,9 +490,66 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
         persistApps(applications.filter((a) => a.id !== id)),
         persistBorrowers(borrowers.filter((b) => b.id !== app.borrowerId)),
         persistProperties(properties.filter((p) => p.id !== app.propertyId)),
+        persistConditions(conditions.filter((c) => c.applicationId !== id)),
+        persistExceptions(exceptions.filter((e) => e.applicationId !== id)),
       ]);
     },
-    [applications, borrowers, properties, persistApps, persistBorrowers, persistProperties]
+    [applications, borrowers, properties, conditions, exceptions,
+     persistApps, persistBorrowers, persistProperties, persistConditions, persistExceptions]
+  );
+
+  // ── Condition CRUD ───────────────────────────────────────────────────────
+
+  const addCondition = useCallback(
+    async (cond: Omit<Condition, "id" | "createdAt" | "updatedAt">) => {
+      const full: Condition = { id: uid(), createdAt: now(), updatedAt: now(), ...cond };
+      await persistConditions([...conditions, full]);
+      return full;
+    },
+    [conditions, persistConditions]
+  );
+
+  const updateCondition = useCallback(
+    async (id: string, updates: Partial<Condition>) => {
+      await persistConditions(
+        conditions.map((c) => c.id === id ? { ...c, ...updates, updatedAt: now() } : c)
+      );
+    },
+    [conditions, persistConditions]
+  );
+
+  const deleteCondition = useCallback(
+    async (id: string) => {
+      await persistConditions(conditions.filter((c) => c.id !== id));
+    },
+    [conditions, persistConditions]
+  );
+
+  // ── Exception CRUD ───────────────────────────────────────────────────────
+
+  const addException = useCallback(
+    async (exc: Omit<Exception, "id" | "createdAt" | "updatedAt">) => {
+      const full: Exception = { id: uid(), createdAt: now(), updatedAt: now(), ...exc };
+      await persistExceptions([...exceptions, full]);
+      return full;
+    },
+    [exceptions, persistExceptions]
+  );
+
+  const updateException = useCallback(
+    async (id: string, updates: Partial<Exception>) => {
+      await persistExceptions(
+        exceptions.map((e) => e.id === id ? { ...e, ...updates, updatedAt: now() } : e)
+      );
+    },
+    [exceptions, persistExceptions]
+  );
+
+  const deleteException = useCallback(
+    async (id: string) => {
+      await persistExceptions(exceptions.filter((e) => e.id !== id));
+    },
+    [exceptions, persistExceptions]
   );
 
   // ── Comments ─────────────────────────────────────────────────────────────
@@ -450,30 +589,6 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
     [applications, persistApps]
   );
 
-  // ── Seed / Reset ─────────────────────────────────────────────────────────
-
-  const loadSampleData = useCallback(async () => {
-    await Promise.all([
-      persistBorrowers([...SEED_BORROWERS, ...borrowers.filter(b => !b.id.startsWith("seed_"))]),
-      persistProperties([...SEED_PROPERTIES, ...properties.filter(p => !p.id.startsWith("seed_"))]),
-      persistApps([...SEED_APPLICATIONS, ...applications.filter(a => !a.id.startsWith("seed_"))]),
-    ]);
-  }, [applications, borrowers, properties, persistApps, persistBorrowers, persistProperties]);
-
-  const clearAllData = useCallback(async () => {
-    const filteredApps = applications.filter((a) => !a.id.startsWith("seed_"));
-    const seedApps = applications.filter((a) => a.id.startsWith("seed_"));
-    const seedBorrowerIds = new Set(seedApps.map((a) => a.borrowerId));
-    const seedPropertyIds = new Set(seedApps.map((a) => a.propertyId));
-    const filteredBorrowers = borrowers.filter((b) => !seedBorrowerIds.has(b.id));
-    const filteredProperties = properties.filter((p) => !seedPropertyIds.has(p.id));
-    await Promise.all([
-      persistApps(filteredApps),
-      persistBorrowers(filteredBorrowers),
-      persistProperties(filteredProperties),
-    ]);
-  }, [applications, borrowers, properties, persistApps, persistBorrowers, persistProperties]);
-
   const deleteAttachment = useCallback(
     async (applicationId: string, attachmentId: string) => {
       const updated = applications.map((a) =>
@@ -485,6 +600,33 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
     },
     [applications, persistApps]
   );
+
+  // ── Seed / Reset ─────────────────────────────────────────────────────────
+
+  const loadSampleData = useCallback(async () => {
+    await Promise.all([
+      persistBorrowers([...SEED_BORROWERS, ...borrowers.filter(b => !b.id.startsWith("seed_"))]),
+      persistProperties([...SEED_PROPERTIES, ...properties.filter(p => !p.id.startsWith("seed_"))]),
+      persistApps([...SEED_APPLICATIONS, ...applications.filter(a => !a.id.startsWith("seed_"))]),
+      persistConditions([...SEED_CONDITIONS, ...conditions.filter(c => !c.id.startsWith("seed_"))]),
+      persistExceptions([...SEED_EXCEPTIONS, ...exceptions.filter(e => !e.id.startsWith("seed_"))]),
+    ]);
+  }, [applications, borrowers, properties, conditions, exceptions,
+      persistApps, persistBorrowers, persistProperties, persistConditions, persistExceptions]);
+
+  const clearAllData = useCallback(async () => {
+    const seedApps = applications.filter((a) => a.id.startsWith("seed_"));
+    const seedBorrowerIds = new Set(seedApps.map((a) => a.borrowerId));
+    const seedPropertyIds = new Set(seedApps.map((a) => a.propertyId));
+    await Promise.all([
+      persistApps(applications.filter((a) => !a.id.startsWith("seed_"))),
+      persistBorrowers(borrowers.filter((b) => !seedBorrowerIds.has(b.id))),
+      persistProperties(properties.filter((p) => !seedPropertyIds.has(p.id))),
+      persistConditions(conditions.filter((c) => !c.id.startsWith("seed_"))),
+      persistExceptions(exceptions.filter((e) => !e.id.startsWith("seed_"))),
+    ]);
+  }, [applications, borrowers, properties, conditions, exceptions,
+      persistApps, persistBorrowers, persistProperties, persistConditions, persistExceptions]);
 
   // ── Lookups ──────────────────────────────────────────────────────────────
 
@@ -499,6 +641,14 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
   const getProperty = useCallback(
     (id: string) => properties.find((p) => p.id === id),
     [properties]
+  );
+  const getConditionsForApplication = useCallback(
+    (applicationId: string) => conditions.filter((c) => c.applicationId === applicationId),
+    [conditions]
+  );
+  const getExceptionsForApplication = useCallback(
+    (applicationId: string) => exceptions.filter((e) => e.applicationId === applicationId),
+    [exceptions]
   );
 
   // ── Pipeline Stats ────────────────────────────────────────────────────────
@@ -517,10 +667,13 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
   };
 
   return {
-    applications, borrowers, properties, loading, stats,
+    applications, borrowers, properties, conditions, exceptions, loading, stats,
     createApplication, updateApplication, updateBorrower, updateProperty, deleteApplication,
+    addCondition, updateCondition, deleteCondition,
+    addException, updateException, deleteException,
     addComment, addAttachment, deleteAttachment,
     getApplication, getBorrower, getProperty,
+    getConditionsForApplication, getExceptionsForApplication,
     loadSampleData, clearAllData,
   };
 });

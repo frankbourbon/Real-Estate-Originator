@@ -14,6 +14,7 @@ export default function ApplicationLayout() {
       <Stack.Screen name="credit-evaluation" />
       <Stack.Screen name="processing" />
       <Stack.Screen name="closing-details" />
+      <Stack.Screen name="conditions" />
     </Stack>
   );
 }

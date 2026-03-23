@@ -48,7 +48,13 @@ type SectionGroup = {
   sections: SectionItem[];
 };
 
-function buildGroups(id: string, commentCount: number, attachmentCount: number): SectionGroup[] {
+function buildGroups(
+  id: string,
+  commentCount: number,
+  attachmentCount: number,
+  conditionCount: number,
+  exceptionCount: number
+): SectionGroup[] {
   return [
     {
       persona: "Sales",
@@ -112,7 +118,7 @@ function buildGroups(id: string, commentCount: number, attachmentCount: number):
           key: "credit-evaluation",
           route: `/application/${id}/credit-evaluation`,
           label: "Credit Evaluation",
-          description: "Credit box, LOI, commitment letter, conditions, exceptions",
+          description: "Credit box, LOI, and commitment letter",
           icon: "shield",
           iconColor: "#0078CF",
           iconBg: "#EAF6FF",
@@ -159,6 +165,16 @@ function buildGroups(id: string, commentCount: number, attachmentCount: number):
       personaIcon: "users",
       activeFrom: "Inquiry",
       sections: [
+        {
+          key: "conditions",
+          route: `/application/${id}/conditions`,
+          label: "Conditions & Exceptions",
+          description: "Loan conditions and policy exceptions — any persona, any phase",
+          icon: "check-square",
+          iconColor: "#0078CF",
+          iconBg: "#EAF6FF",
+          badge: conditionCount + exceptionCount,
+        },
         {
           key: "comments",
           route: `/application/${id}/comments`,
@@ -370,6 +386,7 @@ export default function ApplicationOverviewScreen() {
   const {
     getApplication, getBorrower, getProperty,
     updateApplication, deleteApplication,
+    getConditionsForApplication, getExceptionsForApplication,
   } = useApplications();
   const insets = useSafeAreaInsets();
   const [statusModal, setStatusModal] = useState(false);
@@ -416,7 +433,9 @@ export default function ApplicationOverviewScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const groups = buildGroups(id, app.comments.length, app.attachments.length);
+  const conditionCount = getConditionsForApplication(id).length;
+  const exceptionCount = getExceptionsForApplication(id).length;
+  const groups = buildGroups(id, app.comments.length, app.attachments.length, conditionCount, exceptionCount);
 
   return (
     <>

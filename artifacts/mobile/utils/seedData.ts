@@ -1,5 +1,7 @@
 import type {
   Borrower,
+  Condition,
+  Exception,
   LOAApplication,
   Property,
 } from "@/context/ApplicationContext";
@@ -155,6 +157,8 @@ export const SEED_PROPERTIES: Property[] = [
 ];
 
 // ─── Applications ─────────────────────────────────────────────────────────────
+// NOTE: conditionalApprovals and creditRiskExceptions have been removed from
+// LOAApplication. They are now 3NF entities: Condition[] and Exception[].
 
 export const SEED_APPLICATIONS: LOAApplication[] = [
   // ── 1. Inquiry — Office Philadelphia ─────────────────────────────────────────
@@ -172,7 +176,6 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
     appraisalOrderedDate: "", appraisalCompletedDate: "", appraisalValueUsd: "",
     environmentalStatus: "", borrowerFormsStatus: "",
     commitmentLetterRecommended: false, commitmentLetterIssuedDate: "",
-    conditionalApprovals: "", creditRiskExceptions: "",
     hmdaComplete: false, hmdaNotes: "",
     insuranceCarrier: "", insurancePolicyNumber: "", insuranceEffectiveDate: "",
     titleCompany: "", escrowCompany: "", floodZoneDesignation: "", titleReportDate: "",
@@ -202,7 +205,6 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
     appraisalOrderedDate: "", appraisalCompletedDate: "", appraisalValueUsd: "",
     environmentalStatus: "", borrowerFormsStatus: "",
     commitmentLetterRecommended: false, commitmentLetterIssuedDate: "",
-    conditionalApprovals: "", creditRiskExceptions: "",
     hmdaComplete: false, hmdaNotes: "",
     insuranceCarrier: "", insurancePolicyNumber: "", insuranceEffectiveDate: "",
     titleCompany: "", escrowCompany: "", floodZoneDesignation: "", titleReportDate: "",
@@ -234,7 +236,6 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
     appraisalOrderedDate: "", appraisalCompletedDate: "", appraisalValueUsd: "",
     environmentalStatus: "", borrowerFormsStatus: "Not Started",
     commitmentLetterRecommended: false, commitmentLetterIssuedDate: "",
-    conditionalApprovals: "", creditRiskExceptions: "",
     hmdaComplete: false, hmdaNotes: "",
     insuranceCarrier: "", insurancePolicyNumber: "", insuranceEffectiveDate: "",
     titleCompany: "", escrowCompany: "", floodZoneDesignation: "", titleReportDate: "",
@@ -265,7 +266,6 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
     appraisalOrderedDate: dateStr(2026, 3, 1), appraisalCompletedDate: "",
     appraisalValueUsd: "", environmentalStatus: "In Progress", borrowerFormsStatus: "Packaged",
     commitmentLetterRecommended: false, commitmentLetterIssuedDate: "",
-    conditionalApprovals: "", creditRiskExceptions: "",
     hmdaComplete: false, hmdaNotes: "",
     insuranceCarrier: "", insurancePolicyNumber: "", insuranceEffectiveDate: "",
     titleCompany: "", escrowCompany: "", floodZoneDesignation: "", titleReportDate: "",
@@ -297,8 +297,6 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
     appraisalOrderedDate: dateStr(2026, 2, 8), appraisalCompletedDate: dateStr(2026, 3, 5),
     appraisalValueUsd: "25,100,000", environmentalStatus: "Clear", borrowerFormsStatus: "Received",
     commitmentLetterRecommended: false, commitmentLetterIssuedDate: "",
-    conditionalApprovals: "Borrower to maintain minimum DSCR of 1.25x on a trailing 12-month basis\nBorrower must maintain $500K liquidity reserve\nNo additional debt to be incurred without lender consent",
-    creditRiskExceptions: "Floating rate exception approved by CRO: floating SOFR + 175bps justified by value-add business plan",
     hmdaComplete: false, hmdaNotes: "",
     insuranceCarrier: "", insurancePolicyNumber: "", insuranceEffectiveDate: "",
     titleCompany: "", escrowCompany: "", floodZoneDesignation: "", titleReportDate: "",
@@ -330,8 +328,6 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
     appraisalOrderedDate: dateStr(2026, 1, 22), appraisalCompletedDate: dateStr(2026, 2, 18),
     appraisalValueUsd: "15,200,000", environmentalStatus: "Clear", borrowerFormsStatus: "Received",
     commitmentLetterRecommended: true, commitmentLetterIssuedDate: dateStr(2026, 3, 10),
-    conditionalApprovals: "Borrower to provide final executed lease abstract\nBorrower insurance policy must be in effect at closing",
-    creditRiskExceptions: "Single-tenant concentration exception: approved given NNN lease covenant and borrower net worth of $31M",
     hmdaComplete: false, hmdaNotes: "HMDA LAR fields 90% complete — still need census tract code and action taken date.",
     insuranceCarrier: "", insurancePolicyNumber: "", insuranceEffectiveDate: "",
     titleCompany: "", escrowCompany: "", floodZoneDesignation: "", titleReportDate: "",
@@ -362,8 +358,6 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
     appraisalOrderedDate: dateStr(2026, 1, 5), appraisalCompletedDate: dateStr(2026, 2, 10),
     appraisalValueUsd: "52,000,000", environmentalStatus: "Clear", borrowerFormsStatus: "Received",
     commitmentLetterRecommended: true, commitmentLetterIssuedDate: dateStr(2026, 2, 28),
-    conditionalApprovals: "Borrower to maintain DSCR ≥ 1.25x on trailing 12 months\nOperating account to be maintained at JP Morgan Chase\nPledge of equity interests in property-owning entity",
-    creditRiskExceptions: "Hotel asset class exception: approved by Credit Committee 2/22/2026\nIO structure exception for hospitality: approved",
     hmdaComplete: true, hmdaNotes: "HMDA complete. All LAR fields verified 3/12.",
     insuranceCarrier: "Chubb Insurance Company", insurancePolicyNumber: "CHB-2026-0078341",
     insuranceEffectiveDate: dateStr(2026, 4, 10),
@@ -398,8 +392,6 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
     appraisalOrderedDate: dateStr(2025, 12, 1), appraisalCompletedDate: dateStr(2026, 1, 12),
     appraisalValueUsd: "53,800,000", environmentalStatus: "Clear", borrowerFormsStatus: "Received",
     commitmentLetterRecommended: true, commitmentLetterIssuedDate: dateStr(2026, 2, 5),
-    conditionalApprovals: "Borrower to provide executed purchase and sale agreement\nTitle search must confirm no recorded liens\nBorrower reserves of 3 months PITIA to be funded at closing",
-    creditRiskExceptions: "",
     hmdaComplete: true, hmdaNotes: "HMDA LAR complete and validated 2/28.",
     insuranceCarrier: "Travelers Property Casualty", insurancePolicyNumber: "TRV-2026-0041829",
     insuranceEffectiveDate: dateStr(2026, 3, 28),
@@ -435,8 +427,6 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
     appraisalOrderedDate: dateStr(2025, 11, 12), appraisalCompletedDate: dateStr(2025, 12, 20),
     appraisalValueUsd: "30,800,000", environmentalStatus: "Clear", borrowerFormsStatus: "Received",
     commitmentLetterRecommended: true, commitmentLetterIssuedDate: dateStr(2026, 1, 15),
-    conditionalApprovals: "Borrower to provide current rent roll executed by all tenants\nInsurance policy to name lender as additional insured and loss payee",
-    creditRiskExceptions: "IO structure exception for retail: approved given national credit tenant profile",
     hmdaComplete: true, hmdaNotes: "Complete.",
     insuranceCarrier: "Liberty Mutual Insurance", insurancePolicyNumber: "LM-2026-0095214",
     insuranceEffectiveDate: dateStr(2026, 3, 26),
@@ -472,8 +462,6 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
     appraisalOrderedDate: dateStr(2025, 10, 22), appraisalCompletedDate: dateStr(2025, 12, 5),
     appraisalValueUsd: "76,500,000", environmentalStatus: "Clear", borrowerFormsStatus: "Received",
     commitmentLetterRecommended: true, commitmentLetterIssuedDate: dateStr(2026, 1, 8),
-    conditionalApprovals: "Borrower to certify no material change in tenant financial condition\nLender's counsel to confirm no adverse title matters",
-    creditRiskExceptions: "",
     hmdaComplete: true, hmdaNotes: "HMDA complete 1/15.",
     insuranceCarrier: "AIG Property Casualty", insurancePolicyNumber: "AIG-2026-0013488",
     insuranceEffectiveDate: dateStr(2026, 3, 24),
@@ -494,7 +482,7 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
     attachments: [],
   },
 
-  // ── 11. Inquiry — Industrial Houston (second Inquiry) ─────────────────────────
+  // ── 11. Inquiry — Industrial Houston ─────────────────────────────────────────
   {
     id: uid("a11"), createdAt: dt(2026, 3, 20), updatedAt: dt(2026, 3, 20),
     status: "Inquiry",
@@ -509,7 +497,6 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
     appraisalOrderedDate: "", appraisalCompletedDate: "", appraisalValueUsd: "",
     environmentalStatus: "", borrowerFormsStatus: "",
     commitmentLetterRecommended: false, commitmentLetterIssuedDate: "",
-    conditionalApprovals: "", creditRiskExceptions: "",
     hmdaComplete: false, hmdaNotes: "",
     insuranceCarrier: "", insurancePolicyNumber: "", insuranceEffectiveDate: "",
     titleCompany: "", escrowCompany: "", floodZoneDesignation: "", titleReportDate: "",
@@ -538,7 +525,6 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
     appraisalOrderedDate: dateStr(2026, 3, 5), appraisalCompletedDate: "",
     appraisalValueUsd: "", environmentalStatus: "Ordered", borrowerFormsStatus: "Packaged",
     commitmentLetterRecommended: false, commitmentLetterIssuedDate: "",
-    conditionalApprovals: "", creditRiskExceptions: "",
     hmdaComplete: false, hmdaNotes: "",
     insuranceCarrier: "", insurancePolicyNumber: "", insuranceEffectiveDate: "",
     titleCompany: "", escrowCompany: "", floodZoneDesignation: "", titleReportDate: "",
@@ -550,5 +536,247 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
       { id: uid("c12a"), applicationId: uid("a12"), parentCommentId: null, author: "Lisa Park (Processing)", text: "Appraisal ordered 3/5. Will take ~3 weeks. Borrower packaging financial statements.", createdAt: dt(2026, 3, 5) },
     ],
     attachments: [],
+  },
+];
+
+// ─── Conditions (3NF) ─────────────────────────────────────────────────────────
+// Sourced from what was formerly the conditionalApprovals string field.
+// Any persona can add a condition at any phase.
+
+export const SEED_CONDITIONS: Condition[] = [
+  // a05 — Final Credit Review, Mixed Use Chicago
+  {
+    id: uid("cond_01"), applicationId: uid("a05"),
+    createdAt: dt(2026, 1, 20), updatedAt: dt(2026, 3, 18),
+    conditionType: "Financial Covenant",
+    description: "Borrower to maintain minimum DSCR of 1.25x on a trailing 12-month basis.",
+    status: "Pending",
+    appliesTo: "Application",
+    phaseAddedAt: "Letter of Interest",
+    createdByPersona: "Credit Risk",
+  },
+  {
+    id: uid("cond_02"), applicationId: uid("a05"),
+    createdAt: dt(2026, 1, 20), updatedAt: dt(2026, 3, 18),
+    conditionType: "Financial Covenant",
+    description: "Borrower must maintain a minimum liquidity reserve of $500,000 at all times.",
+    status: "Pending",
+    appliesTo: "Borrower",
+    phaseAddedAt: "Letter of Interest",
+    createdByPersona: "Credit Risk",
+  },
+  {
+    id: uid("cond_03"), applicationId: uid("a05"),
+    createdAt: dt(2026, 2, 5), updatedAt: dt(2026, 3, 18),
+    conditionType: "Financial Covenant",
+    description: "No additional debt to be incurred without prior written lender consent.",
+    status: "Pending",
+    appliesTo: "Borrower",
+    phaseAddedAt: "Application Start",
+    createdByPersona: "Credit Risk",
+  },
+
+  // a06 — Pre-close, Office Austin
+  {
+    id: uid("cond_04"), applicationId: uid("a06"),
+    createdAt: dt(2026, 1, 20), updatedAt: dt(2026, 3, 10),
+    conditionType: "Legal Documentation",
+    description: "Borrower to provide final executed lease abstract from tenant prior to closing.",
+    status: "Pending",
+    appliesTo: "Property",
+    phaseAddedAt: "Application Start",
+    createdByPersona: "Credit Risk",
+  },
+  {
+    id: uid("cond_05"), applicationId: uid("a06"),
+    createdAt: dt(2026, 3, 10), updatedAt: dt(2026, 3, 10),
+    conditionType: "Insurance",
+    description: "Borrower insurance policy must be bound and in full effect at or before closing date.",
+    status: "Pending",
+    appliesTo: "Application",
+    phaseAddedAt: "Final Credit Review",
+    createdByPersona: "Processing",
+  },
+
+  // a07 — Ready for Docs, Hotel Miami
+  {
+    id: uid("cond_06"), applicationId: uid("a07"),
+    createdAt: dt(2025, 12, 1), updatedAt: dt(2026, 3, 15),
+    conditionType: "Financial Covenant",
+    description: "Borrower to maintain DSCR ≥ 1.25x on a trailing 12-month basis throughout loan term.",
+    status: "Pending",
+    appliesTo: "Application",
+    phaseAddedAt: "Letter of Interest",
+    createdByPersona: "Credit Risk",
+  },
+  {
+    id: uid("cond_07"), applicationId: uid("a07"),
+    createdAt: dt(2026, 2, 28), updatedAt: dt(2026, 3, 15),
+    conditionType: "Account Control",
+    description: "Borrower's primary operating account for the property must be maintained at JPMorgan Chase.",
+    status: "Pending",
+    appliesTo: "Borrower",
+    phaseAddedAt: "Final Credit Review",
+    createdByPersona: "Credit Risk",
+  },
+  {
+    id: uid("cond_08"), applicationId: uid("a07"),
+    createdAt: dt(2026, 2, 28), updatedAt: dt(2026, 3, 15),
+    conditionType: "Collateral",
+    description: "Borrower to pledge 100% of equity interests in the property-owning entity as additional collateral.",
+    status: "Pending",
+    appliesTo: "Application",
+    phaseAddedAt: "Final Credit Review",
+    createdByPersona: "Credit Risk",
+  },
+
+  // a08 — Docs Drawn, Multifamily Atlanta
+  {
+    id: uid("cond_09"), applicationId: uid("a08"),
+    createdAt: dt(2025, 11, 20), updatedAt: dt(2026, 2, 5),
+    conditionType: "Legal Documentation",
+    description: "Borrower to provide a fully executed purchase and sale agreement prior to commitment.",
+    status: "Satisfied",
+    appliesTo: "Application",
+    phaseAddedAt: "Application Start",
+    createdByPersona: "Credit Risk",
+  },
+  {
+    id: uid("cond_10"), applicationId: uid("a08"),
+    createdAt: dt(2025, 11, 20), updatedAt: dt(2026, 3, 18),
+    conditionType: "Title",
+    description: "Title search must confirm no recorded liens, encumbrances, or adverse matters on the property.",
+    status: "Satisfied",
+    appliesTo: "Property",
+    phaseAddedAt: "Application Start",
+    createdByPersona: "Closing Team",
+  },
+  {
+    id: uid("cond_11"), applicationId: uid("a08"),
+    createdAt: dt(2026, 2, 5), updatedAt: dt(2026, 3, 18),
+    conditionType: "Financial Reserve",
+    description: "Borrower reserves of 3 months PITIA to be funded and escrowed at closing.",
+    status: "Pending",
+    appliesTo: "Borrower",
+    phaseAddedAt: "Final Credit Review",
+    createdByPersona: "Credit Risk",
+  },
+
+  // a09 — Docs Back, Retail Chicago
+  {
+    id: uid("cond_12"), applicationId: uid("a09"),
+    createdAt: dt(2026, 1, 15), updatedAt: dt(2026, 3, 14),
+    conditionType: "Lease Documentation",
+    description: "Borrower to provide current rent roll executed by all tenants prior to docs being drawn.",
+    status: "Satisfied",
+    appliesTo: "Property",
+    phaseAddedAt: "Final Credit Review",
+    createdByPersona: "Credit Risk",
+  },
+  {
+    id: uid("cond_13"), applicationId: uid("a09"),
+    createdAt: dt(2026, 1, 15), updatedAt: dt(2026, 3, 14),
+    conditionType: "Insurance",
+    description: "Insurance policy must name lender as additional insured and sole loss payee on all commercial lines.",
+    status: "Satisfied",
+    appliesTo: "Application",
+    phaseAddedAt: "Final Credit Review",
+    createdByPersona: "Processing",
+  },
+
+  // a10 — Closing, Office San Francisco
+  {
+    id: uid("cond_14"), applicationId: uid("a10"),
+    createdAt: dt(2026, 1, 8), updatedAt: dt(2026, 3, 17),
+    conditionType: "Certification",
+    description: "Borrower to certify no material change in tenant's financial condition or credit standing since underwriting.",
+    status: "Satisfied",
+    appliesTo: "Borrower",
+    phaseAddedAt: "Final Credit Review",
+    createdByPersona: "Credit Risk",
+  },
+  {
+    id: uid("cond_15"), applicationId: uid("a10"),
+    createdAt: dt(2026, 1, 8), updatedAt: dt(2026, 3, 17),
+    conditionType: "Title",
+    description: "Lender's counsel to confirm no adverse title matters and issue title insurance commitment.",
+    status: "Satisfied",
+    appliesTo: "Property",
+    phaseAddedAt: "Final Credit Review",
+    createdByPersona: "Closing Team",
+  },
+];
+
+// ─── Exceptions (3NF) ─────────────────────────────────────────────────────────
+// Sourced from what was formerly the creditRiskExceptions string field.
+// W1 = lowest authority required; W30 = highest (board-level).
+
+export const SEED_EXCEPTIONS: Exception[] = [
+  // a05 — Final Credit Review, Mixed Use Chicago
+  {
+    id: uid("exc_01"), applicationId: uid("a05"),
+    createdAt: dt(2026, 3, 19), updatedAt: dt(2026, 3, 19),
+    exceptionType: "Rate Structure",
+    description: "Floating rate (SOFR + 175bps) requested in lieu of fixed rate. Justified by value-add business plan with expected refinance within 36 months at stabilization.",
+    status: "Approved",
+    approvalAuthorityLevel: "W15",
+    phaseAddedAt: "Final Credit Review",
+    createdByPersona: "Credit Risk",
+    approvedBy: "Priya Nair (CRO)",
+    approvedAt: dt(2026, 3, 19),
+  },
+
+  // a06 — Pre-close, Office Austin
+  {
+    id: uid("exc_02"), applicationId: uid("a06"),
+    createdAt: dt(2026, 1, 10), updatedAt: dt(2026, 3, 10),
+    exceptionType: "Concentration Risk",
+    description: "Single-tenant concentration exception for NNN office asset. Mitigated by creditworthy tech tenant covenant and borrower net worth of $31M providing strong recourse support.",
+    status: "Approved",
+    approvalAuthorityLevel: "W12",
+    phaseAddedAt: "Application Processing",
+    createdByPersona: "Credit Risk",
+    approvedBy: "Alan Morse (Credit Risk Officer)",
+    approvedAt: dt(2026, 3, 10),
+  },
+
+  // a07 — Ready for Docs, Hotel Miami
+  {
+    id: uid("exc_03"), applicationId: uid("a07"),
+    createdAt: dt(2026, 2, 15), updatedAt: dt(2026, 2, 22),
+    exceptionType: "Asset Class",
+    description: "Hotel/hospitality asset class exception. Policy restricts hospitality to <10% of portfolio. Exception supported by strong post-renovation ADR ($285), RevPAR ($215), and trailing 12-month NOI.",
+    status: "Approved",
+    approvalAuthorityLevel: "W20",
+    phaseAddedAt: "Final Credit Review",
+    createdByPersona: "Credit Risk",
+    approvedBy: "Credit Committee (2/22/2026)",
+    approvedAt: dt(2026, 2, 22),
+  },
+  {
+    id: uid("exc_04"), applicationId: uid("a07"),
+    createdAt: dt(2026, 2, 15), updatedAt: dt(2026, 2, 28),
+    exceptionType: "IO Structure",
+    description: "Interest-only structure for hospitality asset. Policy requires amortization on hotel loans. IO approved for full 5-year term given strong DSCR of 1.32x on IO basis.",
+    status: "Approved",
+    approvalAuthorityLevel: "W12",
+    phaseAddedAt: "Final Credit Review",
+    createdByPersona: "Credit Risk",
+    approvedBy: "Alan Morse (Credit Risk Officer)",
+    approvedAt: dt(2026, 2, 28),
+  },
+
+  // a09 — Docs Back, Retail Chicago
+  {
+    id: uid("exc_05"), applicationId: uid("a09"),
+    createdAt: dt(2026, 1, 15), updatedAt: dt(2026, 1, 20),
+    exceptionType: "IO Structure",
+    description: "Interest-only structure for retail asset. IO approved for 7-year term given all-national-credit tenant roster, 100% occupancy, and DSCR of 1.55x on IO basis.",
+    status: "Approved",
+    approvalAuthorityLevel: "W8",
+    phaseAddedAt: "Final Credit Review",
+    createdByPersona: "Credit Risk",
+    approvedBy: "Alan Morse (Credit Risk Officer)",
+    approvedAt: dt(2026, 1, 20),
   },
 ];

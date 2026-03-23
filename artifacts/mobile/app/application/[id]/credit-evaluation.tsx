@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -19,9 +18,15 @@ import { useApplications } from "@/context/ApplicationContext";
 
 export default function CreditEvaluationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getApplication, updateApplication } = useApplications();
+  const {
+    getApplication, updateApplication,
+    getConditionsForApplication, getExceptionsForApplication,
+  } = useApplications();
   const insets = useSafeAreaInsets();
   const app = getApplication(id);
+
+  const conditions = getConditionsForApplication(id);
+  const exceptions = getExceptionsForApplication(id);
 
   const [creditBoxNotes, setCreditBoxNotes] = useState(app?.creditBoxNotes ?? "");
   const [loiRecommended, setLoiRecommended] = useState(app?.loiRecommended ?? false);
@@ -33,18 +38,14 @@ export default function CreditEvaluationScreen() {
   const [commitmentLetterIssuedDate, setCommitmentLetterIssuedDate] = useState(
     app?.commitmentLetterIssuedDate ?? ""
   );
-  const [conditionalApprovals, setConditionalApprovals] = useState(app?.conditionalApprovals ?? "");
-  const [creditRiskExceptions, setCreditRiskExceptions] = useState(app?.creditRiskExceptions ?? "");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { setDirty(true); }, [
     creditBoxNotes, loiRecommended, loiIssuedDate, loiExpirationDate,
     commitmentLetterRecommended, commitmentLetterIssuedDate,
-    conditionalApprovals, creditRiskExceptions,
   ]);
 
-  // Don't mark dirty on initial load
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); setDirty(false); }, []);
 
@@ -53,7 +54,6 @@ export default function CreditEvaluationScreen() {
     await updateApplication(id, {
       creditBoxNotes, loiRecommended, loiIssuedDate, loiExpirationDate,
       commitmentLetterRecommended, commitmentLetterIssuedDate,
-      conditionalApprovals, creditRiskExceptions,
     });
     setSaving(false);
     setDirty(false);
@@ -63,6 +63,9 @@ export default function CreditEvaluationScreen() {
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   if (!app) return null;
+
+  const pendingConditions = conditions.filter((c) => c.status === "Pending").length;
+  const pendingExceptions = exceptions.filter((e) => e.status === "Pending Approval").length;
 
   return (
     <>
@@ -170,7 +173,6 @@ export default function CreditEvaluationScreen() {
         <Text style={styles.sectionLabel}>Commitment Letter (CL)</Text>
         <Text style={styles.sectionNote}>
           Legally binding commitment to fund. Issued after Final Credit Review.
-          All conditions and exceptions must be documented.
         </Text>
         <View style={styles.card}>
           <View style={styles.switchRow}>
@@ -201,39 +203,58 @@ export default function CreditEvaluationScreen() {
               </View>
             </>
           )}
-
-          <View style={styles.divider} />
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Conditional Approvals</Text>
-            <Text style={styles.sublabel}>One condition per line (e.g., "Appraisal must confirm value ≥ $X")</Text>
-            <TextInput
-              style={[styles.input, styles.textarea]}
-              value={conditionalApprovals}
-              onChangeText={setConditionalApprovals}
-              placeholder={"Condition 1\nCondition 2\nCondition 3"}
-              placeholderTextColor={Colors.light.textTertiary}
-              multiline
-              numberOfLines={5}
-            />
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Credit Risk Exceptions</Text>
-            <Text style={styles.sublabel}>Policy exceptions approved by credit risk management. One per line.</Text>
-            <TextInput
-              style={[styles.input, styles.textarea]}
-              value={creditRiskExceptions}
-              onChangeText={setCreditRiskExceptions}
-              placeholder={"Exception 1\nException 2"}
-              placeholderTextColor={Colors.light.textTertiary}
-              multiline
-              numberOfLines={4}
-            />
-          </View>
         </View>
+
+        {/* ── Conditions & Exceptions link card ── */}
+        <Text style={styles.sectionLabel}>Conditions & Exceptions</Text>
+        <Text style={styles.sectionNote}>
+          Conditions and exceptions are now normalized records. Any persona can add them at any phase.
+        </Text>
+
+        <TouchableOpacity
+          style={styles.condExcCard}
+          activeOpacity={0.75}
+          onPress={() => router.push(`/application/${id}/conditions`)}
+        >
+          <View style={styles.condExcRow}>
+            <View style={styles.condExcBlock}>
+              <View style={styles.condExcIconWrap}>
+                <Feather name="check-square" size={18} color="#0078CF" />
+              </View>
+              <View style={styles.condExcText}>
+                <Text style={styles.condExcCount}>{conditions.length}</Text>
+                <Text style={styles.condExcLabel}>Condition{conditions.length !== 1 ? "s" : ""}</Text>
+                {pendingConditions > 0 && (
+                  <Text style={styles.condExcPending}>{pendingConditions} pending</Text>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.condExcDivider} />
+
+            <View style={styles.condExcBlock}>
+              <View style={[styles.condExcIconWrap, { backgroundColor: "#FFECDC" }]}>
+                <Feather name="shield-off" size={18} color="#C75300" />
+              </View>
+              <View style={styles.condExcText}>
+                <Text style={[styles.condExcCount, { color: "#C75300" }]}>{exceptions.length}</Text>
+                <Text style={styles.condExcLabel}>Exception{exceptions.length !== 1 ? "s" : ""}</Text>
+                {pendingExceptions > 0 && (
+                  <Text style={[styles.condExcPending, { color: "#C75300" }]}>{pendingExceptions} pending approval</Text>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.condExcArrow}>
+              <Feather name="chevron-right" size={18} color={Colors.light.textTertiary} />
+            </View>
+          </View>
+
+          <View style={styles.condExcFooter}>
+            <Feather name="users" size={11} color="#72777D" />
+            <Text style={styles.condExcFooterText}>Any persona can add conditions or exceptions at any phase</Text>
+          </View>
+        </TouchableOpacity>
 
         {/* Save button */}
         {dirty && mounted && (
@@ -333,6 +354,78 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
   },
   textarea: { minHeight: 100, textAlignVertical: "top", paddingTop: 10 },
+
+  // Conditions & Exceptions link card
+  condExcCard: {
+    backgroundColor: Colors.light.backgroundCard,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  condExcRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    gap: 0,
+  },
+  condExcBlock: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  condExcIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: "#EAF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  condExcText: { flex: 1 },
+  condExcCount: {
+    fontSize: 22,
+    fontFamily: "OpenSans_700Bold",
+    color: "#0078CF",
+    lineHeight: 26,
+  },
+  condExcLabel: {
+    fontSize: 11,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.textSecondary,
+    marginTop: 1,
+  },
+  condExcPending: {
+    fontSize: 11,
+    fontFamily: "OpenSans_400Regular",
+    color: "#C75300",
+    marginTop: 2,
+  },
+  condExcDivider: {
+    width: 1,
+    height: 44,
+    backgroundColor: Colors.light.border,
+    marginHorizontal: 16,
+  },
+  condExcArrow: {
+    paddingLeft: 8,
+  },
+  condExcFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#F7F8FA",
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.borderLight,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  condExcFooterText: {
+    fontSize: 11,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textTertiary,
+  },
 
   saveBtnFull: {
     flexDirection: "row",
