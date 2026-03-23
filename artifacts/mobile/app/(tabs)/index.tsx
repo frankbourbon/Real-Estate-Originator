@@ -18,34 +18,34 @@ import { ApplicationCard } from "@/components/ApplicationCard";
 import Colors from "@/constants/colors";
 import { useApplications } from "@/context/ApplicationContext";
 import { formatCurrency } from "@/utils/formatting";
-import { PHASE_INFO, type Persona } from "@/utils/phases";
+import { PHASE_INFO } from "@/utils/phases";
 
 type PhaseStats = Record<string, number>;
 
-const PERSONA_GROUPS: { persona: Persona; icon: string; color: string; bg: string; phases: string[] }[] = [
-  { persona: "Sales",        icon: "briefcase",    color: "#1B7F9E", bg: "#DBF5F7",
-    phases: ["Inquiry", "Application Start"] },
-  { persona: "Credit Risk",  icon: "shield",       color: "#0078CF", bg: "#EAF6FF",
-    phases: ["Letter of Interest", "Final Credit Review"] },
-  { persona: "Processing",   icon: "clipboard",    color: "#C75300", bg: "#FFECDC",
-    phases: ["Application Processing", "Pre-close"] },
-  { persona: "Closing",      icon: "check-circle", color: "#005C3C", bg: "#D0F0E5",
+const STAGE_GROUPS: { label: string; icon: string; color: string; bg: string; phases: string[] }[] = [
+  { label: "Inquiry",     icon: "search",       color: "#1B7F9E", bg: "#DBF5F7",
+    phases: ["Inquiry"] },
+  { label: "LOI",         icon: "file-text",    color: "#0078CF", bg: "#EAF6FF",
+    phases: ["Letter of Interest"] },
+  { label: "Application", icon: "clipboard",    color: "#C75300", bg: "#FFECDC",
+    phases: ["Application Start", "Application Processing"] },
+  { label: "Final",       icon: "shield",       color: "#6B4FBB", bg: "#F0EEFF",
+    phases: ["Final Credit Review", "Pre-close"] },
+  { label: "Closing",     icon: "check-circle", color: "#005C3C", bg: "#D0F0E5",
     phases: ["Ready for Docs", "Docs Drawn", "Docs Back", "Closing"] },
 ];
 
-function PipelineByPersona({ stats }: { stats: PhaseStats }) {
+function PipelineByStage({ stats }: { stats: PhaseStats }) {
   return (
     <View style={pb.card}>
-      {PERSONA_GROUPS.map((group, gi) => (
-        <View key={group.persona} style={[pb.group, gi < PERSONA_GROUPS.length - 1 && pb.groupBorder]}>
-          {/* Persona header */}
+      {STAGE_GROUPS.map((group, gi) => (
+        <View key={group.label} style={[pb.group, gi < STAGE_GROUPS.length - 1 && pb.groupBorder]}>
           <View style={pb.groupHeader}>
             <View style={[pb.personaIcon, { backgroundColor: group.bg }]}>
               <Feather name={group.icon as any} size={13} color={group.color} />
             </View>
-            <Text style={[pb.personaLabel, { color: group.color }]}>{group.persona}</Text>
+            <Text style={[pb.personaLabel, { color: group.color }]}>{group.label}</Text>
           </View>
-          {/* Phase rows */}
           {group.phases.map((phase, pi) => {
             const info = PHASE_INFO[phase as any];
             const count = stats[phase] ?? 0;
@@ -233,7 +233,7 @@ export default function DashboardScreen() {
             <Text style={styles.sectionTitle}>Pipeline by Phase</Text>
           </View>
         </View>
-        <PipelineByPersona stats={stats.byPhase} />
+        <PipelineByStage stats={stats.byPhase} />
 
         {/* ── Recent Applications ── */}
         <View style={styles.sectionHeader}>
