@@ -41,10 +41,9 @@ type SectionItem = {
 };
 
 type SectionGroup = {
-  persona: string;
-  personaColor: string;
-  personaIcon: keyof typeof Feather.glyphMap;
-  activeFrom: ApplicationStatus;
+  label: string;
+  groupColor: string;
+  groupIcon: keyof typeof Feather.glyphMap;
   sections: SectionItem[];
 };
 
@@ -57,20 +56,10 @@ function buildGroups(
 ): SectionGroup[] {
   return [
     {
-      persona: "Sales",
-      personaColor: "#1B7F9E",
-      personaIcon: "briefcase",
-      activeFrom: "Inquiry",
+      label: "Loan",
+      groupColor: "#0078CF",
+      groupIcon: "dollar-sign",
       sections: [
-        {
-          key: "property",
-          route: `/application/${id}/property`,
-          label: "Property Details",
-          description: "Location, property type, size, and occupancy",
-          icon: "map-pin",
-          iconColor: "#00875D",
-          iconBg: "#EAF5F2",
-        },
         {
           key: "loan",
           route: `/application/${id}/loan`,
@@ -89,48 +78,15 @@ function buildGroups(
           iconColor: "#C75300",
           iconBg: "#FFECDC",
         },
-      ],
-    },
-    {
-      persona: "Sales · Application Start",
-      personaColor: "#1B7F9E",
-      personaIcon: "briefcase",
-      activeFrom: "Application Start",
-      sections: [
-        {
-          key: "borrower",
-          route: `/application/${id}/borrower`,
-          label: "Borrower Profile",
-          description: "Identity, contact, and financial profile",
-          icon: "user",
-          iconColor: Colors.light.tint,
-          iconBg: Colors.light.tintLight,
-        },
-      ],
-    },
-    {
-      persona: "Credit Risk",
-      personaColor: "#0078CF",
-      personaIcon: "shield",
-      activeFrom: "Letter of Interest",
-      sections: [
         {
           key: "credit-evaluation",
           route: `/application/${id}/credit-evaluation`,
           label: "Credit Evaluation",
           description: "Credit box, LOI, and commitment letter",
           icon: "shield",
-          iconColor: "#0078CF",
-          iconBg: "#EAF6FF",
+          iconColor: "#6B4FBB",
+          iconBg: "#F0EEFF",
         },
-      ],
-    },
-    {
-      persona: "Processing",
-      personaColor: "#C75300",
-      personaIcon: "clipboard",
-      activeFrom: "Application Processing",
-      sections: [
         {
           key: "processing",
           route: `/application/${id}/processing`,
@@ -140,14 +96,6 @@ function buildGroups(
           iconColor: "#C75300",
           iconBg: "#FFECDC",
         },
-      ],
-    },
-    {
-      persona: "Closing Team",
-      personaColor: "#005C3C",
-      personaIcon: "check-circle",
-      activeFrom: "Ready for Docs",
-      sections: [
         {
           key: "closing-details",
           route: `/application/${id}/closing-details`,
@@ -157,23 +105,31 @@ function buildGroups(
           iconColor: "#005C3C",
           iconBg: "#D0F0E5",
         },
-      ],
-    },
-    {
-      persona: "All Personas",
-      personaColor: "#72777D",
-      personaIcon: "users",
-      activeFrom: "Inquiry",
-      sections: [
         {
           key: "conditions",
           route: `/application/${id}/conditions`,
           label: "Conditions & Exceptions",
-          description: "Loan conditions and policy exceptions — any persona, any phase",
+          description: "Loan conditions and policy exceptions",
           icon: "check-square",
-          iconColor: "#0078CF",
-          iconBg: "#EAF6FF",
+          iconColor: "#1B7F9E",
+          iconBg: "#DBF5F7",
           badge: conditionCount + exceptionCount,
+        },
+      ],
+    },
+    {
+      label: "Client",
+      groupColor: "#1B7F9E",
+      groupIcon: "user",
+      sections: [
+        {
+          key: "borrower",
+          route: `/application/${id}/borrower`,
+          label: "Borrower Profile",
+          description: "Identity, contact, and financial profile",
+          icon: "user",
+          iconColor: Colors.light.tint,
+          iconBg: Colors.light.tintLight,
         },
         {
           key: "comments",
@@ -194,6 +150,22 @@ function buildGroups(
           iconColor: "#5F646A",
           iconBg: "#E6E9EB",
           badge: attachmentCount,
+        },
+      ],
+    },
+    {
+      label: "Property",
+      groupColor: "#00875D",
+      groupIcon: "map-pin",
+      sections: [
+        {
+          key: "property",
+          route: `/application/${id}/property`,
+          label: "Property Details",
+          description: "Location, property type, size, and occupancy",
+          icon: "map-pin",
+          iconColor: "#00875D",
+          iconBg: "#EAF5F2",
         },
       ],
     },
@@ -519,13 +491,12 @@ export default function ApplicationOverviewScreen() {
         {/* Grouped section menu */}
         <Text style={styles.groupLabel}>Sections</Text>
         {groups.map((group) => (
-          <View key={group.persona} style={styles.groupBlock}>
-            {/* Persona header */}
+          <View key={group.label} style={styles.groupBlock}>
             <View style={styles.groupHeader}>
-              <View style={[styles.groupPersonaIcon, { backgroundColor: group.personaColor + "20" }]}>
-                <Feather name={group.personaIcon} size={12} color={group.personaColor} />
+              <View style={[styles.groupPersonaIcon, { backgroundColor: group.groupColor + "20" }]}>
+                <Feather name={group.groupIcon} size={12} color={group.groupColor} />
               </View>
-              <Text style={[styles.groupPersonaLabel, { color: group.personaColor }]}>{group.persona}</Text>
+              <Text style={[styles.groupPersonaLabel, { color: group.groupColor }]}>{group.label}</Text>
             </View>
 
             {/* Section rows */}
