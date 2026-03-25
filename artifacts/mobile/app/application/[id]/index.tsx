@@ -426,18 +426,9 @@ export default function ApplicationOverviewScreen() {
           </Text>
         </View>
 
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => router.push({ pathname: "/new-application", params: { id: app.id } })}
-            activeOpacity={0.7}
-          >
-            <Feather name="edit-2" size={16} color="rgba(255,255,255,0.8)" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={handleDelete} activeOpacity={0.7}>
-            <Feather name="trash-2" size={16} color="#FF6B6B" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.iconBtn} onPress={handleDelete} activeOpacity={0.7}>
+          <Feather name="trash-2" size={16} color="#FF6B6B" />
+        </TouchableOpacity>
       </View>
 
       {/* ── Metrics strip ── */}
