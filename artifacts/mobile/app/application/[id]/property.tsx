@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 
+import { AddressLookup } from "@/components/AddressLookup";
 import { DetailRow } from "@/components/DetailRow";
 import { FormField } from "@/components/FormField";
 import { SectionHeader } from "@/components/SectionHeader";
@@ -79,12 +80,15 @@ export default function PropertySection() {
     city: property?.city ?? "",
     state: property?.state ?? "",
     zipCode: property?.zipCode ?? "",
+    latitude: property?.latitude ?? "",
+    longitude: property?.longitude ?? "",
+    googlePlaceId: property?.googlePlaceId ?? "",
     propertyType: property?.propertyType ?? ("Office" as PropertyType),
-    grossSqFt: property?.grossSqFt != null ? String(property.grossSqFt) : "",
-    numberOfUnits: property?.numberOfUnits != null ? String(property.numberOfUnits) : "",
-    yearBuilt: property?.yearBuilt != null ? String(property.yearBuilt) : "",
-    physicalOccupancyPct: property?.physicalOccupancyPct != null ? String(property.physicalOccupancyPct) : "",
-    economicOccupancyPct: property?.economicOccupancyPct != null ? String(property.economicOccupancyPct) : "",
+    grossSqFt: property?.grossSqFt ?? "",
+    numberOfUnits: property?.numberOfUnits ?? "",
+    yearBuilt: property?.yearBuilt ?? "",
+    physicalOccupancyPct: property?.physicalOccupancyPct ?? "",
+    economicOccupancyPct: property?.economicOccupancyPct ?? "",
   });
 
   const set = (key: string) => (val: string) => setForm((f) => ({ ...f, [key]: val }));
@@ -95,12 +99,15 @@ export default function PropertySection() {
       city: property?.city ?? "",
       state: property?.state ?? "",
       zipCode: property?.zipCode ?? "",
+      latitude: property?.latitude ?? "",
+      longitude: property?.longitude ?? "",
+      googlePlaceId: property?.googlePlaceId ?? "",
       propertyType: property?.propertyType ?? "Office",
-      grossSqFt: property?.grossSqFt != null ? String(property.grossSqFt) : "",
-      numberOfUnits: property?.numberOfUnits != null ? String(property.numberOfUnits) : "",
-      yearBuilt: property?.yearBuilt != null ? String(property.yearBuilt) : "",
-      physicalOccupancyPct: property?.physicalOccupancyPct != null ? String(property.physicalOccupancyPct) : "",
-      economicOccupancyPct: property?.economicOccupancyPct != null ? String(property.economicOccupancyPct) : "",
+      grossSqFt: property?.grossSqFt ?? "",
+      numberOfUnits: property?.numberOfUnits ?? "",
+      yearBuilt: property?.yearBuilt ?? "",
+      physicalOccupancyPct: property?.physicalOccupancyPct ?? "",
+      economicOccupancyPct: property?.economicOccupancyPct ?? "",
     });
     setEditing(true);
   };
@@ -112,17 +119,25 @@ export default function PropertySection() {
       city: form.city || undefined,
       state: form.state || undefined,
       zipCode: form.zipCode || undefined,
+      latitude: form.latitude,
+      longitude: form.longitude,
+      googlePlaceId: form.googlePlaceId,
       propertyType: form.propertyType,
-      grossSqFt: form.grossSqFt ? Number(form.grossSqFt) : undefined,
-      numberOfUnits: form.numberOfUnits ? Number(form.numberOfUnits) : undefined,
-      yearBuilt: form.yearBuilt ? Number(form.yearBuilt) : undefined,
-      physicalOccupancyPct: form.physicalOccupancyPct ? Number(form.physicalOccupancyPct) : undefined,
-      economicOccupancyPct: form.economicOccupancyPct ? Number(form.economicOccupancyPct) : undefined,
+      grossSqFt: form.grossSqFt || undefined,
+      numberOfUnits: form.numberOfUnits || undefined,
+      yearBuilt: form.yearBuilt || undefined,
+      physicalOccupancyPct: form.physicalOccupancyPct || undefined,
+      economicOccupancyPct: form.economicOccupancyPct || undefined,
     });
     setEditing(false);
   };
 
   const handleCancel = () => setEditing(false);
+
+  const hasCoords = property?.latitude && property?.longitude;
+  const coordsDisplay = hasCoords
+    ? `${Number(property!.latitude).toFixed(5)}, ${Number(property!.longitude).toFixed(5)}`
+    : undefined;
 
   return (
     <KeyboardAvoidingView
@@ -141,9 +156,24 @@ export default function PropertySection() {
         {editing ? (
           <>
             <View style={styles.card}>
-              <SectionHeader title="Location" />
-              <FormField label="Street Address" value={form.streetAddress} onChangeText={set("streetAddress")} placeholder="123 Commerce Drive" required />
-              <View style={styles.row}>
+              <SectionHeader title="Location" subtitle="Use address search to auto-fill lat/long and Place ID" />
+
+              <Text style={styles.fieldLabel}>Street Address</Text>
+              <AddressLookup
+                value={form.streetAddress}
+                onSelect={(result) => setForm((f) => ({
+                  ...f,
+                  streetAddress: result.streetAddress,
+                  city: result.city,
+                  state: result.state,
+                  zipCode: result.zipCode,
+                  latitude: result.latitude,
+                  longitude: result.longitude,
+                  googlePlaceId: result.googlePlaceId,
+                }))}
+              />
+
+              <View style={[styles.row, { marginTop: 12 }]}>
                 <View style={styles.flex2}>
                   <FormField label="City" value={form.city} onChangeText={set("city")} placeholder="Chicago" />
                 </View>
@@ -156,6 +186,23 @@ export default function PropertySection() {
                   <FormField label="ZIP" value={form.zipCode} onChangeText={set("zipCode")} placeholder="60601" keyboardType="number-pad" maxLength={5} />
                 </View>
               </View>
+
+              <View style={styles.geoRow}>
+                <View style={styles.flex1}>
+                  <FormField label="Latitude" value={form.latitude} onChangeText={set("latitude")} placeholder="41.8858" keyboardType="decimal-pad" />
+                </View>
+                <View style={styles.gap} />
+                <View style={styles.flex1}>
+                  <FormField label="Longitude" value={form.longitude} onChangeText={set("longitude")} placeholder="-87.6245" keyboardType="decimal-pad" />
+                </View>
+              </View>
+
+              {form.googlePlaceId ? (
+                <View style={styles.placeIdRow}>
+                  <Feather name="check-circle" size={12} color="#00875D" />
+                  <Text style={styles.placeIdText} numberOfLines={1}>Place ID: {form.googlePlaceId}</Text>
+                </View>
+              ) : null}
             </View>
 
             <View style={styles.card}>
@@ -186,7 +233,9 @@ export default function PropertySection() {
               <DetailRow label="Street Address" value={property?.streetAddress} />
               <DetailRow label="City" value={property?.city} />
               <DetailRow label="State" value={property?.state} />
-              <DetailRow label="ZIP Code" value={property?.zipCode} last />
+              <DetailRow label="ZIP Code" value={property?.zipCode} />
+              <DetailRow label="Coordinates" value={coordsDisplay} />
+              <DetailRow label="Google Place ID" value={property?.googlePlaceId || undefined} last />
             </View>
 
             <View style={styles.card}>
@@ -212,13 +261,25 @@ export default function PropertySection() {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.light.backgroundCard,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    borderRadius: 4,
-    padding: 16,
+    borderWidth: 1, borderColor: Colors.light.border,
+    borderRadius: 4, padding: 16,
   },
   row: { flexDirection: "row", alignItems: "flex-end" },
+  geoRow: { flexDirection: "row", alignItems: "flex-end", marginTop: 0 },
   flex1: { flex: 1 },
   flex2: { flex: 2 },
   gap: { width: 8 },
+  fieldLabel: {
+    fontSize: 12, fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.text, marginBottom: 6, marginTop: 4,
+  },
+  placeIdRow: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    marginTop: 8, paddingTop: 8,
+    borderTopWidth: 1, borderTopColor: Colors.light.borderLight,
+  },
+  placeIdText: {
+    fontSize: 11, fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textSecondary, flex: 1,
+  },
 });

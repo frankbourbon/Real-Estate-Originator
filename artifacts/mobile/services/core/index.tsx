@@ -22,10 +22,27 @@ export const APPLICATION_STATUSES: ApplicationStatus[] = [
   "Final Credit Review", "Pre-close", "Ready for Docs", "Docs Drawn", "Docs Back", "Closing",
 ];
 
+/** A labeled contact entry — e.g. { label: "Work", value: "james@hartleycap.com" } */
+export type ContactMethod = {
+  label: string;
+  value: string;
+};
+
+/** A labeled mailing address */
+export type MailingAddress = {
+  label: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+};
+
 export type Borrower = {
   id: string; createdAt: string; updatedAt: string;
   firstName: string; lastName: string; entityName: string;
-  email: string; phone: string;
+  emails: ContactMethod[];
+  phones: ContactMethod[];
+  mailingAddresses: MailingAddress[];
   creExperienceYears: string; netWorthUsd: string; liquidityUsd: string;
   creditScore: string;
 };
@@ -33,6 +50,12 @@ export type Borrower = {
 export type Property = {
   id: string; createdAt: string; updatedAt: string;
   streetAddress: string; city: string; state: string; zipCode: string;
+  /** Latitude from Google Places geocode — stored as string for display convenience. */
+  latitude: string;
+  /** Longitude from Google Places geocode — stored as string for display convenience. */
+  longitude: string;
+  /** Google Places place_id for deep linking / map rendering. */
+  googlePlaceId: string;
   propertyType: PropertyType;
   grossSqFt: string; numberOfUnits: string; yearBuilt: string;
   physicalOccupancyPct: string; economicOccupancyPct: string;
@@ -76,22 +99,32 @@ function ds(y: number, m: number, day: number): string {
 }
 
 function emptyBorrower(): Omit<Borrower, "id" | "createdAt" | "updatedAt"> {
-  return { firstName: "", lastName: "", entityName: "", email: "", phone: "",
-    creExperienceYears: "", netWorthUsd: "", liquidityUsd: "", creditScore: "" };
+  return {
+    firstName: "", lastName: "", entityName: "",
+    emails: [], phones: [], mailingAddresses: [],
+    creExperienceYears: "", netWorthUsd: "", liquidityUsd: "", creditScore: "",
+  };
 }
 
 function emptyProperty(): Omit<Property, "id" | "createdAt" | "updatedAt"> {
-  return { streetAddress: "", city: "", state: "", zipCode: "",
+  return {
+    streetAddress: "", city: "", state: "", zipCode: "",
+    latitude: "", longitude: "", googlePlaceId: "",
     propertyType: "Office", grossSqFt: "", numberOfUnits: "", yearBuilt: "",
-    physicalOccupancyPct: "", economicOccupancyPct: "" };
+    physicalOccupancyPct: "", economicOccupancyPct: "",
+  };
 }
 
 function emptyApp(borrowerId: string, propertyId: string): Omit<LoanApplication, "id" | "createdAt" | "updatedAt"> {
-  return { status: "Inquiry", borrowerId, propertyId,
+  return {
+    status: "Inquiry", borrowerId, propertyId,
     loanType: "Acquisition", loanAmountUsd: "", loanTermYears: "",
     interestType: "Fixed", interestRatePct: "", amortizationType: "Full Amortizing",
-    ltvPct: "", dscrRatio: "", targetClosingDate: "" };
+    ltvPct: "", dscrRatio: "", targetClosingDate: "",
+  };
 }
+
+// ─── Migration helpers ─────────────────────────────────────────────────────────
 
 const LEGACY_STATUS: Record<string, ApplicationStatus> = {
   Draft: "Inquiry", Submitted: "Letter of Interest",
@@ -102,90 +135,151 @@ function migrateStatus(s: string): ApplicationStatus {
   return (LEGACY_STATUS[s] ?? s) as ApplicationStatus;
 }
 
+/** Migrates old single email/phone fields to the new arrays format. */
+function migrateBorrower(raw: any): Borrower {
+  const emails: ContactMethod[] = raw.emails
+    ?? (raw.email ? [{ label: "Primary", value: raw.email }] : []);
+  const phones: ContactMethod[] = raw.phones
+    ?? (raw.phone ? [{ label: "Primary", value: raw.phone }] : []);
+  const mailingAddresses: MailingAddress[] = raw.mailingAddresses ?? [];
+  return {
+    id: raw.id, createdAt: raw.createdAt, updatedAt: raw.updatedAt,
+    firstName: raw.firstName ?? "", lastName: raw.lastName ?? "",
+    entityName: raw.entityName ?? "",
+    emails, phones, mailingAddresses,
+    creExperienceYears: raw.creExperienceYears ?? "",
+    netWorthUsd: raw.netWorthUsd ?? "",
+    liquidityUsd: raw.liquidityUsd ?? "",
+    creditScore: raw.creditScore ?? "",
+  };
+}
+
+/** Fills in new geolocation fields if missing from older stored records. */
+function migrateProperty(raw: any): Property {
+  return {
+    ...emptyProperty(),
+    ...raw,
+    latitude: raw.latitude ?? "",
+    longitude: raw.longitude ?? "",
+    googlePlaceId: raw.googlePlaceId ?? "",
+  };
+}
+
 // ─── Seed Data ────────────────────────────────────────────────────────────────
 
 const SEED_BORROWERS: Borrower[] = [
   { id: "seed_b01", createdAt: d(2026,1,5), updatedAt: d(2026,2,10),
     firstName: "James", lastName: "Hartley", entityName: "Hartley Capital Partners LLC",
-    email: "j.hartley@hartleycap.com", phone: "(212) 555-0181",
+    emails: [{ label: "Work", value: "j.hartley@hartleycap.com" }],
+    phones: [{ label: "Office", value: "(212) 555-0181" }],
+    mailingAddresses: [{ label: "Office", street: "745 Fifth Avenue", city: "New York", state: "NY", zipCode: "10151" }],
     creExperienceYears: "18", netWorthUsd: "24,500,000", liquidityUsd: "4,200,000", creditScore: "748" },
   { id: "seed_b02", createdAt: d(2026,1,12), updatedAt: d(2026,2,15),
     firstName: "Maria", lastName: "Santos", entityName: "Santos Real Estate Group Inc",
-    email: "msantos@sreg.com", phone: "(213) 555-0247",
+    emails: [{ label: "Work", value: "msantos@sreg.com" }, { label: "Personal", value: "maria.santos@gmail.com" }],
+    phones: [{ label: "Mobile", value: "(213) 555-0247" }],
+    mailingAddresses: [{ label: "Office", street: "3780 Wilshire Blvd Suite 800", city: "Los Angeles", state: "CA", zipCode: "90010" }],
     creExperienceYears: "14", netWorthUsd: "18,000,000", liquidityUsd: "2,800,000", creditScore: "761" },
   { id: "seed_b03", createdAt: d(2026,1,20), updatedAt: d(2026,3,1),
     firstName: "David", lastName: "Chen", entityName: "Chen Properties LLC",
-    email: "dchen@chenproperties.com", phone: "(415) 555-0312",
+    emails: [{ label: "Work", value: "dchen@chenproperties.com" }],
+    phones: [{ label: "Direct", value: "(415) 555-0312" }, { label: "Mobile", value: "(415) 555-0313" }],
+    mailingAddresses: [
+      { label: "HQ", street: "101 California St Suite 2450", city: "San Francisco", state: "CA", zipCode: "94111" },
+      { label: "Home", street: "42 Pacific Heights Blvd", city: "San Francisco", state: "CA", zipCode: "94109" },
+    ],
     creExperienceYears: "22", netWorthUsd: "41,000,000", liquidityUsd: "7,500,000", creditScore: "782" },
   { id: "seed_b04", createdAt: d(2026,2,3), updatedAt: d(2026,3,8),
     firstName: "Rachel", lastName: "Kim", entityName: "Meridian Investments Group",
-    email: "rkim@meridian-inv.com", phone: "(312) 555-0499",
+    emails: [{ label: "Work", value: "rkim@meridian-inv.com" }],
+    phones: [{ label: "Office", value: "(312) 555-0499" }],
+    mailingAddresses: [{ label: "Office", street: "200 S Michigan Ave Ste 1200", city: "Chicago", state: "IL", zipCode: "60604" }],
     creExperienceYears: "11", netWorthUsd: "12,750,000", liquidityUsd: "1,900,000", creditScore: "733" },
   { id: "seed_b05", createdAt: d(2026,2,10), updatedAt: d(2026,3,5),
     firstName: "Thomas", lastName: "Brooks", entityName: "Brooks & Associates CRE",
-    email: "tbrooks@brooksassoc.com", phone: "(713) 555-0560",
+    emails: [{ label: "Work", value: "tbrooks@brooksassoc.com" }],
+    phones: [{ label: "Office", value: "(713) 555-0560" }],
+    mailingAddresses: [{ label: "Office", street: "1000 Main St Suite 2500", city: "Houston", state: "TX", zipCode: "77002" }],
     creExperienceYears: "9", netWorthUsd: "8,200,000", liquidityUsd: "1,100,000", creditScore: "719" },
   { id: "seed_b06", createdAt: d(2026,2,18), updatedAt: d(2026,3,12),
     firstName: "Sarah", lastName: "Mitchell", entityName: "Mitchell Commercial Real Estate LLC",
-    email: "smitchell@mitchellcre.com", phone: "(305) 555-0623",
+    emails: [{ label: "Work", value: "smitchell@mitchellcre.com" }, { label: "Investor", value: "sarah@mitchellcre.com" }],
+    phones: [{ label: "Office", value: "(305) 555-0623" }, { label: "Mobile", value: "(305) 555-0624" }],
+    mailingAddresses: [{ label: "Office", street: "200 SE 1st Street Suite 700", city: "Miami", state: "FL", zipCode: "33131" }],
     creExperienceYears: "16", netWorthUsd: "31,000,000", liquidityUsd: "5,400,000", creditScore: "769" },
   { id: "seed_b07", createdAt: d(2026,1,28), updatedAt: d(2026,3,15),
     firstName: "Robert", lastName: "Nguyen", entityName: "Pacific Coast Holdings Corp",
-    email: "rnguyen@paccoasthold.com", phone: "(949) 555-0778",
+    emails: [{ label: "Work", value: "rnguyen@paccoasthold.com" }],
+    phones: [{ label: "Direct", value: "(949) 555-0778" }],
+    mailingAddresses: [{ label: "Corporate", street: "18300 Von Karman Ave Suite 900", city: "Irvine", state: "CA", zipCode: "92612" }],
     creExperienceYears: "20", netWorthUsd: "55,000,000", liquidityUsd: "9,100,000", creditScore: "795" },
   { id: "seed_b08", createdAt: d(2026,3,2), updatedAt: d(2026,3,20),
     firstName: "Evelyn", lastName: "Carter", entityName: "Carter Development Corporation",
-    email: "ecarter@carterdevelopment.com", phone: "(512) 555-0834",
+    emails: [{ label: "Work", value: "ecarter@carterdevelopment.com" }],
+    phones: [{ label: "Mobile", value: "(512) 555-0834" }],
+    mailingAddresses: [],
     creExperienceYears: "7", netWorthUsd: "6,500,000", liquidityUsd: "900,000", creditScore: "" },
 ];
 
 const SEED_PROPERTIES: Property[] = [
   { id: "seed_p01", createdAt: d(2026,1,5), updatedAt: d(2026,2,10),
     streetAddress: "1200 Market Street", city: "Philadelphia", state: "PA", zipCode: "19107",
+    latitude: "39.9526", longitude: "-75.1652", googlePlaceId: "ChIJVVVVVVVVVVMR0af4yL9QDCA",
     propertyType: "Office", grossSqFt: "124,000", numberOfUnits: "", yearBuilt: "2004",
     physicalOccupancyPct: "88", economicOccupancyPct: "85" },
   { id: "seed_p02", createdAt: d(2026,1,12), updatedAt: d(2026,2,15),
     streetAddress: "850 Fifth Avenue", city: "New York", state: "NY", zipCode: "10065",
+    latitude: "40.7651", longitude: "-73.9713", googlePlaceId: "",
     propertyType: "Retail", grossSqFt: "36,500", numberOfUnits: "12", yearBuilt: "1998",
     physicalOccupancyPct: "92", economicOccupancyPct: "89" },
   { id: "seed_p03", createdAt: d(2026,1,20), updatedAt: d(2026,3,1),
     streetAddress: "4400 Industrial Boulevard", city: "Atlanta", state: "GA", zipCode: "30336",
+    latitude: "33.7490", longitude: "-84.3880", googlePlaceId: "",
     propertyType: "Industrial", grossSqFt: "312,000", numberOfUnits: "", yearBuilt: "2011",
     physicalOccupancyPct: "95", economicOccupancyPct: "94" },
   { id: "seed_p04", createdAt: d(2026,2,3), updatedAt: d(2026,3,8),
     streetAddress: "2800 Wilshire Boulevard", city: "Los Angeles", state: "CA", zipCode: "90057",
+    latitude: "34.0584", longitude: "-118.2782", googlePlaceId: "",
     propertyType: "Multifamily", grossSqFt: "98,400", numberOfUnits: "120", yearBuilt: "2016",
     physicalOccupancyPct: "96", economicOccupancyPct: "93" },
   { id: "seed_p05", createdAt: d(2026,2,10), updatedAt: d(2026,3,5),
     streetAddress: "330 North Michigan Avenue", city: "Chicago", state: "IL", zipCode: "60601",
+    latitude: "41.8858", longitude: "-87.6245", googlePlaceId: "",
     propertyType: "Mixed Use", grossSqFt: "78,200", numberOfUnits: "48", yearBuilt: "2008",
     physicalOccupancyPct: "91", economicOccupancyPct: "88" },
   { id: "seed_p06", createdAt: d(2026,2,18), updatedAt: d(2026,3,12),
     streetAddress: "600 Congress Avenue", city: "Austin", state: "TX", zipCode: "78701",
+    latitude: "30.2672", longitude: "-97.7431", googlePlaceId: "",
     propertyType: "Office", grossSqFt: "55,000", numberOfUnits: "", yearBuilt: "2019",
     physicalOccupancyPct: "82", economicOccupancyPct: "80" },
   { id: "seed_p07", createdAt: d(2026,1,28), updatedAt: d(2026,3,15),
     streetAddress: "1500 Brickell Avenue", city: "Miami", state: "FL", zipCode: "33131",
+    latitude: "25.7617", longitude: "-80.1918", googlePlaceId: "",
     propertyType: "Hotel", grossSqFt: "145,000", numberOfUnits: "218", yearBuilt: "2014",
     physicalOccupancyPct: "79", economicOccupancyPct: "74" },
   { id: "seed_p08", createdAt: d(2026,2,5), updatedAt: d(2026,3,10),
     streetAddress: "3200 Peachtree Road NE", city: "Atlanta", state: "GA", zipCode: "30305",
+    latitude: "33.8490", longitude: "-84.3773", googlePlaceId: "",
     propertyType: "Multifamily", grossSqFt: "182,000", numberOfUnits: "224", yearBuilt: "2018",
     physicalOccupancyPct: "97", economicOccupancyPct: "95" },
   { id: "seed_p09", createdAt: d(2026,2,22), updatedAt: d(2026,3,18),
     streetAddress: "900 North Michigan Avenue", city: "Chicago", state: "IL", zipCode: "60611",
+    latitude: "41.8977", longitude: "-87.6243", googlePlaceId: "",
     propertyType: "Retail", grossSqFt: "44,600", numberOfUnits: "8", yearBuilt: "2001",
     physicalOccupancyPct: "100", economicOccupancyPct: "97" },
   { id: "seed_p10", createdAt: d(2026,1,15), updatedAt: d(2026,3,20),
     streetAddress: "555 California Street", city: "San Francisco", state: "CA", zipCode: "94104",
+    latitude: "37.7925", longitude: "-122.4052", googlePlaceId: "",
     propertyType: "Office", grossSqFt: "208,000", numberOfUnits: "", yearBuilt: "2007",
     physicalOccupancyPct: "86", economicOccupancyPct: "83" },
   { id: "seed_p11", createdAt: d(2026,3,1), updatedAt: d(2026,3,18),
     streetAddress: "7800 Airport Boulevard", city: "Houston", state: "TX", zipCode: "77061",
+    latitude: "29.6454", longitude: "-95.2789", googlePlaceId: "",
     propertyType: "Industrial", grossSqFt: "425,000", numberOfUnits: "", yearBuilt: "2015",
     physicalOccupancyPct: "100", economicOccupancyPct: "100" },
   { id: "seed_p12", createdAt: d(2026,3,8), updatedAt: d(2026,3,20),
     streetAddress: "2100 East Camelback Road", city: "Phoenix", state: "AZ", zipCode: "85016",
+    latitude: "33.5104", longitude: "-112.0198", googlePlaceId: "",
     propertyType: "Self Storage", grossSqFt: "62,000", numberOfUnits: "480", yearBuilt: "2020",
     physicalOccupancyPct: "88", economicOccupancyPct: "86" },
 ];
@@ -275,8 +369,8 @@ const [CoreServiceProvider, useCoreService] = createContextHook(() => {
           status: migrateStatus(a.status),
         })));
       }
-      if (bors) setBorrowers(JSON.parse(bors));
-      if (props) setProperties(JSON.parse(props));
+      if (bors) setBorrowers((JSON.parse(bors) as any[]).map(migrateBorrower));
+      if (props) setProperties((JSON.parse(props) as any[]).map(migrateProperty));
       setLoading(false);
     });
   }, []);

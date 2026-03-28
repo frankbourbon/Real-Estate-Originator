@@ -4,8 +4,10 @@ import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -15,8 +17,11 @@ import { FormField } from "@/components/FormField";
 import { SectionHeader } from "@/components/SectionHeader";
 import { SectionScreenLayout } from "@/components/SectionScreenLayout";
 import Colors from "@/constants/colors";
+import type { ContactMethod, MailingAddress } from "@/services/core";
 import { useCoreService } from "@/services/core";
 import { formatCurrencyFull, getBorrowerDisplayName } from "@/utils/formatting";
+
+// ─── Header buttons ───────────────────────────────────────────────────────────
 
 function EditBtn({ onPress }: { onPress: () => void }) {
   return (
@@ -60,6 +65,203 @@ const hdr = StyleSheet.create({
   saveText: { fontSize: 12, fontFamily: "OpenSans_700Bold", color: "#fff" },
 });
 
+// ─── Editable contact list ────────────────────────────────────────────────────
+
+function ContactList({
+  items,
+  onChange,
+  valuePlaceholder,
+  keyboardType,
+  autoCapitalize,
+}: {
+  items: ContactMethod[];
+  onChange: (items: ContactMethod[]) => void;
+  valuePlaceholder: string;
+  keyboardType?: any;
+  autoCapitalize?: any;
+}) {
+  const add = () => onChange([...items, { label: "Primary", value: "" }]);
+  const remove = (i: number) => onChange(items.filter((_, idx) => idx !== i));
+  const update = (i: number, field: keyof ContactMethod, val: string) =>
+    onChange(items.map((item, idx) => idx === i ? { ...item, [field]: val } : item));
+
+  return (
+    <View style={cl.wrap}>
+      {items.map((item, i) => (
+        <View key={i} style={cl.row}>
+          <View style={cl.labelBox}>
+            <TextInput
+              style={cl.labelInput}
+              value={item.label}
+              onChangeText={(v) => update(i, "label", v)}
+              placeholder="Label"
+              placeholderTextColor={Colors.light.textTertiary}
+            />
+          </View>
+          <View style={cl.valueBox}>
+            <TextInput
+              style={cl.valueInput}
+              value={item.value}
+              onChangeText={(v) => update(i, "value", v)}
+              placeholder={valuePlaceholder}
+              placeholderTextColor={Colors.light.textTertiary}
+              keyboardType={keyboardType}
+              autoCapitalize={autoCapitalize ?? "none"}
+              autoCorrect={false}
+            />
+          </View>
+          <TouchableOpacity style={cl.removeBtn} onPress={() => remove(i)} activeOpacity={0.7}>
+            <Feather name="x" size={14} color={Colors.light.textTertiary} />
+          </TouchableOpacity>
+        </View>
+      ))}
+      <TouchableOpacity style={cl.addBtn} onPress={add} activeOpacity={0.7}>
+        <Feather name="plus" size={13} color={Colors.light.tint} />
+        <Text style={cl.addText}>Add</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const cl = StyleSheet.create({
+  wrap: { gap: 8 },
+  row: { flexDirection: "row", alignItems: "center", gap: 8 },
+  labelBox: { width: 80 },
+  valueBox: { flex: 1 },
+  labelInput: {
+    backgroundColor: Colors.light.background, borderWidth: 1,
+    borderColor: Colors.light.border, borderRadius: 4,
+    paddingHorizontal: 8, paddingVertical: 8,
+    fontSize: 12, fontFamily: "OpenSans_600SemiBold", color: Colors.light.textSecondary,
+  },
+  valueInput: {
+    backgroundColor: Colors.light.background, borderWidth: 1,
+    borderColor: Colors.light.border, borderRadius: 4,
+    paddingHorizontal: 10, paddingVertical: 8,
+    fontSize: 13, fontFamily: "OpenSans_400Regular", color: Colors.light.text,
+  },
+  removeBtn: {
+    width: 28, height: 28, alignItems: "center", justifyContent: "center",
+    borderRadius: 4, backgroundColor: Colors.light.background,
+    borderWidth: 1, borderColor: Colors.light.border,
+  },
+  addBtn: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    paddingVertical: 6, paddingHorizontal: 2,
+  },
+  addText: { fontSize: 12, fontFamily: "OpenSans_600SemiBold", color: Colors.light.tint },
+});
+
+// ─── Editable mailing address list ───────────────────────────────────────────
+
+function MailingAddressList({
+  items,
+  onChange,
+}: {
+  items: MailingAddress[];
+  onChange: (items: MailingAddress[]) => void;
+}) {
+  const add = () => onChange([...items, { label: "Primary", street: "", city: "", state: "", zipCode: "" }]);
+  const remove = (i: number) => onChange(items.filter((_, idx) => idx !== i));
+  const update = (i: number, field: keyof MailingAddress, val: string) =>
+    onChange(items.map((item, idx) => idx === i ? { ...item, [field]: val } : item));
+
+  return (
+    <View style={ma.wrap}>
+      {items.map((addr, i) => (
+        <View key={i} style={ma.card}>
+          <View style={ma.cardHeader}>
+            <TextInput
+              style={ma.labelInput}
+              value={addr.label}
+              onChangeText={(v) => update(i, "label", v)}
+              placeholder="Label (e.g. Office)"
+              placeholderTextColor={Colors.light.textTertiary}
+            />
+            <TouchableOpacity style={ma.removeBtn} onPress={() => remove(i)} activeOpacity={0.7}>
+              <Feather name="trash-2" size={13} color={Colors.light.textTertiary} />
+            </TouchableOpacity>
+          </View>
+          <TextInput
+            style={ma.streetInput}
+            value={addr.street}
+            onChangeText={(v) => update(i, "street", v)}
+            placeholder="Street address"
+            placeholderTextColor={Colors.light.textTertiary}
+            autoCapitalize="words"
+          />
+          <View style={ma.row}>
+            <TextInput
+              style={[ma.input, { flex: 2 }]}
+              value={addr.city}
+              onChangeText={(v) => update(i, "city", v)}
+              placeholder="City"
+              placeholderTextColor={Colors.light.textTertiary}
+              autoCapitalize="words"
+            />
+            <TextInput
+              style={[ma.input, { width: 48 }]}
+              value={addr.state}
+              onChangeText={(v) => update(i, "state", v.toUpperCase())}
+              placeholder="ST"
+              placeholderTextColor={Colors.light.textTertiary}
+              maxLength={2}
+              autoCapitalize="characters"
+            />
+            <TextInput
+              style={[ma.input, { width: 72 }]}
+              value={addr.zipCode}
+              onChangeText={(v) => update(i, "zipCode", v)}
+              placeholder="ZIP"
+              placeholderTextColor={Colors.light.textTertiary}
+              keyboardType="number-pad"
+              maxLength={5}
+            />
+          </View>
+        </View>
+      ))}
+      <TouchableOpacity style={cl.addBtn} onPress={add} activeOpacity={0.7}>
+        <Feather name="plus" size={13} color={Colors.light.tint} />
+        <Text style={cl.addText}>Add Address</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const ma = StyleSheet.create({
+  wrap: { gap: 10 },
+  card: {
+    backgroundColor: Colors.light.background,
+    borderWidth: 1, borderColor: Colors.light.border,
+    borderRadius: 4, padding: 10, gap: 8,
+  },
+  cardHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  labelInput: {
+    flex: 1, borderWidth: 1, borderColor: Colors.light.border, borderRadius: 4,
+    paddingHorizontal: 8, paddingVertical: 6,
+    fontSize: 12, fontFamily: "OpenSans_700Bold", color: Colors.light.tint,
+    backgroundColor: Colors.light.backgroundCard,
+  },
+  removeBtn: {
+    width: 28, height: 28, alignItems: "center", justifyContent: "center",
+  },
+  streetInput: {
+    borderWidth: 1, borderColor: Colors.light.border, borderRadius: 4,
+    paddingHorizontal: 10, paddingVertical: 8,
+    fontSize: 13, fontFamily: "OpenSans_400Regular", color: Colors.light.text,
+    backgroundColor: Colors.light.backgroundCard,
+  },
+  row: { flexDirection: "row", gap: 8 },
+  input: {
+    borderWidth: 1, borderColor: Colors.light.border, borderRadius: 4,
+    paddingHorizontal: 8, paddingVertical: 8,
+    fontSize: 13, fontFamily: "OpenSans_400Regular", color: Colors.light.text,
+    backgroundColor: Colors.light.backgroundCard,
+  },
+});
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
+
 export default function BorrowerSection() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication, getBorrower, updateBorrower } = useCoreService();
@@ -71,12 +273,13 @@ export default function BorrowerSection() {
     firstName: borrower?.firstName ?? "",
     lastName: borrower?.lastName ?? "",
     entityName: borrower?.entityName ?? "",
-    email: borrower?.email ?? "",
-    phone: borrower?.phone ?? "",
-    creExperienceYears: borrower?.creExperienceYears != null ? String(borrower.creExperienceYears) : "",
-    netWorthUsd: borrower?.netWorthUsd != null ? String(borrower.netWorthUsd) : "",
-    liquidityUsd: borrower?.liquidityUsd != null ? String(borrower.liquidityUsd) : "",
-    creditScore: borrower?.creditScore != null ? String(borrower.creditScore) : "",
+    emails: borrower?.emails ?? [],
+    phones: borrower?.phones ?? [],
+    mailingAddresses: borrower?.mailingAddresses ?? [],
+    creExperienceYears: borrower?.creExperienceYears ?? "",
+    netWorthUsd: borrower?.netWorthUsd ?? "",
+    liquidityUsd: borrower?.liquidityUsd ?? "",
+    creditScore: borrower?.creditScore ?? "",
   });
 
   const set = (key: string) => (val: string) => setForm((f) => ({ ...f, [key]: val }));
@@ -86,12 +289,13 @@ export default function BorrowerSection() {
       firstName: borrower?.firstName ?? "",
       lastName: borrower?.lastName ?? "",
       entityName: borrower?.entityName ?? "",
-      email: borrower?.email ?? "",
-      phone: borrower?.phone ?? "",
-      creExperienceYears: borrower?.creExperienceYears != null ? String(borrower.creExperienceYears) : "",
-      netWorthUsd: borrower?.netWorthUsd != null ? String(borrower.netWorthUsd) : "",
-      liquidityUsd: borrower?.liquidityUsd != null ? String(borrower.liquidityUsd) : "",
-      creditScore: borrower?.creditScore != null ? String(borrower.creditScore) : "",
+      emails: borrower?.emails ?? [],
+      phones: borrower?.phones ?? [],
+      mailingAddresses: borrower?.mailingAddresses ?? [],
+      creExperienceYears: borrower?.creExperienceYears ?? "",
+      netWorthUsd: borrower?.netWorthUsd ?? "",
+      liquidityUsd: borrower?.liquidityUsd ?? "",
+      creditScore: borrower?.creditScore ?? "",
     });
     setEditing(true);
   };
@@ -102,12 +306,13 @@ export default function BorrowerSection() {
       firstName: form.firstName || undefined,
       lastName: form.lastName || undefined,
       entityName: form.entityName || undefined,
-      email: form.email || undefined,
-      phone: form.phone || undefined,
-      creExperienceYears: form.creExperienceYears ? Number(form.creExperienceYears) : undefined,
-      netWorthUsd: form.netWorthUsd ? Number(form.netWorthUsd) : undefined,
-      liquidityUsd: form.liquidityUsd ? Number(form.liquidityUsd) : undefined,
-      creditScore: form.creditScore ? Number(form.creditScore) : undefined,
+      emails: form.emails,
+      phones: form.phones,
+      mailingAddresses: form.mailingAddresses,
+      creExperienceYears: form.creExperienceYears || undefined,
+      netWorthUsd: form.netWorthUsd || undefined,
+      liquidityUsd: form.liquidityUsd || undefined,
+      creditScore: form.creditScore || undefined,
     });
     setEditing(false);
   };
@@ -145,9 +350,31 @@ export default function BorrowerSection() {
             </View>
 
             <View style={styles.card}>
-              <SectionHeader title="Contact" />
-              <FormField label="Email Address" value={form.email} onChangeText={set("email")} placeholder="john@company.com" keyboardType="email-address" autoCapitalize="none" />
-              <FormField label="Phone Number" value={form.phone} onChangeText={set("phone")} placeholder="(312) 555-0100" keyboardType="phone-pad" />
+              <SectionHeader title="Email Addresses" />
+              <ContactList
+                items={form.emails}
+                onChange={(v) => setForm((f) => ({ ...f, emails: v }))}
+                valuePlaceholder="email@company.com"
+                keyboardType="email-address"
+              />
+            </View>
+
+            <View style={styles.card}>
+              <SectionHeader title="Phone Numbers" />
+              <ContactList
+                items={form.phones}
+                onChange={(v) => setForm((f) => ({ ...f, phones: v }))}
+                valuePlaceholder="(312) 555-0100"
+                keyboardType="phone-pad"
+              />
+            </View>
+
+            <View style={styles.card}>
+              <SectionHeader title="Mailing Addresses" />
+              <MailingAddressList
+                items={form.mailingAddresses}
+                onChange={(v) => setForm((f) => ({ ...f, mailingAddresses: v }))}
+              />
             </View>
 
             <View style={styles.card}>
@@ -175,9 +402,53 @@ export default function BorrowerSection() {
             </View>
 
             <View style={styles.card}>
-              <SectionHeader title="Contact" />
-              <DetailRow label="Email" value={borrower?.email} />
-              <DetailRow label="Phone" value={borrower?.phone} last />
+              <SectionHeader title="Email Addresses" />
+              {borrower?.emails?.length ? (
+                borrower.emails.map((e, i) => (
+                  <DetailRow
+                    key={i}
+                    label={e.label}
+                    value={e.value}
+                    last={i === (borrower.emails?.length ?? 0) - 1}
+                  />
+                ))
+              ) : (
+                <DetailRow label="Email" value={undefined} last />
+              )}
+            </View>
+
+            <View style={styles.card}>
+              <SectionHeader title="Phone Numbers" />
+              {borrower?.phones?.length ? (
+                borrower.phones.map((p, i) => (
+                  <DetailRow
+                    key={i}
+                    label={p.label}
+                    value={p.value}
+                    last={i === (borrower.phones?.length ?? 0) - 1}
+                  />
+                ))
+              ) : (
+                <DetailRow label="Phone" value={undefined} last />
+              )}
+            </View>
+
+            <View style={styles.card}>
+              <SectionHeader title="Mailing Addresses" />
+              {borrower?.mailingAddresses?.length ? (
+                borrower.mailingAddresses.map((addr, i) => (
+                  <View key={i} style={[
+                    styles.addrBlock,
+                    i < (borrower.mailingAddresses?.length ?? 0) - 1 && styles.addrBorder,
+                  ]}>
+                    <Text style={styles.addrLabel}>{addr.label}</Text>
+                    <Text style={styles.addrLine}>{addr.street}</Text>
+                    <Text style={styles.addrLine}>{[addr.city, addr.state, addr.zipCode].filter(Boolean).join(", ")}</Text>
+                  </View>
+                ))
+              ) : (
+                <DetailRow label="Mailing Address" value={undefined} last />
+              )}
             </View>
 
             <View style={styles.card}>
@@ -197,12 +468,21 @@ export default function BorrowerSection() {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.light.backgroundCard,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    borderRadius: 4,
-    padding: 16,
+    borderWidth: 1, borderColor: Colors.light.border,
+    borderRadius: 4, padding: 16,
   },
   row: { flexDirection: "row", alignItems: "flex-end" },
   flex1: { flex: 1 },
   gap: { width: 8 },
+  addrBlock: { paddingVertical: 8 },
+  addrBorder: { borderBottomWidth: 1, borderBottomColor: Colors.light.borderLight },
+  addrLabel: {
+    fontSize: 11, fontFamily: "OpenSans_700Bold",
+    color: Colors.light.tint, textTransform: "uppercase",
+    letterSpacing: 0.4, marginBottom: 3,
+  },
+  addrLine: {
+    fontSize: 13, fontFamily: "OpenSans_400Regular",
+    color: Colors.light.text, lineHeight: 19,
+  },
 });

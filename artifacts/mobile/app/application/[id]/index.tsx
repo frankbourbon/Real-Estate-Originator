@@ -238,9 +238,9 @@ function buildGroups(
   ];
 }
 
-// ─── Phase info card ──────────────────────────────────────────────────────────
+// ─── Phase timeline — all 10 phases always visible ────────────────────────────
 
-function PhaseCard({
+function PhaseTimeline({
   status,
   onAdvance,
   onRetreat,
@@ -251,176 +251,261 @@ function PhaseCard({
   onRetreat: () => void;
   onSeeAllTasks: () => void;
 }) {
-  const info = PHASE_INFO[status];
   const currentIdx = PHASE_ORDER.indexOf(status);
-  const hasPrev = currentIdx > 0;
-  const hasNext = currentIdx < PHASE_ORDER.length - 1;
-  const nextStatus = hasNext ? PHASE_ORDER[currentIdx + 1] : null;
 
   return (
-    <View style={[pc.card, { borderLeftColor: info.color }]}>
-      {/* Phase number / progress */}
-      <View style={pc.topRow}>
-        <View style={pc.phaseNumBadge}>
-          <Text style={[pc.phaseNumText, { color: info.color }]}>
-            Phase {info.phase} of {PHASE_ORDER.length}
-          </Text>
-        </View>
-        <View style={[pc.personaBadge, { backgroundColor: info.bg }]}>
-          <Feather name={info.personaIcon as any} size={11} color={info.color} />
-          <Text style={[pc.personaText, { color: info.color }]}>{info.persona}</Text>
-        </View>
-      </View>
+    <View style={pt.card}>
+      {PHASE_ORDER.map((phase, idx) => {
+        const info = PHASE_INFO[phase];
+        const isDone = idx < currentIdx;
+        const isCurrent = idx === currentIdx;
+        const isFuture = idx > currentIdx;
+        const isLast = idx === PHASE_ORDER.length - 1;
+        const hasPrev = currentIdx > 0;
+        const hasNext = currentIdx < PHASE_ORDER.length - 1;
+        const nextStatus = hasNext ? PHASE_ORDER[currentIdx + 1] : null;
 
-      {/* Progress bar */}
-      <View style={pc.progressTrack}>
-        <View
-          style={[
-            pc.progressFill,
-            { backgroundColor: info.color, width: `${(info.phase / PHASE_ORDER.length) * 100}%` },
-          ]}
-        />
-      </View>
+        return (
+          <View key={phase} style={pt.row}>
+            {/* ── Left rail: connector + indicator ── */}
+            <View style={pt.rail}>
+              {/* Top connector line */}
+              {idx > 0 && (
+                <View style={[pt.line, pt.lineTop, isDone || isCurrent ? { backgroundColor: info.color } : {}]} />
+              )}
 
-      {/* Description */}
-      <Text style={pc.desc}>{info.description}</Text>
+              {/* Circle indicator */}
+              {isDone ? (
+                <View style={[pt.circle, { backgroundColor: info.color, borderColor: info.color }]}>
+                  <Feather name="check" size={10} color="#fff" />
+                </View>
+              ) : isCurrent ? (
+                <View style={[pt.circle, pt.circleCurrent, { borderColor: info.color, backgroundColor: info.bg }]}>
+                  <View style={[pt.circleDot, { backgroundColor: info.color }]} />
+                </View>
+              ) : (
+                <View style={[pt.circle, pt.circleFuture, { borderColor: Colors.light.border }]} />
+              )}
 
-      {/* Checklist preview — first 3 items */}
-      <View style={pc.checklist}>
-        {info.checklist.slice(0, 3).map((item, i) => (
-          <View key={i} style={pc.checkItem}>
-            <View style={[pc.checkDot, { backgroundColor: info.color + "40" }]}>
-              <Feather name="check" size={9} color={info.color} />
+              {/* Bottom connector line */}
+              {!isLast && (
+                <View style={[pt.line, pt.lineBottom, isDone ? { backgroundColor: info.color + "80" } : {}]} />
+              )}
             </View>
-            <Text style={pc.checkText}>{item}</Text>
+
+            {/* ── Content ── */}
+            <View style={[pt.content, !isLast && pt.contentBorder, isCurrent && { borderBottomColor: "transparent" }]}>
+              {/* Phase row header */}
+              <View style={pt.phaseHeader}>
+                <Text style={[pt.phaseNum, isFuture && pt.muted]}>
+                  {String(info.phase).padStart(2, "0")}
+                </Text>
+                <Text style={[pt.phaseName, isFuture && pt.muted, isCurrent && { color: info.color, fontFamily: "OpenSans_700Bold" }]}>
+                  {phase}
+                </Text>
+                <View style={[pt.personaBadge, { backgroundColor: isFuture ? Colors.light.border + "40" : info.bg }]}>
+                  <Feather name={info.personaIcon as any} size={10} color={isFuture ? Colors.light.textTertiary : info.color} />
+                  <Text style={[pt.personaText, { color: isFuture ? Colors.light.textTertiary : info.color }]}>
+                    {info.persona}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Expanded body for current phase only */}
+              {isCurrent && (
+                <View style={pt.expanded}>
+                  {/* Description */}
+                  <Text style={pt.desc}>{info.description}</Text>
+
+                  {/* Checklist preview */}
+                  <View style={pt.checklist}>
+                    {info.checklist.slice(0, 3).map((item, i) => (
+                      <View key={i} style={pt.checkItem}>
+                        <View style={[pt.checkDot, { backgroundColor: info.color + "30" }]}>
+                          <Feather name="check" size={9} color={info.color} />
+                        </View>
+                        <Text style={pt.checkText}>{item}</Text>
+                      </View>
+                    ))}
+                    <TouchableOpacity onPress={onSeeAllTasks} activeOpacity={0.7}>
+                      <Text style={[pt.moreLink, { color: info.color }]}>
+                        {info.checklist.length > 3
+                          ? `+${info.checklist.length - 3} more — view full checklist →`
+                          : "View full checklist →"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Regulatory note */}
+                  {info.notes ? (
+                    <View style={pt.noteRow}>
+                      <Feather name="alert-triangle" size={11} color="#D4780A" />
+                      <Text style={pt.noteText}>{info.notes}</Text>
+                    </View>
+                  ) : null}
+
+                  {/* Advance / Retreat */}
+                  <View style={pt.navRow}>
+                    <TouchableOpacity
+                      style={[pt.retreatBtn, !hasPrev && pt.btnDisabled]}
+                      onPress={onRetreat}
+                      disabled={!hasPrev}
+                      activeOpacity={0.7}
+                    >
+                      <Feather name="chevron-left" size={13} color={hasPrev ? info.color : Colors.light.textTertiary} />
+                      <Text style={[pt.retreatText, !hasPrev && { color: Colors.light.textTertiary }]}>Previous</Text>
+                    </TouchableOpacity>
+
+                    {nextStatus ? (
+                      <TouchableOpacity style={[pt.advanceBtn, { backgroundColor: info.color }]} onPress={onAdvance} activeOpacity={0.8}>
+                        <Text style={pt.advanceBtnText}>Advance to {nextStatus}</Text>
+                        <Feather name="chevron-right" size={13} color="#fff" />
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={[pt.advanceBtn, { backgroundColor: "#005C3C" }]}>
+                        <Feather name="check" size={13} color="#fff" />
+                        <Text style={pt.advanceBtnText}>Loan Closed</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
+            </View>
           </View>
-        ))}
-        {info.checklist.length > 3 ? (
-          <TouchableOpacity onPress={onSeeAllTasks} activeOpacity={0.7}>
-            <Text style={[pc.moreItems, { color: info.color }]}>
-              +{info.checklist.length - 3} more — view full checklist →
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity onPress={onSeeAllTasks} activeOpacity={0.7}>
-            <Text style={[pc.moreItems, { color: info.color }]}>View full checklist →</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Regulatory note */}
-      {info.notes ? (
-        <View style={pc.noteRow}>
-          <Feather name="alert-triangle" size={11} color="#D4780A" />
-          <Text style={pc.noteText}>{info.notes}</Text>
-        </View>
-      ) : null}
-
-      {/* Advance / Retreat */}
-      <View style={pc.navRow}>
-        <TouchableOpacity
-          style={[pc.navBtn, !hasPrev && pc.navBtnDisabled]}
-          onPress={onRetreat}
-          disabled={!hasPrev}
-          activeOpacity={0.7}
-        >
-          <Feather name="chevron-left" size={14} color={hasPrev ? info.color : Colors.light.textTertiary} />
-          <Text style={[pc.navBtnText, !hasPrev && pc.navBtnTextDisabled]}>Previous</Text>
-        </TouchableOpacity>
-
-        {nextStatus ? (
-          <TouchableOpacity style={[pc.advanceBtn, { backgroundColor: info.color }]} onPress={onAdvance} activeOpacity={0.8}>
-            <Text style={pc.advanceBtnText}>Advance to {nextStatus}</Text>
-            <Feather name="chevron-right" size={14} color="#fff" />
-          </TouchableOpacity>
-        ) : (
-          <View style={[pc.advanceBtn, { backgroundColor: "#005C3C" }]}>
-            <Feather name="check" size={14} color="#fff" />
-            <Text style={pc.advanceBtnText}>Loan Closed</Text>
-          </View>
-        )}
-      </View>
+        );
+      })}
     </View>
   );
 }
 
-const pc = StyleSheet.create({
+const RAIL_W = 36;
+const CIRCLE_SIZE = 20;
+
+const pt = StyleSheet.create({
   card: {
     backgroundColor: Colors.light.backgroundCard,
     borderWidth: 1,
     borderColor: Colors.light.border,
-    borderLeftWidth: 4,
     borderRadius: 4,
-    padding: 16,
+    overflow: "hidden",
     marginBottom: 16,
-    gap: 10,
   },
-  topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  phaseNumBadge: {},
-  phaseNumText: { fontSize: 11, fontFamily: "OpenSans_700Bold", letterSpacing: 0.3 },
+  row: {
+    flexDirection: "row",
+  },
+  rail: {
+    width: RAIL_W,
+    alignItems: "center",
+    position: "relative",
+  },
+  line: {
+    width: 2,
+    flex: 1,
+    backgroundColor: Colors.light.border,
+  },
+  lineTop: {},
+  lineBottom: {},
+  circle: {
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.light.backgroundCard,
+    zIndex: 1,
+  },
+  circleCurrent: {
+    borderWidth: 2,
+  },
+  circleFuture: {
+    backgroundColor: Colors.light.background,
+  },
+  circleDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  content: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingRight: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.borderLight,
+  },
+  contentBorder: {},
+  phaseHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  phaseNum: {
+    fontSize: 10,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.textTertiary,
+    letterSpacing: 0.3,
+    width: 18,
+  },
+  phaseName: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.text,
+  },
+  muted: { color: Colors.light.textTertiary, fontFamily: "OpenSans_400Regular" },
   personaBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
   },
-  personaText: { fontSize: 11, fontFamily: "OpenSans_700Bold" },
-  progressTrack: {
-    height: 4,
-    backgroundColor: Colors.light.border,
-    borderRadius: 2,
-    overflow: "hidden",
+  personaText: {
+    fontSize: 10,
+    fontFamily: "OpenSans_700Bold",
   },
-  progressFill: { height: 4, borderRadius: 2 },
+  expanded: {
+    marginTop: 8,
+    gap: 8,
+  },
   desc: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "OpenSans_400Regular",
     color: Colors.light.textSecondary,
-    lineHeight: 19,
+    lineHeight: 18,
   },
   checklist: { gap: 5 },
   checkItem: { flexDirection: "row", alignItems: "center", gap: 7 },
   checkDot: {
-    width: 16,
-    height: 16,
+    width: 15,
+    height: 15,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
   checkText: { fontSize: 12, fontFamily: "OpenSans_400Regular", color: Colors.light.text, flex: 1 },
-  moreItems: { fontSize: 11, fontFamily: "OpenSans_600SemiBold", marginLeft: 23 },
+  moreLink: { fontSize: 11, fontFamily: "OpenSans_600SemiBold", marginLeft: 22 },
   noteRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 6,
+    gap: 5,
     backgroundColor: "#FFF4E5",
     padding: 8,
     borderRadius: 4,
   },
   noteText: { fontSize: 11, fontFamily: "OpenSans_400Regular", color: "#7B4400", flex: 1, lineHeight: 16 },
-  navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 4 },
-  navBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
+  navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 2 },
+  retreatBtn: {
+    flexDirection: "row", alignItems: "center", gap: 3,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4,
+    borderWidth: 1, borderColor: Colors.light.border,
   },
-  navBtnDisabled: { opacity: 0.4 },
-  navBtnText: { fontSize: 12, fontFamily: "OpenSans_600SemiBold", color: Colors.light.text },
-  navBtnTextDisabled: { color: Colors.light.textTertiary },
+  retreatText: { fontSize: 12, fontFamily: "OpenSans_600SemiBold", color: Colors.light.text },
+  btnDisabled: { opacity: 0.35 },
   advanceBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 4,
+    flexDirection: "row", alignItems: "center", gap: 5,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4,
   },
   advanceBtnText: { fontSize: 12, fontFamily: "OpenSans_700Bold", color: "#fff" },
 });
@@ -556,9 +641,9 @@ export default function ApplicationOverviewScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Phase info card */}
-        <Text style={styles.groupLabel}>Current Phase</Text>
-        <PhaseCard
+        {/* Phase timeline — all 10 phases */}
+        <Text style={styles.groupLabel}>Loan Phases</Text>
+        <PhaseTimeline
           status={app.status}
           onAdvance={handleAdvance}
           onRetreat={handleRetreat}

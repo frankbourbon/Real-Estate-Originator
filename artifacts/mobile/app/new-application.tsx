@@ -77,8 +77,8 @@ export default function NewApplicationScreen() {
     firstName: borrower?.firstName ?? "",
     lastName: borrower?.lastName ?? "",
     entityName: borrower?.entityName ?? "",
-    email: borrower?.email ?? "",
-    phone: borrower?.phone ?? "",
+    email: borrower?.emails?.[0]?.value ?? "",
+    phone: borrower?.phones?.[0]?.value ?? "",
     creExperienceYears: borrower?.creExperienceYears ?? "",
     netWorthUsd: borrower?.netWorthUsd ?? "",
     liquidityUsd: borrower?.liquidityUsd ?? "",
@@ -97,7 +97,17 @@ export default function NewApplicationScreen() {
   const saveAll = async () => {
     await Promise.all([
       updateProperty(property.id, { ...propForm, ...occForm }),
-      updateBorrower(borrower.id, borForm),
+      updateBorrower(borrower.id, {
+        firstName: borForm.firstName,
+        lastName: borForm.lastName,
+        entityName: borForm.entityName,
+        emails: borForm.email ? [{ label: "Primary", value: borForm.email }] : borrower.emails,
+        phones: borForm.phone ? [{ label: "Primary", value: borForm.phone }] : borrower.phones,
+        creExperienceYears: borForm.creExperienceYears,
+        netWorthUsd: borForm.netWorthUsd,
+        liquidityUsd: borForm.liquidityUsd,
+        creditScore: borForm.creditScore,
+      }),
       updateApplication(app.id, loanForm),
     ]);
     router.dismiss();
