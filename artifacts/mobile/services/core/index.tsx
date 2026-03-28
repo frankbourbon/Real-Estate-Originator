@@ -360,7 +360,7 @@ const [CoreServiceProvider, useCoreService] = createContextHook(() => {
       AsyncStorage.getItem(KEYS.apps),
       AsyncStorage.getItem(KEYS.borrowers),
       AsyncStorage.getItem(KEYS.properties),
-    ]).then(([apps, bors, props]) => {
+    ]).then(async ([apps, bors, props]) => {
       if (apps) {
         const parsed: LoanApplication[] = JSON.parse(apps);
         setApplications(parsed.map((a) => ({
@@ -368,9 +368,22 @@ const [CoreServiceProvider, useCoreService] = createContextHook(() => {
           ...a,
           status: migrateStatus(a.status),
         })));
+      } else {
+        await AsyncStorage.setItem(KEYS.apps, JSON.stringify(SEED_APPS));
+        setApplications(SEED_APPS);
       }
-      if (bors) setBorrowers((JSON.parse(bors) as any[]).map(migrateBorrower));
-      if (props) setProperties((JSON.parse(props) as any[]).map(migrateProperty));
+      if (bors) {
+        setBorrowers((JSON.parse(bors) as any[]).map(migrateBorrower));
+      } else {
+        await AsyncStorage.setItem(KEYS.borrowers, JSON.stringify(SEED_BORROWERS));
+        setBorrowers(SEED_BORROWERS);
+      }
+      if (props) {
+        setProperties((JSON.parse(props) as any[]).map(migrateProperty));
+      } else {
+        await AsyncStorage.setItem(KEYS.properties, JSON.stringify(SEED_PROPERTIES));
+        setProperties(SEED_PROPERTIES);
+      }
       setLoading(false);
     });
   }, []);

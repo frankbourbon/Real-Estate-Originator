@@ -45,14 +45,8 @@ type SectionItem = {
   badge?: number;
 };
 
-type SectionGroup = {
-  label: string;
-  groupColor: string;
-  groupIcon: keyof typeof Feather.glyphMap;
-  sections: SectionItem[];
-};
-
-function buildGroups(
+/** Maps each loan phase to the screens accessible from it. */
+function buildPhaseSections(
   id: string,
   commentCount: number,
   attachmentCount: number,
@@ -60,198 +54,112 @@ function buildGroups(
   exceptionCount: number,
   taskCount: number,
   rentRollCount: number,
-  opHistCount: number
-): SectionGroup[] {
-  const rentRollItem: SectionItem = {
-    key: "rent-roll",
-    route: `/application/${id}/rent-roll`,
-    label: "Rent Roll",
-    description: "MISMO rent roll — unit-level lease data",
-    icon: "list",
-    iconColor: "#00875D",
-    iconBg: "#EAF5F2",
-    badge: rentRollCount,
+  opHistCount: number,
+): Record<ApplicationStatus, SectionItem[]> {
+  // ── Shared items ───────────────────────────────────────────────────────────
+  const rentRoll: SectionItem = {
+    key: "rent-roll", route: `/application/${id}/rent-roll`,
+    label: "Rent Roll", description: "MISMO rent roll — unit-level lease data",
+    icon: "list", iconColor: "#00875D", iconBg: "#EAF5F2", badge: rentRollCount,
   };
-  const opHistItem: SectionItem = {
-    key: "operating-history",
-    route: `/application/${id}/operating-history`,
-    label: "Operating History",
-    description: "Income & expense statements by period",
-    icon: "trending-up",
-    iconColor: "#00875D",
-    iconBg: "#EAF5F2",
-    badge: opHistCount,
+  const opHist: SectionItem = {
+    key: "operating-history", route: `/application/${id}/operating-history`,
+    label: "Operating History", description: "Income & expense statements by period",
+    icon: "trending-up", iconColor: "#00875D", iconBg: "#EAF5F2", badge: opHistCount,
+  };
+  const borrower: SectionItem = {
+    key: "borrower", route: `/application/${id}/borrower`,
+    label: "Borrower Profile", description: "Identity, contact information, and financial profile",
+    icon: "user", iconColor: Colors.light.tint, iconBg: Colors.light.tintLight,
+  };
+  const property: SectionItem = {
+    key: "property", route: `/application/${id}/property`,
+    label: "Property Details", description: "Location, property type, size, and occupancy",
+    icon: "map-pin", iconColor: "#00875D", iconBg: "#EAF5F2",
+  };
+  const loanTerms: SectionItem = {
+    key: "loan", route: `/application/${id}/loan`,
+    label: "Loan Terms", description: "Structure, rate, LTV, DSCR, amortization type",
+    icon: "dollar-sign", iconColor: "#0078CF", iconBg: "#EAF6FF",
+  };
+  const amortization: SectionItem = {
+    key: "amortization", route: `/application/${id}/amortization`,
+    label: "Amortization Calculator", description: "Rate build-up, day count convention, payment schedule",
+    icon: "bar-chart-2", iconColor: "#0078CF", iconBg: "#EAF6FF",
+  };
+  const creditEval: SectionItem = {
+    key: "credit-evaluation", route: `/application/${id}/credit-evaluation`,
+    label: "Credit Evaluation", description: "Credit box assessment, LOI, and commitment letter",
+    icon: "shield", iconColor: "#6B4FBB", iconBg: "#F0EEFF",
+  };
+  const processing: SectionItem = {
+    key: "processing", route: `/application/${id}/processing`,
+    label: "Processing & Compliance", description: "Appraisal, environmental, borrower forms, HMDA",
+    icon: "clipboard", iconColor: "#C75300", iconBg: "#FFECDC",
+  };
+  const conditions: SectionItem = {
+    key: "conditions", route: `/application/${id}/conditions`,
+    label: "Conditions & Exceptions", description: "Loan conditions and policy exceptions",
+    icon: "check-square", iconColor: "#1B7F9E", iconBg: "#DBF5F7",
+    badge: conditionCount + exceptionCount,
+  };
+  const closingDetails: SectionItem = {
+    key: "closing-details", route: `/application/${id}/closing-details`,
+    label: "Closing Details", description: "Third-party items, legal docs, wire instructions, booking",
+    icon: "check-circle", iconColor: "#005C3C", iconBg: "#D0F0E5",
+  };
+  const tasks: SectionItem = {
+    key: "tasks", route: `/application/${id}/tasks`,
+    label: "Task Checklist", description: "Phase-by-phase task tracking for this loan",
+    icon: "check-square", iconColor: "#C75300", iconBg: "#FFECDC", badge: taskCount,
+  };
+  const comments: SectionItem = {
+    key: "comments", route: `/application/${id}/comments`,
+    label: "Comments", description: "Threaded discussion on this application",
+    icon: "message-circle", iconColor: "#6B46C1", iconBg: "#F3F0FF", badge: commentCount,
+  };
+  const documents: SectionItem = {
+    key: "documents", route: `/application/${id}/documents`,
+    label: "Documents", description: "Attached files and supporting materials",
+    icon: "paperclip", iconColor: "#5F646A", iconBg: "#E6E9EB", badge: attachmentCount,
   };
 
-  return [
-    {
-      label: "Letter of Interest",
-      groupColor: "#6B4FBB",
-      groupIcon: "shield",
-      sections: [
-        {
-          key: "credit-evaluation",
-          route: `/application/${id}/credit-evaluation`,
-          label: "Credit Evaluation",
-          description: "Credit box, LOI, and commitment letter",
-          icon: "shield",
-          iconColor: "#6B4FBB",
-          iconBg: "#F0EEFF",
-        },
-        rentRollItem,
-        opHistItem,
-      ],
-    },
-    {
-      label: "Application",
-      groupColor: "#0078CF",
-      groupIcon: "dollar-sign",
-      sections: [
-        {
-          key: "loan",
-          route: `/application/${id}/loan`,
-          label: "Loan Terms",
-          description: "Structure, rate, LTV, DSCR, amortization type",
-          icon: "dollar-sign",
-          iconColor: "#0078CF",
-          iconBg: "#EAF6FF",
-        },
-        {
-          key: "amortization",
-          route: `/application/${id}/amortization`,
-          label: "Amortization Calculator",
-          description: "Rate build-up, day count convention, schedule",
-          icon: "bar-chart-2",
-          iconColor: "#0078CF",
-          iconBg: "#EAF6FF",
-        },
-        {
-          key: "borrower",
-          route: `/application/${id}/borrower`,
-          label: "Borrower Profile",
-          description: "Identity, contact, and financial profile",
-          icon: "user",
-          iconColor: Colors.light.tint,
-          iconBg: Colors.light.tintLight,
-        },
-        {
-          key: "property",
-          route: `/application/${id}/property`,
-          label: "Property Details",
-          description: "Location, property type, size, and occupancy",
-          icon: "map-pin",
-          iconColor: "#00875D",
-          iconBg: "#EAF5F2",
-        },
-      ],
-    },
-    {
-      label: "Processing",
-      groupColor: "#C75300",
-      groupIcon: "clipboard",
-      sections: [
-        {
-          key: "processing",
-          route: `/application/${id}/processing`,
-          label: "Processing & Compliance",
-          description: "Appraisal, environmental, borrower forms, HMDA",
-          icon: "clipboard",
-          iconColor: "#C75300",
-          iconBg: "#FFECDC",
-        },
-        rentRollItem,
-        opHistItem,
-      ],
-    },
-    {
-      label: "Credit Review",
-      groupColor: "#1B7F9E",
-      groupIcon: "check-square",
-      sections: [
-        {
-          key: "conditions",
-          route: `/application/${id}/conditions`,
-          label: "Conditions & Exceptions",
-          description: "Loan conditions and policy exceptions",
-          icon: "check-square",
-          iconColor: "#1B7F9E",
-          iconBg: "#DBF5F7",
-          badge: conditionCount + exceptionCount,
-        },
-        rentRollItem,
-        opHistItem,
-      ],
-    },
-    {
-      label: "Closing",
-      groupColor: "#005C3C",
-      groupIcon: "check-circle",
-      sections: [
-        {
-          key: "closing-details",
-          route: `/application/${id}/closing-details`,
-          label: "Closing Details",
-          description: "Third-party items, legal docs, wire instructions, booking",
-          icon: "check-circle",
-          iconColor: "#005C3C",
-          iconBg: "#D0F0E5",
-        },
-      ],
-    },
-    {
-      label: "Activity",
-      groupColor: "#5F646A",
-      groupIcon: "activity",
-      sections: [
-        {
-          key: "tasks",
-          route: `/application/${id}/tasks`,
-          label: "Phase Task Checklist",
-          description: "Phase-by-phase task tracking for this loan",
-          icon: "check-square",
-          iconColor: "#C75300",
-          iconBg: "#FFECDC",
-          badge: taskCount,
-        },
-        {
-          key: "comments",
-          route: `/application/${id}/comments`,
-          label: "Comments",
-          description: "Threaded discussion on this application",
-          icon: "message-circle",
-          iconColor: "#6B46C1",
-          iconBg: "#F3F0FF",
-          badge: commentCount,
-        },
-        {
-          key: "documents",
-          route: `/application/${id}/documents`,
-          label: "Documents",
-          description: "Attached files and supporting materials",
-          icon: "paperclip",
-          iconColor: "#5F646A",
-          iconBg: "#E6E9EB",
-          badge: attachmentCount,
-        },
-      ],
-    },
-  ];
+  const activity = [tasks, comments, documents];
+
+  return {
+    "Inquiry":               [borrower, property, rentRoll, opHist, ...activity],
+    "Letter of Interest":    [creditEval, rentRoll, opHist, borrower, property, loanTerms, ...activity],
+    "Application Start":     [borrower, property, loanTerms, amortization, ...activity],
+    "Application Processing":[processing, rentRoll, opHist, ...activity],
+    "Final Credit Review":   [conditions, rentRoll, opHist, ...activity],
+    "Pre-close":             [conditions, ...activity],
+    "Ready for Docs":        [closingDetails, ...activity],
+    "Docs Drawn":            [closingDetails, ...activity],
+    "Docs Back":             [closingDetails, ...activity],
+    "Closing":               [closingDetails, ...activity],
+  };
 }
 
-// ─── Phase timeline — all 10 phases always visible ────────────────────────────
+// ─── Phase timeline — accordion with per-phase screen navigation ──────────────
 
 function PhaseTimeline({
   status,
+  phaseSections,
   onAdvance,
   onRetreat,
-  onSeeAllTasks,
+  onNavigate,
 }: {
   status: ApplicationStatus;
+  phaseSections: Record<ApplicationStatus, SectionItem[]>;
   onAdvance: () => void;
   onRetreat: () => void;
-  onSeeAllTasks: () => void;
+  onNavigate: (route: string) => void;
 }) {
   const currentIdx = PHASE_ORDER.indexOf(status);
+  const [expanded, setExpanded] = useState<ApplicationStatus | null>(status);
+
+  const toggle = (phase: ApplicationStatus) =>
+    setExpanded((prev) => (prev === phase ? null : phase));
 
   return (
     <View style={pt.card}>
@@ -261,80 +169,67 @@ function PhaseTimeline({
         const isCurrent = idx === currentIdx;
         const isFuture = idx > currentIdx;
         const isLast = idx === PHASE_ORDER.length - 1;
+        const isExpanded = expanded === phase;
         const hasPrev = currentIdx > 0;
         const hasNext = currentIdx < PHASE_ORDER.length - 1;
         const nextStatus = hasNext ? PHASE_ORDER[currentIdx + 1] : null;
+        const sections = phaseSections[phase] ?? [];
 
         return (
           <View key={phase} style={pt.row}>
-            {/* ── Left rail: connector + indicator ── */}
+            {/* ── Left rail ── */}
             <View style={pt.rail}>
-              {/* Top connector line */}
               {idx > 0 && (
-                <View style={[pt.line, pt.lineTop, isDone || isCurrent ? { backgroundColor: info.color } : {}]} />
+                <View style={[pt.line, isDone || isCurrent ? { backgroundColor: info.color + "90" } : {}]} />
               )}
-
-              {/* Circle indicator */}
               {isDone ? (
                 <View style={[pt.circle, { backgroundColor: info.color, borderColor: info.color }]}>
                   <Feather name="check" size={10} color="#fff" />
                 </View>
               ) : isCurrent ? (
-                <View style={[pt.circle, pt.circleCurrent, { borderColor: info.color, backgroundColor: info.bg }]}>
+                <View style={[pt.circle, { borderColor: info.color, backgroundColor: info.bg }]}>
                   <View style={[pt.circleDot, { backgroundColor: info.color }]} />
                 </View>
               ) : (
-                <View style={[pt.circle, pt.circleFuture, { borderColor: Colors.light.border }]} />
+                <View style={[pt.circle, { borderColor: Colors.light.border, backgroundColor: Colors.light.background }]} />
               )}
-
-              {/* Bottom connector line */}
               {!isLast && (
-                <View style={[pt.line, pt.lineBottom, isDone ? { backgroundColor: info.color + "80" } : {}]} />
+                <View style={[pt.line, isDone ? { backgroundColor: info.color + "60" } : {}]} />
               )}
             </View>
 
             {/* ── Content ── */}
-            <View style={[pt.content, !isLast && pt.contentBorder, isCurrent && { borderBottomColor: "transparent" }]}>
-              {/* Phase row header */}
-              <View style={pt.phaseHeader}>
+            <View style={[pt.content, !isLast && !isExpanded && pt.contentBorder]}>
+              {/* Tappable phase header */}
+              <TouchableOpacity
+                style={pt.phaseHeader}
+                onPress={() => toggle(phase)}
+                activeOpacity={0.7}
+              >
                 <Text style={[pt.phaseNum, isFuture && pt.muted]}>
                   {String(info.phase).padStart(2, "0")}
                 </Text>
                 <Text style={[pt.phaseName, isFuture && pt.muted, isCurrent && { color: info.color, fontFamily: "OpenSans_700Bold" }]}>
                   {phase}
                 </Text>
-                <View style={[pt.personaBadge, { backgroundColor: isFuture ? Colors.light.border + "40" : info.bg }]}>
+                <View style={[pt.personaBadge, { backgroundColor: isFuture ? Colors.light.border + "30" : info.bg }]}>
                   <Feather name={info.personaIcon as any} size={10} color={isFuture ? Colors.light.textTertiary : info.color} />
                   <Text style={[pt.personaText, { color: isFuture ? Colors.light.textTertiary : info.color }]}>
                     {info.persona}
                   </Text>
                 </View>
-              </View>
+                <Feather
+                  name={isExpanded ? "chevron-up" : "chevron-down"}
+                  size={14}
+                  color={isFuture ? Colors.light.textTertiary : info.color}
+                />
+              </TouchableOpacity>
 
-              {/* Expanded body for current phase only */}
-              {isCurrent && (
-                <View style={pt.expanded}>
+              {/* Accordion body */}
+              {isExpanded && (
+                <View style={[pt.expanded, !isLast && pt.expandedBorder]}>
                   {/* Description */}
                   <Text style={pt.desc}>{info.description}</Text>
-
-                  {/* Checklist preview */}
-                  <View style={pt.checklist}>
-                    {info.checklist.slice(0, 3).map((item, i) => (
-                      <View key={i} style={pt.checkItem}>
-                        <View style={[pt.checkDot, { backgroundColor: info.color + "30" }]}>
-                          <Feather name="check" size={9} color={info.color} />
-                        </View>
-                        <Text style={pt.checkText}>{item}</Text>
-                      </View>
-                    ))}
-                    <TouchableOpacity onPress={onSeeAllTasks} activeOpacity={0.7}>
-                      <Text style={[pt.moreLink, { color: info.color }]}>
-                        {info.checklist.length > 3
-                          ? `+${info.checklist.length - 3} more — view full checklist →`
-                          : "View full checklist →"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
 
                   {/* Regulatory note */}
                   {info.notes ? (
@@ -344,30 +239,60 @@ function PhaseTimeline({
                     </View>
                   ) : null}
 
-                  {/* Advance / Retreat */}
-                  <View style={pt.navRow}>
-                    <TouchableOpacity
-                      style={[pt.retreatBtn, !hasPrev && pt.btnDisabled]}
-                      onPress={onRetreat}
-                      disabled={!hasPrev}
-                      activeOpacity={0.7}
-                    >
-                      <Feather name="chevron-left" size={13} color={hasPrev ? info.color : Colors.light.textTertiary} />
-                      <Text style={[pt.retreatText, !hasPrev && { color: Colors.light.textTertiary }]}>Previous</Text>
-                    </TouchableOpacity>
-
-                    {nextStatus ? (
-                      <TouchableOpacity style={[pt.advanceBtn, { backgroundColor: info.color }]} onPress={onAdvance} activeOpacity={0.8}>
-                        <Text style={pt.advanceBtnText}>Advance to {nextStatus}</Text>
-                        <Feather name="chevron-right" size={13} color="#fff" />
+                  {/* Section links */}
+                  <View style={pt.sectionList}>
+                    {sections.map((section, si) => (
+                      <TouchableOpacity
+                        key={section.key}
+                        style={[pt.sectionRow, si < sections.length - 1 && pt.sectionRowBorder]}
+                        onPress={() => onNavigate(section.route)}
+                        activeOpacity={0.75}
+                      >
+                        <View style={[pt.sectionIcon, { backgroundColor: section.iconBg }]}>
+                          <Feather name={section.icon as any} size={14} color={section.iconColor} />
+                        </View>
+                        <View style={pt.sectionText}>
+                          <Text style={pt.sectionLabel}>{section.label}</Text>
+                          <Text style={pt.sectionDesc} numberOfLines={1}>{section.description}</Text>
+                        </View>
+                        <View style={pt.sectionRight}>
+                          {section.badge != null && section.badge > 0 ? (
+                            <View style={[pt.sectionBadge, { backgroundColor: section.iconColor + "20" }]}>
+                              <Text style={[pt.sectionBadgeText, { color: section.iconColor }]}>{section.badge}</Text>
+                            </View>
+                          ) : null}
+                          <Feather name="chevron-right" size={14} color={Colors.light.textTertiary} />
+                        </View>
                       </TouchableOpacity>
-                    ) : (
-                      <View style={[pt.advanceBtn, { backgroundColor: "#005C3C" }]}>
-                        <Feather name="check" size={13} color="#fff" />
-                        <Text style={pt.advanceBtnText}>Loan Closed</Text>
-                      </View>
-                    )}
+                    ))}
                   </View>
+
+                  {/* Advance / Retreat — only for the current phase */}
+                  {isCurrent && (
+                    <View style={pt.navRow}>
+                      <TouchableOpacity
+                        style={[pt.retreatBtn, !hasPrev && pt.btnDisabled]}
+                        onPress={onRetreat}
+                        disabled={!hasPrev}
+                        activeOpacity={0.7}
+                      >
+                        <Feather name="chevron-left" size={13} color={hasPrev ? info.color : Colors.light.textTertiary} />
+                        <Text style={[pt.retreatText, !hasPrev && { color: Colors.light.textTertiary }]}>Previous</Text>
+                      </TouchableOpacity>
+
+                      {nextStatus ? (
+                        <TouchableOpacity style={[pt.advanceBtn, { backgroundColor: info.color }]} onPress={onAdvance} activeOpacity={0.8}>
+                          <Text style={pt.advanceBtnText}>Advance to {nextStatus}</Text>
+                          <Feather name="chevron-right" size={13} color="#fff" />
+                        </TouchableOpacity>
+                      ) : (
+                        <View style={[pt.advanceBtn, { backgroundColor: "#005C3C" }]}>
+                          <Feather name="check" size={13} color="#fff" />
+                          <Text style={pt.advanceBtnText}>Loan Closed</Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
                 </View>
               )}
             </View>
@@ -403,8 +328,6 @@ const pt = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.light.border,
   },
-  lineTop: {},
-  lineBottom: {},
   circle: {
     width: CIRCLE_SIZE,
     height: CIRCLE_SIZE,
@@ -414,12 +337,6 @@ const pt = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: Colors.light.backgroundCard,
     zIndex: 1,
-  },
-  circleCurrent: {
-    borderWidth: 2,
-  },
-  circleFuture: {
-    backgroundColor: Colors.light.background,
   },
   circleDot: {
     width: 8,
@@ -475,17 +392,47 @@ const pt = StyleSheet.create({
     color: Colors.light.textSecondary,
     lineHeight: 18,
   },
-  checklist: { gap: 5 },
-  checkItem: { flexDirection: "row", alignItems: "center", gap: 7 },
-  checkDot: {
-    width: 15,
-    height: 15,
-    borderRadius: 8,
+  expandedBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.borderLight,
+    paddingBottom: 10,
+  },
+  sectionList: {
+    backgroundColor: Colors.light.background,
+    borderRadius: 4,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  sectionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    gap: 10,
+    backgroundColor: Colors.light.backgroundCard,
+  },
+  sectionRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.light.borderLight },
+  sectionIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 4,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
-  checkText: { fontSize: 12, fontFamily: "OpenSans_400Regular", color: Colors.light.text, flex: 1 },
-  moreLink: { fontSize: 11, fontFamily: "OpenSans_600SemiBold", marginLeft: 22 },
+  sectionText: { flex: 1 },
+  sectionLabel: { fontSize: 13, fontFamily: "OpenSans_600SemiBold", color: Colors.light.text },
+  sectionDesc: { fontSize: 11, fontFamily: "OpenSans_400Regular", color: Colors.light.textSecondary, marginTop: 1 },
+  sectionRight: { flexDirection: "row", alignItems: "center", gap: 6 },
+  sectionBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 20,
+    alignItems: "center",
+  },
+  sectionBadgeText: { fontSize: 11, fontFamily: "OpenSans_700Bold" },
   noteRow: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -570,7 +517,7 @@ export default function ApplicationOverviewScreen() {
   const rentRollCount = getRentRoll(id).length;
   const opHistCount = getOpHistory(id).length;
   const taskCount = getTasksForApplication(id).length;
-  const groups = buildGroups(
+  const phaseSections = buildPhaseSections(
     id, getComments(id).length, getDocuments(id).length,
     conditionCount, exceptionCount, taskCount, rentRollCount, opHistCount
   );
@@ -641,58 +588,15 @@ export default function ApplicationOverviewScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Phase timeline — all 10 phases */}
+        {/* Phase timeline — tap any phase to reveal its screens */}
         <Text style={styles.groupLabel}>Loan Phases</Text>
         <PhaseTimeline
           status={app.status}
+          phaseSections={phaseSections}
           onAdvance={handleAdvance}
           onRetreat={handleRetreat}
-          onSeeAllTasks={() => router.push(`/application/${id}/tasks` as any)}
+          onNavigate={(route) => router.push(route as any)}
         />
-
-        {/* Grouped section menu */}
-        <Text style={styles.groupLabel}>Sections</Text>
-        {groups.map((group) => (
-          <View key={group.label} style={styles.groupBlock}>
-            <View style={styles.groupHeader}>
-              <View style={[styles.groupPersonaIcon, { backgroundColor: group.groupColor + "20" }]}>
-                <Feather name={group.groupIcon} size={12} color={group.groupColor} />
-              </View>
-              <Text style={[styles.groupPersonaLabel, { color: group.groupColor }]}>{group.label}</Text>
-            </View>
-
-            {/* Section rows */}
-            <View style={styles.menuCard}>
-              {group.sections.map((section, idx) => (
-                <TouchableOpacity
-                  key={section.key}
-                  style={[
-                    styles.menuRow,
-                    idx < group.sections.length - 1 && styles.menuRowBorder,
-                  ]}
-                  onPress={() => router.push(section.route as any)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.menuIcon, { backgroundColor: section.iconBg }]}>
-                    <Feather name={section.icon} size={16} color={section.iconColor} />
-                  </View>
-                  <View style={styles.menuText}>
-                    <Text style={styles.menuRowLabel}>{section.label}</Text>
-                    <Text style={styles.menuRowDesc}>{section.description}</Text>
-                  </View>
-                  <View style={styles.menuRight}>
-                    {section.badge != null && section.badge > 0 ? (
-                      <View style={styles.menuBadge}>
-                        <Text style={styles.menuBadgeText}>{section.badge}</Text>
-                      </View>
-                    ) : null}
-                    <Feather name="chevron-right" size={16} color={Colors.light.textTertiary} />
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        ))}
       </ScrollView>
 
       {/* ── Status modal ── */}
