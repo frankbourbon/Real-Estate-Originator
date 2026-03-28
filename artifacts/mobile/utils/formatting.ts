@@ -1,4 +1,5 @@
-import type { Borrower, LOAApplication, Property } from "@/context/ApplicationContext";
+import type { Borrower, Property } from "@/services/core";
+import type { Comment } from "@/services/comments";
 
 export function formatCurrency(value: string | number): string {
   const num = typeof value === "number" ? value : parseFloat(String(value).replace(/[^0-9.]/g, ""));
@@ -80,10 +81,10 @@ export function getPropertyCityState(property: Property | undefined): string {
   return [property.city, property.state].filter(Boolean).join(", ");
 }
 
-export function getTopLevelComments(app: LOAApplication) {
-  return app.comments.filter((c) => c.parentCommentId === null);
+export function getTopLevelComments(comments: Comment[]): Comment[] {
+  return comments.filter((c) => c.parentCommentId === null);
 }
 
-export function getReplies(app: LOAApplication, parentId: string) {
-  return app.comments.filter((c) => c.parentCommentId === parentId);
+export function getReplies(comments: Comment[], parentId: string): Comment[] {
+  return comments.filter((c) => c.parentCommentId === parentId);
 }

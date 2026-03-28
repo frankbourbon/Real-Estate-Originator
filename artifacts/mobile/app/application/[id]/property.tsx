@@ -16,8 +16,8 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { SectionScreenLayout } from "@/components/SectionScreenLayout";
 import { SelectField } from "@/components/SelectField";
 import Colors from "@/constants/colors";
-import type { PropertyType } from "@/context/ApplicationContext";
-import { useApplications } from "@/context/ApplicationContext";
+import type { PropertyType } from "@/services/core";
+import { useCoreService } from "@/services/core";
 import { formatPct, formatSqFt, getPropertyCityState } from "@/utils/formatting";
 
 const PROPERTY_TYPES: PropertyType[] = [
@@ -69,7 +69,7 @@ const hdr = StyleSheet.create({
 
 export default function PropertySection() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getApplication, getProperty, updateProperty } = useApplications();
+  const { getApplication, getProperty, updateProperty } = useCoreService();
   const app = getApplication(id);
   const property = getProperty(app?.propertyId ?? "");
 

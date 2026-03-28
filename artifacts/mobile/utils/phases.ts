@@ -1,4 +1,4 @@
-import type { ApplicationStatus } from "@/context/ApplicationContext";
+import type { ApplicationStatus } from "@/services/core";
 
 // ─── Phase Order ──────────────────────────────────────────────────────────────
 

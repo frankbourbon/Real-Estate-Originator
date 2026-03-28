@@ -3,10 +3,12 @@ import { router } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import Colors from "@/constants/colors";
-import type { LOAApplication } from "@/context/ApplicationContext";
-import { useApplications } from "@/context/ApplicationContext";
 import { StatusBadge } from "@/components/StatusBadge";
+import Colors from "@/constants/colors";
+import { useCoreService } from "@/services/core";
+import type { LoanApplication } from "@/services/core";
+import { useCommentsService } from "@/services/comments";
+import { useDocumentsService } from "@/services/documents";
 import {
   formatCurrency,
   formatDate,
@@ -16,13 +18,18 @@ import {
 } from "@/utils/formatting";
 
 type Props = {
-  application: LOAApplication;
+  application: LoanApplication;
 };
 
 export function ApplicationCard({ application }: Props) {
-  const { getBorrower, getProperty } = useApplications();
+  const { getBorrower, getProperty } = useCoreService();
+  const { getComments } = useCommentsService();
+  const { getDocuments } = useDocumentsService();
+
   const borrower = getBorrower(application.borrowerId);
   const property = getProperty(application.propertyId);
+  const commentCount = getComments(application.id).length;
+  const documentCount = getDocuments(application.id).length;
 
   return (
     <TouchableOpacity
@@ -85,18 +92,18 @@ export function ApplicationCard({ application }: Props) {
         </View>
 
         {/* Footer badges */}
-        {(application.comments.length > 0 || application.attachments.length > 0) && (
+        {(commentCount > 0 || documentCount > 0) && (
           <View style={styles.badges}>
-            {application.comments.length > 0 && (
+            {commentCount > 0 && (
               <View style={styles.badge}>
                 <Feather name="message-circle" size={11} color={Colors.light.tint} />
-                <Text style={styles.badgeText}>{application.comments.length}</Text>
+                <Text style={styles.badgeText}>{commentCount}</Text>
               </View>
             )}
-            {application.attachments.length > 0 && (
+            {documentCount > 0 && (
               <View style={styles.badge}>
                 <Feather name="paperclip" size={11} color={Colors.light.tint} />
-                <Text style={styles.badgeText}>{application.attachments.length}</Text>
+                <Text style={styles.badgeText}>{documentCount}</Text>
               </View>
             )}
           </View>

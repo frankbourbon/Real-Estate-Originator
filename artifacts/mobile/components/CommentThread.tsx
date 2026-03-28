@@ -9,7 +9,7 @@ import {
 } from "react-native";
 
 import Colors from "@/constants/colors";
-import type { Comment, LOAApplication } from "@/context/ApplicationContext";
+import type { Comment } from "@/services/comments";
 import { formatTimeAgo, getReplies } from "@/utils/formatting";
 
 type ReplyFormProps = {
@@ -51,22 +51,21 @@ function ReplyForm({ onSubmit, onCancel }: ReplyFormProps) {
 
 type CommentItemProps = {
   comment: Comment;
-  application: LOAApplication;
+  allComments: Comment[];
   depth?: number;
   onReply: (parentId: string, text: string) => void;
 };
 
-function CommentItem({ comment, application, depth = 0, onReply }: CommentItemProps) {
+function CommentItem({ comment, allComments, depth = 0, onReply }: CommentItemProps) {
   const [showReply, setShowReply] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const replies = getReplies(application, comment.id);
+  const replies = getReplies(allComments, comment.id);
 
   return (
     <View style={[styles.commentItem, depth > 0 && styles.commentNested]}>
       {depth > 0 && <View style={styles.threadLine} />}
 
       <View style={styles.commentInner}>
-        {/* Header */}
         <View style={styles.commentHeader}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{comment.author.charAt(0).toUpperCase()}</Text>
@@ -75,10 +74,8 @@ function CommentItem({ comment, application, depth = 0, onReply }: CommentItemPr
           <Text style={styles.commentTime}>{formatTimeAgo(comment.createdAt)}</Text>
         </View>
 
-        {/* Body */}
         <Text style={styles.commentText}>{comment.text}</Text>
 
-        {/* Actions */}
         <View style={styles.commentFooter}>
           <TouchableOpacity
             style={styles.action}
@@ -117,7 +114,7 @@ function CommentItem({ comment, application, depth = 0, onReply }: CommentItemPr
           <CommentItem
             key={r.id}
             comment={r}
-            application={application}
+            allComments={allComments}
             depth={depth + 1}
             onReply={onReply}
           />
@@ -128,17 +125,16 @@ function CommentItem({ comment, application, depth = 0, onReply }: CommentItemPr
 }
 
 type Props = {
-  application: LOAApplication;
+  comments: Comment[];
   onAddComment: (text: string, parentId: string | null) => void;
 };
 
-export function CommentThread({ application, onAddComment }: Props) {
+export function CommentThread({ comments, onAddComment }: Props) {
   const [newText, setNewText] = useState("");
-  const topLevel = application.comments.filter((c) => c.parentCommentId === null);
+  const topLevel = comments.filter((c) => c.parentCommentId === null);
 
   return (
     <View style={styles.container}>
-      {/* New comment input */}
       <View style={styles.newCommentBox}>
         <View style={styles.newCommentAvatar}>
           <Text style={styles.avatarText}>Y</Text>
@@ -164,7 +160,6 @@ export function CommentThread({ application, onAddComment }: Props) {
         </View>
       </View>
 
-      {/* Thread */}
       {topLevel.length === 0 ? (
         <View style={styles.empty}>
           <Feather name="message-circle" size={24} color={Colors.light.textTertiary} />
@@ -175,7 +170,7 @@ export function CommentThread({ application, onAddComment }: Props) {
           <CommentItem
             key={c.id}
             comment={c}
-            application={application}
+            allComments={comments}
             depth={0}
             onReply={(parentId, text) => onAddComment(text, parentId)}
           />

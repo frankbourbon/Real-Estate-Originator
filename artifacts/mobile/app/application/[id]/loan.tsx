@@ -20,8 +20,8 @@ import type {
   AmortizationType,
   InterestType,
   LoanType,
-} from "@/context/ApplicationContext";
-import { useApplications } from "@/context/ApplicationContext";
+} from "@/services/core";
+import { useCoreService } from "@/services/core";
 import { formatCurrencyFull } from "@/utils/formatting";
 
 const LOAN_TYPES: LoanType[] = ["Acquisition", "Refinance", "Construction", "Bridge", "Permanent"];
@@ -72,7 +72,7 @@ const hdr = StyleSheet.create({
 
 export default function LoanSection() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getApplication, updateApplication } = useApplications();
+  const { getApplication, updateApplication } = useCoreService();
   const app = getApplication(id);
 
   const [editing, setEditing] = useState(false);

@@ -15,8 +15,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ApplicationCard } from "@/components/ApplicationCard";
 import Colors from "@/constants/colors";
-import type { ApplicationStatus } from "@/context/ApplicationContext";
-import { useApplications } from "@/context/ApplicationContext";
+import type { ApplicationStatus } from "@/services/core";
+import { useCoreService } from "@/services/core";
 import { getBorrowerDisplayName, getPropertyShortAddress } from "@/utils/formatting";
 
 const STATUS_FILTERS: (ApplicationStatus | "All")[] = [
@@ -34,7 +34,7 @@ const STATUS_FILTERS: (ApplicationStatus | "All")[] = [
 ];
 
 export default function ApplicationsScreen() {
-  const { applications, loading, createApplication, getBorrower, getProperty } = useApplications();
+  const { applications, loading, createBorrower, createProperty, createApplication, getBorrower, getProperty } = useCoreService();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "All">("All");
@@ -55,7 +55,9 @@ export default function ApplicationsScreen() {
   });
 
   const handleCreate = async () => {
-    const { application } = await createApplication();
+    const borrower = await createBorrower({ firstName: "", lastName: "", entityName: "", email: "", phone: "", creExperienceYears: "", netWorthUsd: "", liquidityUsd: "", creditScore: "" });
+    const property = await createProperty({ streetAddress: "", city: "", state: "", zipCode: "", propertyType: "Office", grossSqFt: "", numberOfUnits: "", yearBuilt: "", physicalOccupancyPct: "", economicOccupancyPct: "" });
+    const application = await createApplication(borrower.id, property.id);
     router.push({ pathname: "/new-application", params: { id: application.id } });
   };
 

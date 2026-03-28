@@ -16,8 +16,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
-import type { ApplicationStatus, LoanTask } from "@/context/ApplicationContext";
-import { useApplications } from "@/context/ApplicationContext";
+import type { ApplicationStatus } from "@/services/core";
+import type { LoanTask } from "@/services/tasks";
+import { useTasksService } from "@/services/tasks";
+import { useCoreService } from "@/services/core";
 import { PHASE_INFO, PHASE_ORDER } from "@/utils/phases";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -29,30 +31,6 @@ type GroupedTasks = {
   total: number;
 };
 
-// ─── Seed helper (called from screen to avoid circular import) ────────────────
-
-async function seedTasksForApp(
-  applicationId: string,
-  addTasksBatch: (batch: Array<Omit<LoanTask, "id" | "createdAt" | "updatedAt">>) => Promise<void>
-) {
-  const batch: Array<Omit<LoanTask, "id" | "createdAt" | "updatedAt">> = [];
-  PHASE_ORDER.forEach((phase, phaseIdx) => {
-    const info = PHASE_INFO[phase];
-    info.checklist.forEach((title, i) => {
-      batch.push({
-        applicationId,
-        phase,
-        title,
-        description: "",
-        isComplete: false,
-        isCustom: false,
-        completedAt: "",
-        sortOrder: phaseIdx * 100 + i,
-      });
-    });
-  });
-  await addTasksBatch(batch);
-}
 
 // ─── Progress bar ─────────────────────────────────────────────────────────────
 
@@ -294,10 +272,8 @@ const m = StyleSheet.create({
 
 export default function TasksScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const {
-    getApplication, getTasksForApplication,
-    addTasksBatch, toggleTask, addTask, deleteTask,
-  } = useApplications();
+  const { getApplication } = useCoreService();
+  const { getTasksForApplication, seedTasksForPhase, toggleTask, addTask, deleteTask } = useTasksService();
   const insets = useSafeAreaInsets();
 
   const [seeded, setSeeded] = useState(false);
@@ -309,7 +285,17 @@ export default function TasksScreen() {
   useEffect(() => {
     if (!seeded && app && allTasks.length === 0) {
       setSeeded(true);
-      seedTasksForApp(id, addTasksBatch);
+      Promise.all(
+        PHASE_ORDER.map((phase, phaseIdx) => {
+          const info = PHASE_INFO[phase];
+          const items = info.checklist.map((title, i) => ({
+            title,
+            description: "",
+            sortOrder: phaseIdx * 100 + i,
+          }));
+          return seedTasksForPhase(id, phase, items);
+        })
+      );
     } else if (!seeded) {
       setSeeded(true);
     }
@@ -344,16 +330,7 @@ export default function TasksScreen() {
   const handleAddCustom = async (phase: ApplicationStatus, title: string) => {
     const phaseTasks = allTasks.filter((t) => t.phase === phase);
     const maxSort = phaseTasks.length > 0 ? Math.max(...phaseTasks.map((t) => t.sortOrder)) : 0;
-    await addTask({
-      applicationId: id,
-      phase,
-      title,
-      description: "",
-      isComplete: false,
-      isCustom: true,
-      completedAt: "",
-      sortOrder: maxSort + 1,
-    });
+    await addTask(id, phase, { title, description: "", isCustom: true, sortOrder: maxSort + 1 });
   };
 
   const handleDelete = (task: LoanTask) => {

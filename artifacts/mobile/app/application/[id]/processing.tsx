@@ -14,7 +14,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
-import { useApplications } from "@/context/ApplicationContext";
+import { useProcessingService } from "@/services/processing";
+import { usePreCloseService } from "@/services/pre-close";
+import { useCoreService } from "@/services/core";
 
 type EnvStatus = "" | "Ordered" | "In Progress" | "Clear" | "Issues Found";
 type FormsStatus = "" | "Not Started" | "Packaged" | "Sent for Signature" | "Received";
@@ -63,17 +65,21 @@ const op = StyleSheet.create({
 
 export default function ProcessingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getApplication, updateApplication } = useApplications();
+  const { getApplication } = useCoreService();
+  const { getOrCreateProcessing, updateProcessing } = useProcessingService();
+  const { getOrCreatePreClose, updatePreClose } = usePreCloseService();
   const insets = useSafeAreaInsets();
   const app = getApplication(id);
+  const proc = getOrCreateProcessing(id);
+  const preClose = getOrCreatePreClose(id);
 
-  const [appraisalOrderedDate, setAppraisalOrderedDate] = useState(app?.appraisalOrderedDate ?? "");
-  const [appraisalCompletedDate, setAppraisalCompletedDate] = useState(app?.appraisalCompletedDate ?? "");
-  const [appraisalValueUsd, setAppraisalValueUsd] = useState(app?.appraisalValueUsd ?? "");
-  const [environmentalStatus, setEnvironmentalStatus] = useState<EnvStatus>((app?.environmentalStatus as EnvStatus) ?? "");
-  const [borrowerFormsStatus, setBorrowerFormsStatus] = useState<FormsStatus>((app?.borrowerFormsStatus as FormsStatus) ?? "");
-  const [hmdaComplete, setHmdaComplete] = useState(app?.hmdaComplete ?? false);
-  const [hmdaNotes, setHmdaNotes] = useState(app?.hmdaNotes ?? "");
+  const [appraisalOrderedDate, setAppraisalOrderedDate] = useState(proc.appraisalOrderedDate);
+  const [appraisalCompletedDate, setAppraisalCompletedDate] = useState(proc.appraisalCompletedDate);
+  const [appraisalValueUsd, setAppraisalValueUsd] = useState(proc.appraisalValueUsd);
+  const [environmentalStatus, setEnvironmentalStatus] = useState<EnvStatus>(proc.environmentalStatus as EnvStatus);
+  const [borrowerFormsStatus, setBorrowerFormsStatus] = useState<FormsStatus>(proc.borrowerFormsStatus as FormsStatus);
+  const [hmdaComplete, setHmdaComplete] = useState(preClose.hmdaComplete);
+  const [hmdaNotes, setHmdaNotes] = useState(preClose.hmdaNotes);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -86,10 +92,10 @@ export default function ProcessingScreen() {
 
   const handleSave = async () => {
     setSaving(true);
-    await updateApplication(id, {
-      appraisalOrderedDate, appraisalCompletedDate, appraisalValueUsd,
-      environmentalStatus, borrowerFormsStatus, hmdaComplete, hmdaNotes,
-    });
+    await Promise.all([
+      updateProcessing(id, { appraisalOrderedDate, appraisalCompletedDate, appraisalValueUsd, environmentalStatus, borrowerFormsStatus }),
+      updatePreClose(id, { hmdaComplete, hmdaNotes }),
+    ]);
     setSaving(false);
     setDirty(false);
   };

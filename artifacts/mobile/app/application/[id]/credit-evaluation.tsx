@@ -14,29 +14,32 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
-import { useApplications } from "@/context/ApplicationContext";
+import { useFinalCreditReviewService } from "@/services/final-credit-review";
+import { useLetterOfInterestService } from "@/services/letter-of-interest";
+import { useCoreService } from "@/services/core";
 
 export default function CreditEvaluationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const {
-    getApplication, updateApplication,
-    getConditionsForApplication, getExceptionsForApplication,
-  } = useApplications();
+  const { getApplication } = useCoreService();
+  const { getOrCreateLOI, updateLOI } = useLetterOfInterestService();
+  const { getOrCreateFCR, updateFCR, getConditions, getExceptions } = useFinalCreditReviewService();
   const insets = useSafeAreaInsets();
   const app = getApplication(id);
 
-  const conditions = getConditionsForApplication(id);
-  const exceptions = getExceptionsForApplication(id);
+  const loi = getOrCreateLOI(id);
+  const fcr = getOrCreateFCR(id);
+  const conditions = getConditions(id);
+  const exceptions = getExceptions(id);
 
-  const [creditBoxNotes, setCreditBoxNotes] = useState(app?.creditBoxNotes ?? "");
-  const [loiRecommended, setLoiRecommended] = useState(app?.loiRecommended ?? false);
-  const [loiIssuedDate, setLoiIssuedDate] = useState(app?.loiIssuedDate ?? "");
-  const [loiExpirationDate, setLoiExpirationDate] = useState(app?.loiExpirationDate ?? "");
+  const [creditBoxNotes, setCreditBoxNotes] = useState(loi.creditBoxNotes);
+  const [loiRecommended, setLoiRecommended] = useState(loi.loiRecommended);
+  const [loiIssuedDate, setLoiIssuedDate] = useState(loi.loiIssuedDate);
+  const [loiExpirationDate, setLoiExpirationDate] = useState(loi.loiExpirationDate);
   const [commitmentLetterRecommended, setCommitmentLetterRecommended] = useState(
-    app?.commitmentLetterRecommended ?? false
+    fcr.commitmentLetterRecommended
   );
   const [commitmentLetterIssuedDate, setCommitmentLetterIssuedDate] = useState(
-    app?.commitmentLetterIssuedDate ?? ""
+    fcr.commitmentLetterIssuedDate
   );
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -51,10 +54,10 @@ export default function CreditEvaluationScreen() {
 
   const handleSave = async () => {
     setSaving(true);
-    await updateApplication(id, {
-      creditBoxNotes, loiRecommended, loiIssuedDate, loiExpirationDate,
-      commitmentLetterRecommended, commitmentLetterIssuedDate,
-    });
+    await Promise.all([
+      updateLOI(id, { creditBoxNotes, loiRecommended, loiIssuedDate, loiExpirationDate }),
+      updateFCR(id, { commitmentLetterRecommended, commitmentLetterIssuedDate }),
+    ]);
     setSaving(false);
     setDirty(false);
   };

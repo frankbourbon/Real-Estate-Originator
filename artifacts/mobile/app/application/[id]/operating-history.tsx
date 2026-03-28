@@ -16,8 +16,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
-import type { OperatingPeriodType, OperatingYear } from "@/context/ApplicationContext";
-import { useApplications } from "@/context/ApplicationContext";
+import type { OperatingPeriodType, OperatingYear } from "@/services/inquiry";
+import { useInquiryService } from "@/services/inquiry";
+import { useCoreService } from "@/services/core";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -52,7 +53,7 @@ function calcNOI(d: YearDraft): string {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type YearDraft = Omit<OperatingYear, "id" | "propertyId" | "createdAt" | "updatedAt">;
+type YearDraft = Omit<OperatingYear, "id" | "applicationId" | "createdAt" | "updatedAt">;
 
 function emptyDraft(): YearDraft {
   return {
@@ -378,10 +379,8 @@ const pc = StyleSheet.create({
 
 export default function OperatingHistoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const {
-    getApplication, getProperty,
-    getOperatingHistoryForProperty, addOperatingYear, updateOperatingYear, deleteOperatingYear,
-  } = useApplications();
+  const { getApplication, getProperty } = useCoreService();
+  const { getOpHistory, addYear, updateYear, deleteYear } = useInquiryService();
   const insets = useSafeAreaInsets();
 
   const [addModal, setAddModal] = useState(false);
@@ -392,7 +391,7 @@ export default function OperatingHistoryScreen() {
 
   const app = getApplication(id);
   const property = getProperty(app?.propertyId ?? "");
-  const history = getOperatingHistoryForProperty(app?.propertyId ?? "");
+  const history = getOpHistory(id);
 
   if (!app) {
     return (
@@ -411,8 +410,7 @@ export default function OperatingHistoryScreen() {
 
   const handleAdd = async () => {
     const noi = calcNOI(addDraft);
-    await addOperatingYear({
-      propertyId: app.propertyId,
+    await addYear(id, {
       ...addDraft,
       netOperatingIncome: noi || addDraft.netOperatingIncome,
     });
@@ -421,7 +419,7 @@ export default function OperatingHistoryScreen() {
   };
 
   const handleEditOpen = (year: OperatingYear) => {
-    const { id: _id, propertyId: _pid, createdAt: _ca, updatedAt: _ua, ...rest } = year;
+    const { id: _id, applicationId: _aid, createdAt: _ca, updatedAt: _ua, ...rest } = year;
     setEditDraft(rest);
     setEditYear(year);
   };
@@ -429,7 +427,7 @@ export default function OperatingHistoryScreen() {
   const handleEditSave = async () => {
     if (!editYear) return;
     const noi = calcNOI(editDraft);
-    await updateOperatingYear(editYear.id, {
+    await updateYear(editYear.id, {
       ...editDraft,
       netOperatingIncome: noi || editDraft.netOperatingIncome,
     });
@@ -439,7 +437,7 @@ export default function OperatingHistoryScreen() {
   const handleDelete = (year: OperatingYear) => {
     Alert.alert("Delete Period", `Remove ${year.periodType} ${year.periodYear}?`, [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => deleteOperatingYear(year.id) },
+      { text: "Delete", style: "destructive", onPress: () => deleteYear(year.id) },
     ]);
   };
 

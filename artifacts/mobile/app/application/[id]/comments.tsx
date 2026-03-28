@@ -6,12 +6,15 @@ import { CommentThread } from "@/components/CommentThread";
 import { SectionHeader } from "@/components/SectionHeader";
 import { SectionScreenLayout } from "@/components/SectionScreenLayout";
 import Colors from "@/constants/colors";
-import { useApplications } from "@/context/ApplicationContext";
+import { useCommentsService } from "@/services/comments";
+import { useCoreService } from "@/services/core";
 
 export default function CommentsSection() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getApplication, addComment } = useApplications();
+  const { getApplication } = useCoreService();
+  const { getComments, addComment } = useCommentsService();
   const app = getApplication(id);
+  const comments = getComments(id);
 
   if (!app) return null;
 
@@ -19,16 +22,16 @@ export default function CommentsSection() {
     <SectionScreenLayout
       title="Comments"
       subtitle="Threaded discussion on this application"
-      badge={app.comments.length > 0 ? `${app.comments.length}` : undefined}
+      badge={comments.length > 0 ? `${comments.length}` : undefined}
     >
       <View style={styles.card}>
         <SectionHeader
-          title={`Comments (${app.comments.length})`}
+          title={`Comments (${comments.length})`}
           subtitle="Replies are threaded below each root comment"
         />
         <CommentThread
-          application={app}
-          onAddComment={(text, parentId) => addComment(app.id, text, parentId)}
+          comments={comments}
+          onAddComment={(text, parentId) => addComment(id, text, "You", parentId)}
         />
       </View>
     </SectionScreenLayout>

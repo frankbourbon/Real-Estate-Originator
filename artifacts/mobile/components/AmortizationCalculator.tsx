@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 import Colors from "@/constants/colors";
-import type { LOAApplication } from "@/context/ApplicationContext";
+import type { LoanApplication } from "@/services/core";
 import {
   buildAmortSchedule,
   computeNoteRate,
@@ -372,7 +372,7 @@ const st = StyleSheet.create({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 type Props = {
-  application: LOAApplication;
+  application: LoanApplication;
 };
 
 export function AmortizationCalculator({ application }: Props) {

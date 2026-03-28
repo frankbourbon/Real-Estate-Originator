@@ -21,8 +21,9 @@ import type {
   LeaseType,
   RentRollUnit,
   UnitType,
-} from "@/context/ApplicationContext";
-import { useApplications } from "@/context/ApplicationContext";
+} from "@/services/inquiry";
+import { useInquiryService } from "@/services/inquiry";
+import { useCoreService } from "@/services/core";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -138,7 +139,7 @@ const fi = StyleSheet.create({
 
 // ─── Unit form (used in both Add and Edit modals) ─────────────────────────────
 
-type UnitDraft = Omit<RentRollUnit, "id" | "propertyId" | "createdAt" | "updatedAt">;
+type UnitDraft = Omit<RentRollUnit, "id" | "applicationId" | "createdAt" | "updatedAt">;
 
 function emptyDraft(): UnitDraft {
   return {
@@ -489,10 +490,8 @@ const sb = StyleSheet.create({
 
 export default function RentRollScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const {
-    getApplication, getProperty,
-    getRentRollForProperty, addRentRollUnit, updateRentRollUnit, deleteRentRollUnit,
-  } = useApplications();
+  const { getApplication, getProperty } = useCoreService();
+  const { getRentRoll, addUnit, updateUnit, deleteUnit } = useInquiryService();
   const insets = useSafeAreaInsets();
 
   const [addModal, setAddModal] = useState(false);
@@ -503,7 +502,7 @@ export default function RentRollScreen() {
 
   const app = getApplication(id);
   const property = getProperty(app?.propertyId ?? "");
-  const units = getRentRollForProperty(app?.propertyId ?? "");
+  const units = getRentRoll(id);
 
   if (!app) {
     return (
@@ -521,27 +520,27 @@ export default function RentRollScreen() {
 
   const handleAdd = async () => {
     if (!addDraft.unitIdentifier.trim()) return;
-    await addRentRollUnit({ propertyId: app.propertyId, ...addDraft });
+    await addUnit(id, addDraft);
     setAddModal(false);
     setAddDraft(emptyDraft());
   };
 
   const handleEditOpen = (unit: RentRollUnit) => {
-    const { id: _id, propertyId: _pid, createdAt: _ca, updatedAt: _ua, ...rest } = unit;
+    const { id: _id, applicationId: _aid, createdAt: _ca, updatedAt: _ua, ...rest } = unit;
     setEditDraft(rest);
     setEditUnit(unit);
   };
 
   const handleEditSave = async () => {
     if (!editUnit) return;
-    await updateRentRollUnit(editUnit.id, editDraft);
+    await updateUnit(editUnit.id, editDraft);
     setEditUnit(null);
   };
 
   const handleDelete = (unit: RentRollUnit) => {
     Alert.alert("Delete Unit", `Remove unit "${unit.unitIdentifier}"?`, [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => deleteRentRollUnit(unit.id) },
+      { text: "Delete", style: "destructive", onPress: () => deleteUnit(unit.id) },
     ]);
   };
 

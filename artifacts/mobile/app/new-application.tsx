@@ -21,8 +21,8 @@ import type {
   InterestType,
   LoanType,
   PropertyType,
-} from "@/context/ApplicationContext";
-import { useApplications } from "@/context/ApplicationContext";
+} from "@/services/core";
+import { useCoreService } from "@/services/core";
 
 const STEPS = ["Property", "Occupancy", "Loan Terms", "Borrower", "Review"];
 
@@ -37,7 +37,7 @@ const AMORT_TYPES: AmortizationType[] = ["Full Amortizing", "Interest Only", "Pa
 export default function NewApplicationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication, getBorrower, getProperty, updateApplication, updateBorrower, updateProperty } =
-    useApplications();
+    useCoreService();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
 
@@ -94,11 +94,11 @@ export default function NewApplicationScreen() {
   const updateLoan = (key: string) => (val: string) => setLoanForm((f) => ({ ...f, [key]: val }));
   const updateBor = (key: string) => (val: string) => setBorForm((f) => ({ ...f, [key]: val }));
 
-  const saveAll = async (status?: "Draft" | "Submitted") => {
+  const saveAll = async () => {
     await Promise.all([
       updateProperty(property.id, { ...propForm, ...occForm }),
       updateBorrower(borrower.id, borForm),
-      updateApplication(app.id, { ...loanForm, ...(status ? { status } : {}) }),
+      updateApplication(app.id, loanForm),
     ]);
     router.dismiss();
   };
@@ -113,14 +113,14 @@ export default function NewApplicationScreen() {
     >
       {/* ── Header ── */}
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
-        <TouchableOpacity onPress={() => saveAll("Draft")} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => saveAll()} activeOpacity={0.7}>
           <Text style={styles.headerAction}>Save Draft</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>New Loan Application</Text>
           <Text style={styles.headerStep}>{STEPS[step]}</Text>
         </View>
-        <TouchableOpacity onPress={() => saveAll("Draft")} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => saveAll()} activeOpacity={0.7}>
           <Feather name="x" size={20} color={Colors.light.textInverse} />
         </TouchableOpacity>
       </View>
@@ -322,7 +322,7 @@ export default function NewApplicationScreen() {
         )}
         <TouchableOpacity
           style={styles.nextBtn}
-          onPress={() => step < STEPS.length - 1 ? setStep(step + 1) : saveAll("Submitted")}
+          onPress={() => step < STEPS.length - 1 ? setStep(step + 1) : saveAll()}
           activeOpacity={0.8}
         >
           <Text style={styles.nextBtnText}>

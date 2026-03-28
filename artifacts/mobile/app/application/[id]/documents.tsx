@@ -6,12 +6,15 @@ import { AttachmentList } from "@/components/AttachmentList";
 import { SectionHeader } from "@/components/SectionHeader";
 import { SectionScreenLayout } from "@/components/SectionScreenLayout";
 import Colors from "@/constants/colors";
-import { useApplications } from "@/context/ApplicationContext";
+import { useDocumentsService } from "@/services/documents";
+import { useCoreService } from "@/services/core";
 
 export default function DocumentsSection() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getApplication, addAttachment, deleteAttachment } = useApplications();
+  const { getApplication } = useCoreService();
+  const { getDocuments, addDocument, deleteDocument } = useDocumentsService();
   const app = getApplication(id);
+  const docs = getDocuments(id);
 
   if (!app) return null;
 
@@ -19,17 +22,17 @@ export default function DocumentsSection() {
     <SectionScreenLayout
       title="Documents"
       subtitle="Attached files and supporting materials"
-      badge={app.attachments.length > 0 ? `${app.attachments.length}` : undefined}
+      badge={docs.length > 0 ? `${docs.length}` : undefined}
     >
       <View style={styles.card}>
         <SectionHeader
-          title={`Documents (${app.attachments.length})`}
+          title={`Documents (${docs.length})`}
           subtitle="Tap the attach button to add files"
         />
         <AttachmentList
-          attachments={app.attachments}
-          onAdd={(att) => addAttachment(app.id, att)}
-          onDelete={(attId) => deleteAttachment(app.id, attId)}
+          attachments={docs}
+          onAdd={(att) => addDocument(id, { ...att, serviceTag: "", uploadedBy: "You" })}
+          onDelete={(attId) => deleteDocument(attId)}
         />
       </View>
     </SectionScreenLayout>

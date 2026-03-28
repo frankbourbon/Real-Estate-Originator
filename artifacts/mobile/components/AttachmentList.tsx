@@ -4,7 +4,7 @@ import React from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import Colors from "@/constants/colors";
-import type { Attachment } from "@/context/ApplicationContext";
+import type { Attachment } from "@/services/documents";
 import { formatFileSize, formatDate } from "@/utils/formatting";
 
 function mimeIcon(mimeType: string): React.ComponentProps<typeof Feather>["name"] {

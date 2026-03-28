@@ -22,8 +22,9 @@ import type {
   ConditionStatus,
   Exception,
   ExceptionStatus,
-} from "@/context/ApplicationContext";
-import { APPROVAL_LEVELS, useApplications } from "@/context/ApplicationContext";
+} from "@/services/final-credit-review";
+import { APPROVAL_LEVELS, useFinalCreditReviewService } from "@/services/final-credit-review";
+import { useCoreService } from "@/services/core";
 
 // ─── Status chips ─────────────────────────────────────────────────────────────
 
@@ -481,22 +482,17 @@ const ic = StyleSheet.create({
 
 export default function ConditionsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { getApplication } = useCoreService();
   const {
-    getApplication,
-    getConditionsForApplication,
-    getExceptionsForApplication,
-    addCondition,
-    updateCondition,
-    deleteCondition,
-    addException,
-    updateException,
-    deleteException,
-  } = useApplications();
+    getConditions, getExceptions,
+    addCondition, updateCondition, deleteCondition,
+    addException, updateException, deleteException,
+  } = useFinalCreditReviewService();
   const insets = useSafeAreaInsets();
 
   const app = getApplication(id);
-  const conditions = getConditionsForApplication(id);
-  const exceptions = getExceptionsForApplication(id);
+  const conditions = getConditions(id);
+  const exceptions = getExceptions(id);
 
   const [modal, setModal] = useState<ModalState>({ mode: "none" });
   const [saving, setSaving] = useState(false);

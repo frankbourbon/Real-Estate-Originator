@@ -16,8 +16,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { StatusBadge } from "@/components/StatusBadge";
 import Colors from "@/constants/colors";
-import type { ApplicationStatus } from "@/context/ApplicationContext";
-import { useApplications } from "@/context/ApplicationContext";
+import type { ApplicationStatus } from "@/services/core";
+import { useCoreService } from "@/services/core";
+import { useCommentsService } from "@/services/comments";
+import { useDocumentsService } from "@/services/documents";
+import { useFinalCreditReviewService } from "@/services/final-credit-review";
+import { useInquiryService } from "@/services/inquiry";
+import { useTasksService } from "@/services/tasks";
 import {
   formatCurrencyFull,
   formatFullDate,
@@ -403,12 +408,12 @@ const pc = StyleSheet.create({
 
 export default function ApplicationOverviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const {
-    getApplication, getBorrower, getProperty,
-    updateApplication, deleteApplication,
-    getConditionsForApplication, getExceptionsForApplication,
-    getRentRollForProperty, getOperatingHistoryForProperty, getTasksForApplication,
-  } = useApplications();
+  const { getApplication, getBorrower, getProperty, updateApplication, deleteApplication } = useCoreService();
+  const { getComments } = useCommentsService();
+  const { getDocuments } = useDocumentsService();
+  const { getConditions, getExceptions } = useFinalCreditReviewService();
+  const { getRentRoll, getOpHistory } = useInquiryService();
+  const { getTasksForApplication } = useTasksService();
   const insets = useSafeAreaInsets();
   const [statusModal, setStatusModal] = useState(false);
 
@@ -454,13 +459,13 @@ export default function ApplicationOverviewScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const conditionCount = getConditionsForApplication(id).length;
-  const exceptionCount = getExceptionsForApplication(id).length;
-  const rentRollCount = getRentRollForProperty(app.propertyId).length;
-  const opHistCount = getOperatingHistoryForProperty(app.propertyId).length;
+  const conditionCount = getConditions(id).length;
+  const exceptionCount = getExceptions(id).length;
+  const rentRollCount = getRentRoll(id).length;
+  const opHistCount = getOpHistory(id).length;
   const taskCount = getTasksForApplication(id).length;
   const groups = buildGroups(
-    id, app.comments.length, app.attachments.length,
+    id, getComments(id).length, getDocuments(id).length,
     conditionCount, exceptionCount, taskCount, rentRollCount, opHistCount
   );
 

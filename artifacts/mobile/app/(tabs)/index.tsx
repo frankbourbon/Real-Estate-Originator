@@ -16,7 +16,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ApplicationCard } from "@/components/ApplicationCard";
 import Colors from "@/constants/colors";
-import { useApplications } from "@/context/ApplicationContext";
+import { useCoreService } from "@/services/core";
+import { useSeedCoordinator } from "@/services/seed-coordinator";
 import { formatCurrency } from "@/utils/formatting";
 import { PHASE_INFO } from "@/utils/phases";
 
@@ -134,23 +135,27 @@ const pb = StyleSheet.create({
 });
 
 export default function DashboardScreen() {
-  const { applications, stats, loading, createApplication, loadSampleData, clearAllData } = useApplications();
+  const { applications, loading, createBorrower, createProperty, createApplication, getPipelineStats } = useCoreService();
+  const { loadAllSeedData, clearAllData } = useSeedCoordinator();
   const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
   const [seeding, setSeeding] = useState(false);
 
+  const stats = getPipelineStats();
   const recentApps = applications.slice(0, 3);
   const hasSeedData = applications.some((a) => a.id.startsWith("seed_"));
 
   const handleCreate = async () => {
-    const { application } = await createApplication();
+    const borrower = await createBorrower({ firstName: "", lastName: "", entityName: "", email: "", phone: "", creExperienceYears: "", netWorthUsd: "", liquidityUsd: "", creditScore: "" });
+    const property = await createProperty({ streetAddress: "", city: "", state: "", zipCode: "", propertyType: "Office", grossSqFt: "", numberOfUnits: "", yearBuilt: "", physicalOccupancyPct: "", economicOccupancyPct: "" });
+    const application = await createApplication(borrower.id, property.id);
     router.push({ pathname: "/new-application", params: { id: application.id } });
   };
 
   const handleLoadSample = async () => {
     setMenuOpen(false);
     setSeeding(true);
-    await loadSampleData();
+    await loadAllSeedData();
     setSeeding(false);
   };
 

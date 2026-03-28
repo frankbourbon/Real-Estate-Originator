@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import type { ApplicationStatus } from "@/context/ApplicationContext";
+import type { ApplicationStatus } from "@/services/core";
 import { PHASE_INFO } from "@/utils/phases";
 
 type Props = { status: ApplicationStatus; size?: "sm" | "md" };

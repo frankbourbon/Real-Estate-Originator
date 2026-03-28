@@ -93,52 +93,54 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 
 ### `artifacts/mobile` (`@workspace/mobile`)
 
-Expo React Native app for LOA (Letter of Authorization) origination in commercial real estate.
+Expo React Native app — LOA Origination System for commercial real estate lending.
 
-**Design**: Navy blue `#1B3A6B` primary, golden amber `#C8963E` accent, `#F4F6FA` background.
+**Design**: Salt Design System / J.P. Morgan Brand — teal-500 `#1B7F9E` primary, blue-900 `#001736` dark surface, `#E6E9EB` background, Open Sans typography.
 
-**Data Model (3NF-compliant)**:
-- `Borrower` — `firstName` + `lastName` (separate fields), `entityName`, contact, financial profile (`netWorthUsd`, `liquidityUsd`, `creditScore`, `creExperienceYears`)
-- `Property` — location (street/city/state/zip), `propertyType`, `grossSqFt` (SF), `numberOfUnits`, `yearBuilt`, **two occupancy fields**:
-  - `physicalOccupancyPct` — unit-based (occupied units ÷ total rentable units)
-  - `economicOccupancyPct` — rent-based (collected rent ÷ potential gross rent)
-- `LOAApplication` — loan terms only (`loanAmountUsd`, `ltvPct`, `dscrRatio`, `interestRatePct`, `loanTermYears`, etc.) + foreign keys `borrowerId` + `propertyId`. No data duplicated.
-- `Comment` — threaded via `parentCommentId: string | null` (null = root, string = reply)
-- `Attachment` — document metadata (uri, name, mimeType, sizeBytes) via expo-document-picker
+**Architecture**: Full microservices — 14 independent service contexts, zero cross-service imports. Services communicate only through `applicationId` strings.
 
-**Storage**: AsyncStorage keys — `loa_applications_v2`, `loa_borrowers_v2`, `loa_properties_v2`, `loan_conditions_v1`, `loan_exceptions_v1`, `loan_rent_roll_v1`, `loan_operating_history_v1`, `loan_tasks_v1`
+**Services** (`services/`):
+| Service | Storage Key | Responsibility |
+|---|---|---|
+| `core` | `svc_core_apps_v1` | LoanApplication, Borrower, Property, pipeline stats |
+| `inquiry` | `svc_inquiry_*_v1` | InquiryRecord, RentRollUnit (MISMO), OperatingYear (MISMO) |
+| `letter-of-interest` | `svc_loi_v1` | LOI record (credit box notes, LOI issued/expiration) |
+| `application-start` | `svc_app_start_v1` | Application Start phase data |
+| `processing` | `svc_processing_v1` | Appraisal, environmental, borrower forms |
+| `final-credit-review` | `svc_fcr_v1` | FCR record, Conditions, Exceptions |
+| `pre-close` | `svc_pre_close_v1` | HMDA compliance |
+| `ready-for-docs` | `svc_ready_for_docs_v1` | Insurance, title, escrow, flood |
+| `docs-drawn` | `svc_docs_drawn_v1` | Docs drawn date, settlement fees |
+| `docs-back` | `svc_docs_back_v1` | Docs back date, title confirmation |
+| `closing` | `svc_closing_v1` | Wire info, servicing loan number, booking date |
+| `documents` | `svc_documents_v1` | Attachment metadata |
+| `tasks` | `svc_tasks_v1` | LoanTask per application+phase, seed/toggle/custom |
+| `comments` | `svc_comments_v1` | Threaded comments via parentCommentId |
 
-**Data Model (3NF) — full entity list**:
-- `Borrower`, `Property`, `LOAApplication` (with `borrowerId` + `propertyId` FK)
-- `Condition`, `Exception` (per application)
-- `RentRollUnit` — MISMO RentRollItemType, per property. MF fields (monthly/market rent) + commercial fields (annual base rent, PSF, lease type, renewal options, tenant industry)
-- `OperatingYear` — MISMO IncomeExpenseStatementType, per property. Up to 5 periods (Actual Y1/Y2, T12, Budget, Lender UW). NOI = EGI − totalOperatingExpenses.
-- `LoanTask` — per application + phase. Auto-seeded from PHASE_INFO checklist on first screen open. Custom tasks flagged `isCustom: true`.
-- `Comment` — threaded via `parentCommentId`
-- `Attachment` — document metadata
+**Providers**: `services/providers.tsx` wraps all 14 service providers. `services/seed-coordinator.tsx` orchestrates seeding across all services.
 
 **Key screens** (all under `app/application/[id]/`):
-- `index.tsx` — Overview: timeline, metrics strip, nav groups (Loan / Client / Property / Tasks)
-- `loan.tsx` — Loan terms, inline editing
-- `borrower.tsx` — Borrower profile, inline editing
-- `property.tsx` — Property details, inline editing
-- `amortization.tsx` — Amortization calculator
-- `credit-evaluation.tsx` — Credit box, LOI, commitment letter
-- `processing.tsx` — Processing & compliance
-- `closing-details.tsx` — Closing details
-- `conditions.tsx` — Conditions & exceptions (3NF)
-- `comments.tsx` — Threaded comments
-- `documents.tsx` — Document attachments
-- `rent-roll.tsx` — MISMO rent roll: unit cards, occupancy stats, add/edit/delete units
-- `operating-history.tsx` — MISMO operating history: period cards with income/expense breakdown, NOI calc, add/edit/delete
-- `tasks.tsx` — Phase-grouped checklist: auto-seeded from PHASE_INFO, toggle, add custom tasks, progress bars
+- `index.tsx` — Overview: badge counts from 5 services, status advance/retreat
+- `loan.tsx`, `borrower.tsx`, `property.tsx` — `useCoreService` inline editing
+- `amortization.tsx` — Amortization calculator, reads loan terms from core
+- `credit-evaluation.tsx` — `useLetterOfInterestService` + `useFinalCreditReviewService`
+- `processing.tsx` — `useProcessingService` + `usePreCloseService`
+- `closing-details.tsx` — 4 services: ready-for-docs, docs-drawn, docs-back, closing
+- `conditions.tsx` — `useFinalCreditReviewService` (conditions + exceptions CRUD)
+- `comments.tsx` — `useCommentsService` threaded comments
+- `documents.tsx` — `useDocumentsService` attachment management
+- `rent-roll.tsx` — `useInquiryService` (MISMO RentRollItemType, by applicationId)
+- `operating-history.tsx` — `useInquiryService` (MISMO IncomeExpenseStatementType)
+- `tasks.tsx` — `useTasksService` (seeded from PHASE_INFO checklists, phase-grouped)
 
-**phases.ts**: PHASE_ORDER (10 phases), PHASE_INFO (phase metadata + checklists). Imported by screens, never by ApplicationContext (avoids circular import). Task seeding happens inside `tasks.tsx` by passing PHASE_INFO data into `addTasksBatch`.
+**phases.ts**: PHASE_ORDER (10 phases), PHASE_INFO (phase metadata + checklists per phase). Used in task seeding and UI.
 
 **Key components**:
-- `CommentThread.tsx` — Threaded comments with inline reply forms, collapse/expand
-- `AttachmentList.tsx` — Document picker integration with file metadata display
-- `ApplicationCard.tsx` — Card with live borrower/property lookups from context
+- `CommentThread.tsx` — accepts `comments: Comment[]` prop, threaded with collapse
+- `AttachmentList.tsx` — `Attachment` type from `@/services/documents`
+- `AmortizationCalculator.tsx` — accepts `LoanApplication` from `@/services/core`
+- `ApplicationCard.tsx` — reads borrower/property from core service
+- `StatusBadge.tsx` — `ApplicationStatus` from `@/services/core`
 
 ### `scripts` (`@workspace/scripts`)
 

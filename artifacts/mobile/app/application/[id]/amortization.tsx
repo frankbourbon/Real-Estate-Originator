@@ -3,11 +3,11 @@ import React from "react";
 
 import { AmortizationCalculator } from "@/components/AmortizationCalculator";
 import { SectionScreenLayout } from "@/components/SectionScreenLayout";
-import { useApplications } from "@/context/ApplicationContext";
+import { useCoreService } from "@/services/core";
 
 export default function AmortizationSection() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getApplication } = useApplications();
+  const { getApplication } = useCoreService();
   const app = getApplication(id);
 
   if (!app) return null;

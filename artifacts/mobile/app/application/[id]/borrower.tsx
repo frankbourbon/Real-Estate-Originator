@@ -15,7 +15,7 @@ import { FormField } from "@/components/FormField";
 import { SectionHeader } from "@/components/SectionHeader";
 import { SectionScreenLayout } from "@/components/SectionScreenLayout";
 import Colors from "@/constants/colors";
-import { useApplications } from "@/context/ApplicationContext";
+import { useCoreService } from "@/services/core";
 import { formatCurrencyFull, getBorrowerDisplayName } from "@/utils/formatting";
 
 function EditBtn({ onPress }: { onPress: () => void }) {
@@ -62,7 +62,7 @@ const hdr = StyleSheet.create({
 
 export default function BorrowerSection() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getApplication, getBorrower, updateBorrower } = useApplications();
+  const { getApplication, getBorrower, updateBorrower } = useCoreService();
   const app = getApplication(id);
   const borrower = getBorrower(app?.borrowerId ?? "");
 
