@@ -610,6 +610,13 @@ export default function ApplicationOverviewScreen() {
               desc: "Phase-by-phase task tracking",
             },
             {
+              key: "conditions", route: `/application/${id}/conditions`,
+              label: "Conditions & Exceptions", icon: "shield" as const,
+              iconColor: "#1B7F9E", iconBg: "#DBF5F7",
+              badge: conditionCount + exceptionCount,
+              desc: "Loan conditions and policy exceptions",
+            },
+            {
               key: "comments", route: `/application/${id}/comments`,
               label: "Comments", icon: "message-circle" as const,
               iconColor: "#6B46C1", iconBg: "#F3F0FF",
