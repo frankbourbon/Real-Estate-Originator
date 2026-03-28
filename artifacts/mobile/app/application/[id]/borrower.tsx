@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -16,10 +15,20 @@ import { DetailRow } from "@/components/DetailRow";
 import { FormField } from "@/components/FormField";
 import { SectionHeader } from "@/components/SectionHeader";
 import { SectionScreenLayout } from "@/components/SectionScreenLayout";
+import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
 import type { ContactMethod, MailingAddress } from "@/services/core";
 import { useCoreService } from "@/services/core";
 import { formatCurrencyFull, getBorrowerDisplayName } from "@/utils/formatting";
+
+// ─── Tab definitions ──────────────────────────────────────────────────────────
+
+const TABS = [
+  { key: "identity",   label: "Identity",   icon: "user"       as const },
+  { key: "contact",    label: "Contact",    icon: "phone"      as const },
+  { key: "addresses",  label: "Addresses",  icon: "map-pin"    as const },
+  { key: "financials", label: "Financials", icon: "bar-chart-2" as const },
+];
 
 // ─── Header buttons ───────────────────────────────────────────────────────────
 
@@ -145,10 +154,7 @@ const cl = StyleSheet.create({
     borderRadius: 4, backgroundColor: Colors.light.background,
     borderWidth: 1, borderColor: Colors.light.border,
   },
-  addBtn: {
-    flexDirection: "row", alignItems: "center", gap: 5,
-    paddingVertical: 6, paddingHorizontal: 2,
-  },
+  addBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 6, paddingHorizontal: 2 },
   addText: { fontSize: 12, fontFamily: "OpenSans_600SemiBold", color: Colors.light.tint },
 });
 
@@ -242,9 +248,7 @@ const ma = StyleSheet.create({
     fontSize: 12, fontFamily: "OpenSans_700Bold", color: Colors.light.tint,
     backgroundColor: Colors.light.backgroundCard,
   },
-  removeBtn: {
-    width: 28, height: 28, alignItems: "center", justifyContent: "center",
-  },
+  removeBtn: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
   streetInput: {
     borderWidth: 1, borderColor: Colors.light.border, borderRadius: 4,
     paddingHorizontal: 10, paddingVertical: 8,
@@ -260,6 +264,151 @@ const ma = StyleSheet.create({
   },
 });
 
+// ─── Tab content panels ───────────────────────────────────────────────────────
+
+function IdentityView({ borrower }: { borrower: any }) {
+  return (
+    <View style={s.card}>
+      <SectionHeader title="Identity" />
+      <DetailRow label="First Name"       value={borrower?.firstName} />
+      <DetailRow label="Last Name"        value={borrower?.lastName} />
+      <DetailRow label="Entity / Company" value={borrower?.entityName} last />
+    </View>
+  );
+}
+
+function IdentityEdit({ form, set }: { form: any; set: (k: string) => (v: string) => void }) {
+  return (
+    <View style={s.card}>
+      <SectionHeader title="Identity" />
+      <View style={s.row}>
+        <View style={s.flex1}>
+          <FormField label="First Name" value={form.firstName} onChangeText={set("firstName")} placeholder="John" autoCapitalize="words" required />
+        </View>
+        <View style={s.gap} />
+        <View style={s.flex1}>
+          <FormField label="Last Name" value={form.lastName} onChangeText={set("lastName")} placeholder="Smith" autoCapitalize="words" required />
+        </View>
+      </View>
+      <FormField label="Entity / Company Name" value={form.entityName} onChangeText={set("entityName")} placeholder="ABC Holdings LLC" autoCapitalize="words" />
+    </View>
+  );
+}
+
+function ContactView({ borrower }: { borrower: any }) {
+  return (
+    <>
+      <View style={s.card}>
+        <SectionHeader title="Email Addresses" />
+        {borrower?.emails?.length ? (
+          borrower.emails.map((e: ContactMethod, i: number) => (
+            <DetailRow key={i} label={e.label} value={e.value} last={i === (borrower.emails?.length ?? 0) - 1} />
+          ))
+        ) : (
+          <DetailRow label="Email" value={undefined} last />
+        )}
+      </View>
+      <View style={s.card}>
+        <SectionHeader title="Phone Numbers" />
+        {borrower?.phones?.length ? (
+          borrower.phones.map((p: ContactMethod, i: number) => (
+            <DetailRow key={i} label={p.label} value={p.value} last={i === (borrower.phones?.length ?? 0) - 1} />
+          ))
+        ) : (
+          <DetailRow label="Phone" value={undefined} last />
+        )}
+      </View>
+    </>
+  );
+}
+
+function ContactEdit({ form, setForm }: { form: any; setForm: React.Dispatch<React.SetStateAction<any>> }) {
+  return (
+    <>
+      <View style={s.card}>
+        <SectionHeader title="Email Addresses" />
+        <ContactList
+          items={form.emails}
+          onChange={(v) => setForm((f: any) => ({ ...f, emails: v }))}
+          valuePlaceholder="email@company.com"
+          keyboardType="email-address"
+        />
+      </View>
+      <View style={s.card}>
+        <SectionHeader title="Phone Numbers" />
+        <ContactList
+          items={form.phones}
+          onChange={(v) => setForm((f: any) => ({ ...f, phones: v }))}
+          valuePlaceholder="(312) 555-0100"
+          keyboardType="phone-pad"
+        />
+      </View>
+    </>
+  );
+}
+
+function AddressesView({ borrower }: { borrower: any }) {
+  return (
+    <View style={s.card}>
+      <SectionHeader title="Mailing Addresses" />
+      {borrower?.mailingAddresses?.length ? (
+        borrower.mailingAddresses.map((addr: MailingAddress, i: number) => (
+          <View key={i} style={[s.addrBlock, i < (borrower.mailingAddresses?.length ?? 0) - 1 && s.addrBorder]}>
+            <Text style={s.addrLabel}>{addr.label}</Text>
+            <Text style={s.addrLine}>{addr.street}</Text>
+            <Text style={s.addrLine}>{[addr.city, addr.state, addr.zipCode].filter(Boolean).join(", ")}</Text>
+          </View>
+        ))
+      ) : (
+        <DetailRow label="Mailing Address" value={undefined} last />
+      )}
+    </View>
+  );
+}
+
+function AddressesEdit({ form, setForm }: { form: any; setForm: React.Dispatch<React.SetStateAction<any>> }) {
+  return (
+    <View style={s.card}>
+      <SectionHeader title="Mailing Addresses" />
+      <MailingAddressList
+        items={form.mailingAddresses}
+        onChange={(v) => setForm((f: any) => ({ ...f, mailingAddresses: v }))}
+      />
+    </View>
+  );
+}
+
+function FinancialsView({ borrower }: { borrower: any }) {
+  return (
+    <View style={s.card}>
+      <SectionHeader title="Financial Profile" />
+      <DetailRow label="CRE Experience"   value={borrower?.creExperienceYears ? `${borrower.creExperienceYears} years` : undefined} />
+      <DetailRow label="Net Worth (USD)"   value={borrower?.netWorthUsd ? formatCurrencyFull(borrower.netWorthUsd) : undefined} />
+      <DetailRow label="Liquid Assets"     value={borrower?.liquidityUsd ? formatCurrencyFull(borrower.liquidityUsd) : undefined} />
+      <DetailRow label="FICO Credit Score" value={borrower?.creditScore} last />
+    </View>
+  );
+}
+
+function FinancialsEdit({ form, set }: { form: any; set: (k: string) => (v: string) => void }) {
+  return (
+    <View style={s.card}>
+      <SectionHeader title="Financial Profile" subtitle="Used for underwriting and credit assessment" />
+      <FormField label="CRE Experience (years)" value={form.creExperienceYears} onChangeText={set("creExperienceYears")} placeholder="10" keyboardType="number-pad" suffix="yrs" hint="Commercial real estate experience" />
+      <View style={s.row}>
+        <View style={s.flex1}>
+          <FormField label="Net Worth (USD)" value={form.netWorthUsd} onChangeText={set("netWorthUsd")} placeholder="5,000,000" keyboardType="number-pad" prefix="$" />
+        </View>
+        <View style={s.gap} />
+        <View style={s.flex1}>
+          <FormField label="Liquid Assets (USD)" value={form.liquidityUsd} onChangeText={set("liquidityUsd")} placeholder="500,000" keyboardType="number-pad" prefix="$" />
+        </View>
+      </View>
+      <FormField label="FICO Credit Score" value={form.creditScore} onChangeText={set("creditScore")} placeholder="740" keyboardType="number-pad" maxLength={3} hint="FICO score (300–850)" />
+    </View>
+  );
+}
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function BorrowerSection() {
@@ -268,6 +417,7 @@ export default function BorrowerSection() {
   const app = getApplication(id);
   const borrower = getBorrower(app?.borrowerId ?? "");
 
+  const [activeTab, setActiveTab] = useState("identity");
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     firstName: borrower?.firstName ?? "",
@@ -319,6 +469,25 @@ export default function BorrowerSection() {
 
   const handleCancel = () => setEditing(false);
 
+  function renderTabContent() {
+    if (editing) {
+      switch (activeTab) {
+        case "identity":   return <IdentityEdit   form={form} set={set} />;
+        case "contact":    return <ContactEdit    form={form} setForm={setForm} />;
+        case "addresses":  return <AddressesEdit  form={form} setForm={setForm} />;
+        case "financials": return <FinancialsEdit form={form} set={set} />;
+      }
+    } else {
+      switch (activeTab) {
+        case "identity":   return <IdentityView   borrower={borrower} />;
+        case "contact":    return <ContactView    borrower={borrower} />;
+        case "addresses":  return <AddressesView  borrower={borrower} />;
+        case "financials": return <FinancialsView borrower={borrower} />;
+      }
+    }
+    return null;
+  }
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -332,140 +501,17 @@ export default function BorrowerSection() {
             ? <SaveCancelBtns onSave={handleSave} onCancel={handleCancel} />
             : <EditBtn onPress={handleEdit} />
         }
+        headerSlot={
+          <TabBar tabs={TABS} activeTab={activeTab} onSelect={setActiveTab} />
+        }
       >
-        {editing ? (
-          <>
-            <View style={styles.card}>
-              <SectionHeader title="Identity" />
-              <View style={styles.row}>
-                <View style={styles.flex1}>
-                  <FormField label="First Name" value={form.firstName} onChangeText={set("firstName")} placeholder="John" autoCapitalize="words" required />
-                </View>
-                <View style={styles.gap} />
-                <View style={styles.flex1}>
-                  <FormField label="Last Name" value={form.lastName} onChangeText={set("lastName")} placeholder="Smith" autoCapitalize="words" required />
-                </View>
-              </View>
-              <FormField label="Entity / Company Name" value={form.entityName} onChangeText={set("entityName")} placeholder="ABC Holdings LLC" autoCapitalize="words" />
-            </View>
-
-            <View style={styles.card}>
-              <SectionHeader title="Email Addresses" />
-              <ContactList
-                items={form.emails}
-                onChange={(v) => setForm((f) => ({ ...f, emails: v }))}
-                valuePlaceholder="email@company.com"
-                keyboardType="email-address"
-              />
-            </View>
-
-            <View style={styles.card}>
-              <SectionHeader title="Phone Numbers" />
-              <ContactList
-                items={form.phones}
-                onChange={(v) => setForm((f) => ({ ...f, phones: v }))}
-                valuePlaceholder="(312) 555-0100"
-                keyboardType="phone-pad"
-              />
-            </View>
-
-            <View style={styles.card}>
-              <SectionHeader title="Mailing Addresses" />
-              <MailingAddressList
-                items={form.mailingAddresses}
-                onChange={(v) => setForm((f) => ({ ...f, mailingAddresses: v }))}
-              />
-            </View>
-
-            <View style={styles.card}>
-              <SectionHeader title="Financial Profile" subtitle="Used for underwriting and credit assessment" />
-              <FormField label="CRE Experience (years)" value={form.creExperienceYears} onChangeText={set("creExperienceYears")} placeholder="10" keyboardType="number-pad" suffix="yrs" hint="Commercial real estate experience" />
-              <View style={styles.row}>
-                <View style={styles.flex1}>
-                  <FormField label="Net Worth (USD)" value={form.netWorthUsd} onChangeText={set("netWorthUsd")} placeholder="5,000,000" keyboardType="number-pad" prefix="$" />
-                </View>
-                <View style={styles.gap} />
-                <View style={styles.flex1}>
-                  <FormField label="Liquid Assets (USD)" value={form.liquidityUsd} onChangeText={set("liquidityUsd")} placeholder="500,000" keyboardType="number-pad" prefix="$" />
-                </View>
-              </View>
-              <FormField label="FICO Credit Score" value={form.creditScore} onChangeText={set("creditScore")} placeholder="740" keyboardType="number-pad" maxLength={3} hint="FICO score (300–850)" />
-            </View>
-          </>
-        ) : (
-          <>
-            <View style={styles.card}>
-              <SectionHeader title="Identity" />
-              <DetailRow label="First Name" value={borrower?.firstName} />
-              <DetailRow label="Last Name" value={borrower?.lastName} />
-              <DetailRow label="Entity / Company" value={borrower?.entityName} last />
-            </View>
-
-            <View style={styles.card}>
-              <SectionHeader title="Email Addresses" />
-              {borrower?.emails?.length ? (
-                borrower.emails.map((e, i) => (
-                  <DetailRow
-                    key={i}
-                    label={e.label}
-                    value={e.value}
-                    last={i === (borrower.emails?.length ?? 0) - 1}
-                  />
-                ))
-              ) : (
-                <DetailRow label="Email" value={undefined} last />
-              )}
-            </View>
-
-            <View style={styles.card}>
-              <SectionHeader title="Phone Numbers" />
-              {borrower?.phones?.length ? (
-                borrower.phones.map((p, i) => (
-                  <DetailRow
-                    key={i}
-                    label={p.label}
-                    value={p.value}
-                    last={i === (borrower.phones?.length ?? 0) - 1}
-                  />
-                ))
-              ) : (
-                <DetailRow label="Phone" value={undefined} last />
-              )}
-            </View>
-
-            <View style={styles.card}>
-              <SectionHeader title="Mailing Addresses" />
-              {borrower?.mailingAddresses?.length ? (
-                borrower.mailingAddresses.map((addr, i) => (
-                  <View key={i} style={[
-                    styles.addrBlock,
-                    i < (borrower.mailingAddresses?.length ?? 0) - 1 && styles.addrBorder,
-                  ]}>
-                    <Text style={styles.addrLabel}>{addr.label}</Text>
-                    <Text style={styles.addrLine}>{addr.street}</Text>
-                    <Text style={styles.addrLine}>{[addr.city, addr.state, addr.zipCode].filter(Boolean).join(", ")}</Text>
-                  </View>
-                ))
-              ) : (
-                <DetailRow label="Mailing Address" value={undefined} last />
-              )}
-            </View>
-
-            <View style={styles.card}>
-              <SectionHeader title="Financial Profile" />
-              <DetailRow label="CRE Experience" value={borrower?.creExperienceYears ? `${borrower.creExperienceYears} years` : undefined} />
-              <DetailRow label="Net Worth (USD)" value={borrower?.netWorthUsd ? formatCurrencyFull(borrower.netWorthUsd) : undefined} />
-              <DetailRow label="Liquid Assets (USD)" value={borrower?.liquidityUsd ? formatCurrencyFull(borrower.liquidityUsd) : undefined} />
-              <DetailRow label="FICO Credit Score" value={borrower?.creditScore} last />
-            </View>
-          </>
-        )}
+        {renderTabContent()}
       </SectionScreenLayout>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   card: {
     backgroundColor: Colors.light.backgroundCard,
     borderWidth: 1, borderColor: Colors.light.border,

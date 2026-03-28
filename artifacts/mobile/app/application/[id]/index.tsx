@@ -597,6 +597,57 @@ export default function ApplicationOverviewScreen() {
           onRetreat={handleRetreat}
           onNavigate={(route) => router.push(route as any)}
         />
+
+        {/* Activity — always accessible regardless of phase */}
+        <Text style={styles.groupLabel}>Activity</Text>
+        <View style={styles.activityCard}>
+          {([
+            {
+              key: "tasks", route: `/application/${id}/tasks`,
+              label: "Task Checklist", icon: "check-square" as const,
+              iconColor: "#C75300", iconBg: "#FFECDC",
+              badge: taskCount,
+              desc: "Phase-by-phase task tracking",
+            },
+            {
+              key: "comments", route: `/application/${id}/comments`,
+              label: "Comments", icon: "message-circle" as const,
+              iconColor: "#6B46C1", iconBg: "#F3F0FF",
+              badge: getComments(id).length,
+              desc: "Threaded discussion",
+            },
+            {
+              key: "documents", route: `/application/${id}/documents`,
+              label: "Documents", icon: "paperclip" as const,
+              iconColor: "#5F646A", iconBg: "#E6E9EB",
+              badge: getDocuments(id).length,
+              desc: "Attached files",
+            },
+          ] as const).map((item, idx, arr) => (
+            <TouchableOpacity
+              key={item.key}
+              style={[styles.activityRow, idx < arr.length - 1 && styles.activityRowBorder]}
+              onPress={() => router.push(item.route as any)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.activityIcon, { backgroundColor: item.iconBg }]}>
+                <Feather name={item.icon} size={16} color={item.iconColor} />
+              </View>
+              <View style={styles.activityText}>
+                <Text style={styles.activityLabel}>{item.label}</Text>
+                <Text style={styles.activityDesc}>{item.desc}</Text>
+              </View>
+              <View style={styles.activityRight}>
+                {item.badge > 0 && (
+                  <View style={[styles.activityBadge, { backgroundColor: item.iconColor + "20" }]}>
+                    <Text style={[styles.activityBadgeText, { color: item.iconColor }]}>{item.badge}</Text>
+                  </View>
+                )}
+                <Feather name="chevron-right" size={16} color={Colors.light.textTertiary} />
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
 
       {/* ── Status modal ── */}
@@ -772,4 +823,30 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.tintLight + "40",
     borderRadius: 4, paddingHorizontal: 8,
   },
+
+  activityCard: {
+    backgroundColor: Colors.light.backgroundCard,
+    borderWidth: 1, borderColor: Colors.light.border,
+    borderRadius: 4, overflow: "hidden",
+    marginBottom: 16,
+  },
+  activityRow: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 14, paddingVertical: 13, gap: 12,
+    backgroundColor: Colors.light.backgroundCard,
+  },
+  activityRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.light.borderLight },
+  activityIcon: {
+    width: 34, height: 34, borderRadius: 6,
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  activityText: { flex: 1 },
+  activityLabel: { fontSize: 13, fontFamily: "OpenSans_600SemiBold", color: Colors.light.text },
+  activityDesc: { fontSize: 11, fontFamily: "OpenSans_400Regular", color: Colors.light.textSecondary, marginTop: 1 },
+  activityRight: { flexDirection: "row", alignItems: "center", gap: 8 },
+  activityBadge: {
+    paddingHorizontal: 7, paddingVertical: 2,
+    borderRadius: 10, minWidth: 22, alignItems: "center",
+  },
+  activityBadgeText: { fontSize: 11, fontFamily: "OpenSans_700Bold" },
 });

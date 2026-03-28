@@ -20,9 +20,11 @@ type Props = {
   children: React.ReactNode;
   /** Teal accent on the right side of the back bar — e.g. "3 comments" */
   badge?: string;
+  /** Optional slot rendered between the header and the scroll content (e.g. a TabBar) */
+  headerSlot?: React.ReactNode;
 };
 
-export function SectionScreenLayout({ title, subtitle, rightAction, children, badge }: Props) {
+export function SectionScreenLayout({ title, subtitle, rightAction, children, badge, headerSlot }: Props) {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -49,6 +51,9 @@ export function SectionScreenLayout({ title, subtitle, rightAction, children, ba
           {rightAction ?? null}
         </View>
       </View>
+
+      {/* ── Optional slot (e.g. TabBar) ── */}
+      {headerSlot ?? null}
 
       {/* ── Content ── */}
       <ScrollView
