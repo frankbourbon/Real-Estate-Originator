@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
 import { useFinalCreditReviewService } from "@/services/final-credit-review";
+import { useConditionsService } from "@/services/conditions";
 import { useLetterOfInterestService } from "@/services/letter-of-interest";
 import { useCoreService } from "@/services/core";
 
@@ -29,7 +30,8 @@ export default function CreditEvaluationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication } = useCoreService();
   const { getOrCreateLOI, updateLOI } = useLetterOfInterestService();
-  const { getOrCreateFCR, updateFCR, getConditions, getExceptions } = useFinalCreditReviewService();
+  const { getOrCreateFCR, updateFCR } = useFinalCreditReviewService();
+  const { getConditions, getExceptions } = useConditionsService();
   const insets = useSafeAreaInsets();
   const app = getApplication(id);
 

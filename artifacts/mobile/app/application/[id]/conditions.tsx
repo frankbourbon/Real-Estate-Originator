@@ -23,8 +23,8 @@ import type {
   ConditionStatus,
   Exception,
   ExceptionStatus,
-} from "@/services/final-credit-review";
-import { APPROVAL_LEVELS, useFinalCreditReviewService } from "@/services/final-credit-review";
+} from "@/services/conditions";
+import { APPROVAL_LEVELS, useConditionsService } from "@/services/conditions";
 import { useCoreService } from "@/services/core";
 
 const TABS = [
@@ -493,7 +493,7 @@ export default function ConditionsScreen() {
     getConditions, getExceptions,
     addCondition, updateCondition, deleteCondition,
     addException, updateException, deleteException,
-  } = useFinalCreditReviewService();
+  } = useConditionsService();
   const insets = useSafeAreaInsets();
 
   const app = getApplication(id);
@@ -568,8 +568,7 @@ export default function ConditionsScreen() {
           Alert.alert("Required", "Please enter a condition description.");
           return;
         }
-        await addCondition({
-          applicationId: id,
+        await addCondition(id, {
           phaseAddedAt: app?.status ?? "Inquiry",
           ...conditionDraft,
         });
@@ -580,8 +579,7 @@ export default function ConditionsScreen() {
           Alert.alert("Required", "Please enter an exception description.");
           return;
         }
-        await addException({
-          applicationId: id,
+        await addException(id, {
           phaseAddedAt: app?.status ?? "Inquiry",
           ...exceptionDraft,
         });

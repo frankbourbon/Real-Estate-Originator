@@ -20,7 +20,7 @@ import type { ApplicationStatus } from "@/services/core";
 import { useCoreService } from "@/services/core";
 import { useCommentsService } from "@/services/comments";
 import { useDocumentsService } from "@/services/documents";
-import { useFinalCreditReviewService } from "@/services/final-credit-review";
+import { useConditionsService } from "@/services/conditions";
 import { useInquiryService } from "@/services/inquiry";
 import { useTasksService } from "@/services/tasks";
 import {
@@ -124,15 +124,15 @@ function buildPhaseSections(
     icon: "paperclip", iconColor: "#5F646A", iconBg: "#E6E9EB", badge: attachmentCount,
   };
 
-  const activity = [tasks, comments, documents];
+  const activity = [tasks, conditions, comments, documents];
 
   return {
     "Inquiry":               [borrower, property, rentRoll, opHist, ...activity],
     "Letter of Interest":    [creditEval, rentRoll, opHist, borrower, property, loanTerms, ...activity],
     "Application Start":     [borrower, property, loanTerms, amortization, ...activity],
     "Application Processing":[processing, rentRoll, opHist, ...activity],
-    "Final Credit Review":   [conditions, rentRoll, opHist, ...activity],
-    "Pre-close":             [conditions, ...activity],
+    "Final Credit Review":   [creditEval, rentRoll, opHist, ...activity],
+    "Pre-close":             [...activity],
     "Ready for Docs":        [closingDetails, ...activity],
     "Docs Drawn":            [closingDetails, ...activity],
     "Docs Back":             [closingDetails, ...activity],
@@ -464,7 +464,7 @@ export default function ApplicationOverviewScreen() {
   const { getApplication, getBorrower, getProperty, updateApplication, deleteApplication } = useCoreService();
   const { getComments } = useCommentsService();
   const { getDocuments } = useDocumentsService();
-  const { getConditions, getExceptions } = useFinalCreditReviewService();
+  const { getConditions, getExceptions } = useConditionsService();
   const { getRentRoll, getOpHistory } = useInquiryService();
   const { getTasksForApplication } = useTasksService();
   const insets = useSafeAreaInsets();

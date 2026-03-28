@@ -3,6 +3,7 @@ import { useCallback } from "react";
 import { useApplicationStartService } from "@/services/application-start";
 import { useClosingService } from "@/services/closing";
 import { useCommentsService } from "@/services/comments";
+import { useConditionsService } from "@/services/conditions";
 import { useCoreService } from "@/services/core";
 import { useDocumentsService } from "@/services/documents";
 import { useFinalCreditReviewService } from "@/services/final-credit-review";
@@ -14,7 +15,7 @@ import { useReadyForDocsService } from "@/services/ready-for-docs";
 import { useTasksService } from "@/services/tasks";
 
 /**
- * Coordinates seed data loading and clearing across all 12 services.
+ * Coordinates seed data loading and clearing across all 13 services.
  * Must be used inside <ServiceProviders>.
  */
 export function useSeedCoordinator() {
@@ -24,6 +25,7 @@ export function useSeedCoordinator() {
   const appStart = useApplicationStartService();
   const processing = useProcessingService();
   const fcr = useFinalCreditReviewService();
+  const conditions = useConditionsService();
   const preClose = usePreCloseService();
   const rfd = useReadyForDocsService();
   const closing = useClosingService();
@@ -39,6 +41,7 @@ export function useSeedCoordinator() {
       appStart.loadSeedData(),
       processing.loadSeedData(),
       fcr.loadSeedData(),
+      conditions.loadSeedData(),
       preClose.loadSeedData(),
       rfd.loadSeedData(),
       closing.loadSeedData(),
@@ -46,7 +49,7 @@ export function useSeedCoordinator() {
       tasks.loadSeedData(),
       comments.loadSeedData(),
     ]);
-  }, [core, inquiry, loi, appStart, processing, fcr, preClose, rfd, closing, documents, tasks, comments]);
+  }, [core, inquiry, loi, appStart, processing, fcr, conditions, preClose, rfd, closing, documents, tasks, comments]);
 
   const clearAllData = useCallback(async () => {
     await Promise.all([
@@ -56,6 +59,7 @@ export function useSeedCoordinator() {
       appStart.clearData(),
       processing.clearData(),
       fcr.clearData(),
+      conditions.clearData(),
       preClose.clearData(),
       rfd.clearData(),
       closing.clearData(),
@@ -63,7 +67,7 @@ export function useSeedCoordinator() {
       tasks.clearData(),
       comments.clearData(),
     ]);
-  }, [core, inquiry, loi, appStart, processing, fcr, preClose, rfd, closing, documents, tasks, comments]);
+  }, [core, inquiry, loi, appStart, processing, fcr, conditions, preClose, rfd, closing, documents, tasks, comments]);
 
   /**
    * Clears all phase-service data for a specific application (cascade delete).
@@ -76,6 +80,7 @@ export function useSeedCoordinator() {
       appStart.clearForApplication(applicationId),
       processing.clearForApplication(applicationId),
       fcr.clearForApplication(applicationId),
+      conditions.clearForApplication(applicationId),
       preClose.clearForApplication(applicationId),
       rfd.clearForApplication(applicationId),
       closing.clearForApplication(applicationId),
@@ -84,7 +89,7 @@ export function useSeedCoordinator() {
       comments.clearForApplication(applicationId),
     ]);
     await core.deleteApplication(applicationId);
-  }, [core, inquiry, loi, appStart, processing, fcr, preClose, rfd, closing, documents, tasks, comments]);
+  }, [core, inquiry, loi, appStart, processing, fcr, conditions, preClose, rfd, closing, documents, tasks, comments]);
 
   return { loadAllSeedData, clearAllData, clearForApplication };
 }

@@ -3,6 +3,7 @@ import React from "react";
 import { ApplicationStartServiceProvider } from "@/services/application-start";
 import { ClosingServiceProvider } from "@/services/closing";
 import { CommentsServiceProvider } from "@/services/comments";
+import { ConditionsServiceProvider } from "@/services/conditions";
 import { CoreServiceProvider } from "@/services/core";
 import { DocumentsServiceProvider } from "@/services/documents";
 import { FinalCreditReviewServiceProvider } from "@/services/final-credit-review";
@@ -26,19 +27,21 @@ export function ServiceProviders({ children }: { children: React.ReactNode }) {
           <ApplicationStartServiceProvider>
             <ProcessingServiceProvider>
               <FinalCreditReviewServiceProvider>
-                <PreCloseServiceProvider>
-                  <ReadyForDocsServiceProvider>
-                    <ClosingServiceProvider>
-                      <DocumentsServiceProvider>
-                        <TasksServiceProvider>
-                          <CommentsServiceProvider>
-                            {children}
-                          </CommentsServiceProvider>
-                        </TasksServiceProvider>
-                      </DocumentsServiceProvider>
-                    </ClosingServiceProvider>
-                  </ReadyForDocsServiceProvider>
-                </PreCloseServiceProvider>
+                <ConditionsServiceProvider>
+                  <PreCloseServiceProvider>
+                    <ReadyForDocsServiceProvider>
+                      <ClosingServiceProvider>
+                        <DocumentsServiceProvider>
+                          <TasksServiceProvider>
+                            <CommentsServiceProvider>
+                              {children}
+                            </CommentsServiceProvider>
+                          </TasksServiceProvider>
+                        </DocumentsServiceProvider>
+                      </ClosingServiceProvider>
+                    </ReadyForDocsServiceProvider>
+                  </PreCloseServiceProvider>
+                </ConditionsServiceProvider>
               </FinalCreditReviewServiceProvider>
             </ProcessingServiceProvider>
           </ApplicationStartServiceProvider>
