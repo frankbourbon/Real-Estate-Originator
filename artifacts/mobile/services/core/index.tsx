@@ -47,15 +47,28 @@ export type Borrower = {
   creditScore: string;
 };
 
+/** A single Google Maps–verified physical address for a property. */
+export type PropertyLocation = {
+  id: string;
+  label: string;
+  streetAddress: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  latitude: string;
+  longitude: string;
+  googlePlaceId: string;
+};
+
 export type Property = {
   id: string; createdAt: string; updatedAt: string;
+  /** Free-form legal address as recorded on deed/title (not tied to Google Maps). */
+  legalAddress: string;
+  /** One or more Google Maps–verified physical locations for this property. */
+  locations: PropertyLocation[];
+  // ── Legacy single-address fields — kept for backward compat, synced from locations[0] ──
   streetAddress: string; city: string; state: string; zipCode: string;
-  /** Latitude from Google Places geocode — stored as string for display convenience. */
-  latitude: string;
-  /** Longitude from Google Places geocode — stored as string for display convenience. */
-  longitude: string;
-  /** Google Places place_id for deep linking / map rendering. */
-  googlePlaceId: string;
+  latitude: string; longitude: string; googlePlaceId: string;
   propertyType: PropertyType;
   grossSqFt: string; numberOfUnits: string; yearBuilt: string;
   physicalOccupancyPct: string; economicOccupancyPct: string;
@@ -108,6 +121,8 @@ function emptyBorrower(): Omit<Borrower, "id" | "createdAt" | "updatedAt"> {
 
 function emptyProperty(): Omit<Property, "id" | "createdAt" | "updatedAt"> {
   return {
+    legalAddress: "",
+    locations: [],
     streetAddress: "", city: "", state: "", zipCode: "",
     latitude: "", longitude: "", googlePlaceId: "",
     propertyType: "Office", grossSqFt: "", numberOfUnits: "", yearBuilt: "",
@@ -154,11 +169,27 @@ function migrateBorrower(raw: any): Borrower {
   };
 }
 
-/** Fills in new geolocation fields if missing from older stored records. */
+/** Fills in new fields from older stored records and migrates single address → locations array. */
 function migrateProperty(raw: any): Property {
+  let locations: PropertyLocation[] = raw.locations ?? [];
+  if (locations.length === 0 && (raw.streetAddress || raw.city)) {
+    locations = [{
+      id: `loc_${raw.id}_0`,
+      label: "Main",
+      streetAddress: raw.streetAddress ?? "",
+      city: raw.city ?? "",
+      state: raw.state ?? "",
+      zipCode: raw.zipCode ?? "",
+      latitude: raw.latitude ?? "",
+      longitude: raw.longitude ?? "",
+      googlePlaceId: raw.googlePlaceId ?? "",
+    }];
+  }
   return {
     ...emptyProperty(),
     ...raw,
+    legalAddress: raw.legalAddress ?? "",
+    locations,
     latitude: raw.latitude ?? "",
     longitude: raw.longitude ?? "",
     googlePlaceId: raw.googlePlaceId ?? "",
@@ -223,61 +254,73 @@ const SEED_BORROWERS: Borrower[] = [
 
 const SEED_PROPERTIES: Property[] = [
   { id: "seed_p01", createdAt: d(2026,1,5), updatedAt: d(2026,2,10),
+    legalAddress: "", locations: [],
     streetAddress: "1200 Market Street", city: "Philadelphia", state: "PA", zipCode: "19107",
     latitude: "39.9526", longitude: "-75.1652", googlePlaceId: "ChIJVVVVVVVVVVMR0af4yL9QDCA",
     propertyType: "Office", grossSqFt: "124,000", numberOfUnits: "", yearBuilt: "2004",
     physicalOccupancyPct: "88", economicOccupancyPct: "85" },
   { id: "seed_p02", createdAt: d(2026,1,12), updatedAt: d(2026,2,15),
+    legalAddress: "", locations: [],
     streetAddress: "850 Fifth Avenue", city: "New York", state: "NY", zipCode: "10065",
     latitude: "40.7651", longitude: "-73.9713", googlePlaceId: "",
     propertyType: "Retail", grossSqFt: "36,500", numberOfUnits: "12", yearBuilt: "1998",
     physicalOccupancyPct: "92", economicOccupancyPct: "89" },
   { id: "seed_p03", createdAt: d(2026,1,20), updatedAt: d(2026,3,1),
+    legalAddress: "", locations: [],
     streetAddress: "4400 Industrial Boulevard", city: "Atlanta", state: "GA", zipCode: "30336",
     latitude: "33.7490", longitude: "-84.3880", googlePlaceId: "",
     propertyType: "Industrial", grossSqFt: "312,000", numberOfUnits: "", yearBuilt: "2011",
     physicalOccupancyPct: "95", economicOccupancyPct: "94" },
   { id: "seed_p04", createdAt: d(2026,2,3), updatedAt: d(2026,3,8),
+    legalAddress: "", locations: [],
     streetAddress: "2800 Wilshire Boulevard", city: "Los Angeles", state: "CA", zipCode: "90057",
     latitude: "34.0584", longitude: "-118.2782", googlePlaceId: "",
     propertyType: "Multifamily", grossSqFt: "98,400", numberOfUnits: "120", yearBuilt: "2016",
     physicalOccupancyPct: "96", economicOccupancyPct: "93" },
   { id: "seed_p05", createdAt: d(2026,2,10), updatedAt: d(2026,3,5),
+    legalAddress: "", locations: [],
     streetAddress: "330 North Michigan Avenue", city: "Chicago", state: "IL", zipCode: "60601",
     latitude: "41.8858", longitude: "-87.6245", googlePlaceId: "",
     propertyType: "Mixed Use", grossSqFt: "78,200", numberOfUnits: "48", yearBuilt: "2008",
     physicalOccupancyPct: "91", economicOccupancyPct: "88" },
   { id: "seed_p06", createdAt: d(2026,2,18), updatedAt: d(2026,3,12),
+    legalAddress: "", locations: [],
     streetAddress: "600 Congress Avenue", city: "Austin", state: "TX", zipCode: "78701",
     latitude: "30.2672", longitude: "-97.7431", googlePlaceId: "",
     propertyType: "Office", grossSqFt: "55,000", numberOfUnits: "", yearBuilt: "2019",
     physicalOccupancyPct: "82", economicOccupancyPct: "80" },
   { id: "seed_p07", createdAt: d(2026,1,28), updatedAt: d(2026,3,15),
+    legalAddress: "", locations: [],
     streetAddress: "1500 Brickell Avenue", city: "Miami", state: "FL", zipCode: "33131",
     latitude: "25.7617", longitude: "-80.1918", googlePlaceId: "",
     propertyType: "Hotel", grossSqFt: "145,000", numberOfUnits: "218", yearBuilt: "2014",
     physicalOccupancyPct: "79", economicOccupancyPct: "74" },
   { id: "seed_p08", createdAt: d(2026,2,5), updatedAt: d(2026,3,10),
+    legalAddress: "", locations: [],
     streetAddress: "3200 Peachtree Road NE", city: "Atlanta", state: "GA", zipCode: "30305",
     latitude: "33.8490", longitude: "-84.3773", googlePlaceId: "",
     propertyType: "Multifamily", grossSqFt: "182,000", numberOfUnits: "224", yearBuilt: "2018",
     physicalOccupancyPct: "97", economicOccupancyPct: "95" },
   { id: "seed_p09", createdAt: d(2026,2,22), updatedAt: d(2026,3,18),
+    legalAddress: "", locations: [],
     streetAddress: "900 North Michigan Avenue", city: "Chicago", state: "IL", zipCode: "60611",
     latitude: "41.8977", longitude: "-87.6243", googlePlaceId: "",
     propertyType: "Retail", grossSqFt: "44,600", numberOfUnits: "8", yearBuilt: "2001",
     physicalOccupancyPct: "100", economicOccupancyPct: "97" },
   { id: "seed_p10", createdAt: d(2026,1,15), updatedAt: d(2026,3,20),
+    legalAddress: "", locations: [],
     streetAddress: "555 California Street", city: "San Francisco", state: "CA", zipCode: "94104",
     latitude: "37.7925", longitude: "-122.4052", googlePlaceId: "",
     propertyType: "Office", grossSqFt: "208,000", numberOfUnits: "", yearBuilt: "2007",
     physicalOccupancyPct: "86", economicOccupancyPct: "83" },
   { id: "seed_p11", createdAt: d(2026,3,1), updatedAt: d(2026,3,18),
+    legalAddress: "", locations: [],
     streetAddress: "7800 Airport Boulevard", city: "Houston", state: "TX", zipCode: "77061",
     latitude: "29.6454", longitude: "-95.2789", googlePlaceId: "",
     propertyType: "Industrial", grossSqFt: "425,000", numberOfUnits: "", yearBuilt: "2015",
     physicalOccupancyPct: "100", economicOccupancyPct: "100" },
   { id: "seed_p12", createdAt: d(2026,3,8), updatedAt: d(2026,3,20),
+    legalAddress: "", locations: [],
     streetAddress: "2100 East Camelback Road", city: "Phoenix", state: "AZ", zipCode: "85016",
     latitude: "33.5104", longitude: "-112.0198", googlePlaceId: "",
     propertyType: "Self Storage", grossSqFt: "62,000", numberOfUnits: "480", yearBuilt: "2020",

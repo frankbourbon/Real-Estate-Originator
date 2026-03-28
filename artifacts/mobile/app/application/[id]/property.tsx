@@ -1,11 +1,13 @@
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   KeyboardAvoidingView,
+  Linking,
   Platform,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -18,9 +20,11 @@ import { SectionScreenLayout } from "@/components/SectionScreenLayout";
 import { SelectField } from "@/components/SelectField";
 import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
-import type { PropertyType } from "@/services/core";
+import type { PropertyLocation, PropertyType } from "@/services/core";
 import { useCoreService } from "@/services/core";
 import { formatPct, formatSqFt, getPropertyCityState } from "@/utils/formatting";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const PROPERTY_TYPES: PropertyType[] = [
   "Office", "Retail", "Industrial", "Multifamily", "Mixed Use",
@@ -32,6 +36,8 @@ const TABS = [
   { key: "attributes", label: "Attributes", icon: "home"      as const },
   { key: "occupancy",  label: "Occupancy",  icon: "percent"   as const },
 ];
+
+// ─── Header buttons ───────────────────────────────────────────────────────────
 
 function EditBtn({ onPress }: { onPress: () => void }) {
   return (
@@ -75,6 +81,47 @@ const hdr = StyleSheet.create({
   saveText: { fontSize: 12, fontFamily: "OpenSans_700Bold", color: "#fff" },
 });
 
+// ─── Location helpers ─────────────────────────────────────────────────────────
+
+function genId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+}
+
+function emptyLocation(propertyId: string, idx: number): PropertyLocation {
+  return {
+    id: `loc_${propertyId}_${genId()}`,
+    label: idx === 0 ? "Main" : "",
+    streetAddress: "", city: "", state: "", zipCode: "",
+    latitude: "", longitude: "", googlePlaceId: "",
+  };
+}
+
+function mapsUrl(loc: PropertyLocation): string {
+  if (loc.googlePlaceId) {
+    return `https://maps.google.com/maps/search/?api=1&query_place_id=${loc.googlePlaceId}`;
+  }
+  if (loc.latitude && loc.longitude) {
+    return `https://maps.google.com/maps?q=${loc.latitude},${loc.longitude}`;
+  }
+  const q = encodeURIComponent(
+    [loc.streetAddress, loc.city, loc.state, loc.zipCode].filter(Boolean).join(", ")
+  );
+  return `https://maps.google.com/maps?q=${q}`;
+}
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
+
+type FormState = {
+  legalAddress: string;
+  locations: PropertyLocation[];
+  propertyType: PropertyType;
+  grossSqFt: string;
+  numberOfUnits: string;
+  yearBuilt: string;
+  physicalOccupancyPct: string;
+  economicOccupancyPct: string;
+};
+
 export default function PropertySection() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication, getProperty, updateProperty } = useCoreService();
@@ -83,53 +130,86 @@ export default function PropertySection() {
 
   const [activeTab, setActiveTab] = useState("location");
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({
-    streetAddress: property?.streetAddress ?? "",
-    city: property?.city ?? "",
-    state: property?.state ?? "",
-    zipCode: property?.zipCode ?? "",
-    latitude: property?.latitude ?? "",
-    longitude: property?.longitude ?? "",
-    googlePlaceId: property?.googlePlaceId ?? "",
-    propertyType: property?.propertyType ?? ("Office" as PropertyType),
-    grossSqFt: property?.grossSqFt ?? "",
-    numberOfUnits: property?.numberOfUnits ?? "",
-    yearBuilt: property?.yearBuilt ?? "",
-    physicalOccupancyPct: property?.physicalOccupancyPct ?? "",
-    economicOccupancyPct: property?.economicOccupancyPct ?? "",
+  const [form, setForm] = useState<FormState>({
+    legalAddress: "",
+    locations: [],
+    propertyType: "Office",
+    grossSqFt: "", numberOfUnits: "", yearBuilt: "",
+    physicalOccupancyPct: "", economicOccupancyPct: "",
   });
 
-  const set = (key: string) => (val: string) => setForm((f) => ({ ...f, [key]: val }));
+  const set = useCallback((key: keyof FormState) => (val: string) =>
+    setForm((f) => ({ ...f, [key]: val })), []);
 
-  const handleEdit = () => {
-    setForm({
-      streetAddress: property?.streetAddress ?? "",
-      city: property?.city ?? "",
-      state: property?.state ?? "",
-      zipCode: property?.zipCode ?? "",
-      latitude: property?.latitude ?? "",
-      longitude: property?.longitude ?? "",
-      googlePlaceId: property?.googlePlaceId ?? "",
+  const addLocation = useCallback(() => {
+    setForm((f) => ({
+      ...f,
+      locations: [...f.locations, emptyLocation(app?.propertyId ?? "p", f.locations.length)],
+    }));
+  }, [app]);
+
+  const removeLocation = useCallback((locId: string) => {
+    setForm((f) => ({ ...f, locations: f.locations.filter((l) => l.id !== locId) }));
+  }, []);
+
+  const updateLocation = useCallback((locId: string, patch: Partial<PropertyLocation>) => {
+    setForm((f) => ({
+      ...f,
+      locations: f.locations.map((l) => l.id === locId ? { ...l, ...patch } : l),
+    }));
+  }, []);
+
+  const openInMaps = useCallback((loc: PropertyLocation) => {
+    Linking.openURL(mapsUrl(loc)).catch(() => {});
+  }, []);
+
+  const initForm = useCallback((): FormState => {
+    const locs = property?.locations?.length
+      ? property.locations
+      : (property?.streetAddress || property?.city
+        ? [{
+            id: `loc_${property.id}_0`,
+            label: "Main",
+            streetAddress: property.streetAddress ?? "",
+            city: property.city ?? "",
+            state: property.state ?? "",
+            zipCode: property.zipCode ?? "",
+            latitude: property.latitude ?? "",
+            longitude: property.longitude ?? "",
+            googlePlaceId: property.googlePlaceId ?? "",
+          }]
+        : []);
+    return {
+      legalAddress: property?.legalAddress ?? "",
+      locations: locs,
       propertyType: property?.propertyType ?? "Office",
       grossSqFt: property?.grossSqFt ?? "",
       numberOfUnits: property?.numberOfUnits ?? "",
       yearBuilt: property?.yearBuilt ?? "",
       physicalOccupancyPct: property?.physicalOccupancyPct ?? "",
       economicOccupancyPct: property?.economicOccupancyPct ?? "",
-    });
+    };
+  }, [property]);
+
+  const handleEdit = () => {
+    setForm(initForm());
     setEditing(true);
   };
 
   const handleSave = async () => {
     if (!property) return;
+    const primary = form.locations[0];
     await updateProperty(property.id, {
-      streetAddress: form.streetAddress || undefined,
-      city: form.city || undefined,
-      state: form.state || undefined,
-      zipCode: form.zipCode || undefined,
-      latitude: form.latitude,
-      longitude: form.longitude,
-      googlePlaceId: form.googlePlaceId,
+      legalAddress: form.legalAddress,
+      locations: form.locations,
+      // Sync primary location → legacy top-level fields for backward compat
+      streetAddress: primary?.streetAddress ?? property.streetAddress ?? "",
+      city: primary?.city ?? property.city ?? "",
+      state: primary?.state ?? property.state ?? "",
+      zipCode: primary?.zipCode ?? property.zipCode ?? "",
+      latitude: primary?.latitude ?? property.latitude ?? "",
+      longitude: primary?.longitude ?? property.longitude ?? "",
+      googlePlaceId: primary?.googlePlaceId ?? property.googlePlaceId ?? "",
       propertyType: form.propertyType,
       grossSqFt: form.grossSqFt || undefined,
       numberOfUnits: form.numberOfUnits || undefined,
@@ -142,82 +222,152 @@ export default function PropertySection() {
 
   const handleCancel = () => setEditing(false);
 
-  const hasCoords = property?.latitude && property?.longitude;
-  const coordsDisplay = hasCoords
-    ? `${Number(property!.latitude).toFixed(5)}, ${Number(property!.longitude).toFixed(5)}`
-    : undefined;
+  // ─── Tab content ────────────────────────────────────────────────────────────
 
   function renderTabContent() {
     if (editing) {
       switch (activeTab) {
         case "location":
           return (
-            <View style={styles.card}>
-              <SectionHeader title="Location" subtitle="Use address search to auto-fill lat/long and Place ID" />
-              <Text style={styles.fieldLabel}>Street Address</Text>
-              <AddressLookup
-                value={form.streetAddress}
-                onSelect={(result) => setForm((f) => ({
-                  ...f,
-                  streetAddress: result.streetAddress,
-                  city: result.city,
-                  state: result.state,
-                  zipCode: result.zipCode,
-                  latitude: result.latitude,
-                  longitude: result.longitude,
-                  googlePlaceId: result.googlePlaceId,
-                }))}
-              />
-              <View style={[styles.row, { marginTop: 12 }]}>
-                <View style={styles.flex2}>
-                  <FormField label="City" value={form.city} onChangeText={set("city")} placeholder="Chicago" />
-                </View>
-                <View style={styles.gap} />
-                <View style={styles.flex1}>
-                  <FormField label="State" value={form.state} onChangeText={set("state")} placeholder="IL" maxLength={2} autoCapitalize="characters" />
-                </View>
-                <View style={styles.gap} />
-                <View style={styles.flex1}>
-                  <FormField label="ZIP" value={form.zipCode} onChangeText={set("zipCode")} placeholder="60601" keyboardType="number-pad" maxLength={5} />
-                </View>
+            <View>
+              {/* Legal Address */}
+              <View style={s.card}>
+                <SectionHeader
+                  title="Legal Address"
+                  subtitle="Free-form text as recorded on deed, title, or APN — not linked to Google Maps"
+                />
+                <TextInput
+                  style={[s.legalInput]}
+                  value={form.legalAddress}
+                  onChangeText={set("legalAddress")}
+                  placeholder={"e.g. Lot 14, Block 7, Section B, as described in Deed Book 4219,\nPage 302, County of Philadelphia"}
+                  placeholderTextColor={Colors.light.textTertiary}
+                  multiline
+                  textAlignVertical="top"
+                  numberOfLines={4}
+                />
               </View>
-              <View style={styles.geoRow}>
-                <View style={styles.flex1}>
-                  <FormField label="Latitude" value={form.latitude} onChangeText={set("latitude")} placeholder="41.8858" keyboardType="decimal-pad" />
+
+              {/* Physical Locations */}
+              <View style={s.card}>
+                <View style={s.locSectionRow}>
+                  <View style={{ flex: 1 }}>
+                    <SectionHeader
+                      title="Physical Locations"
+                      subtitle="Google Maps–verified addresses for physical location verification"
+                    />
+                  </View>
+                  <TouchableOpacity onPress={addLocation} style={s.addLocBtn} activeOpacity={0.75}>
+                    <Feather name="plus" size={13} color={Colors.light.tint} />
+                    <Text style={s.addLocText}>Add</Text>
+                  </TouchableOpacity>
                 </View>
-                <View style={styles.gap} />
-                <View style={styles.flex1}>
-                  <FormField label="Longitude" value={form.longitude} onChangeText={set("longitude")} placeholder="-87.6245" keyboardType="decimal-pad" />
-                </View>
+
+                {form.locations.length === 0 && (
+                  <View style={s.emptyLocBox}>
+                    <Feather name="map-pin" size={20} color={Colors.light.textTertiary} />
+                    <Text style={s.emptyLocText}>No locations yet. Tap "Add" to link a Google Maps address.</Text>
+                  </View>
+                )}
+
+                {form.locations.map((loc, idx) => (
+                  <View
+                    key={loc.id}
+                    style={[s.locEditCard, idx > 0 && s.locEditCardBorder, { zIndex: (form.locations.length - idx) * 50 }]}
+                  >
+                    {/* Location header row */}
+                    <View style={s.locEditHeader}>
+                      <TextInput
+                        style={s.locLabelInput}
+                        value={loc.label}
+                        onChangeText={(v) => updateLocation(loc.id, { label: v })}
+                        placeholder={`Label (e.g. ${idx === 0 ? "Main Building" : "Parking Structure"})`}
+                        placeholderTextColor={Colors.light.textTertiary}
+                      />
+                      <TouchableOpacity
+                        onPress={() => removeLocation(loc.id)}
+                        style={s.removeBtn}
+                        activeOpacity={0.7}
+                      >
+                        <Feather name="x" size={16} color="#B91C1C" />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Google Maps search */}
+                    <Text style={s.fieldSubLabel}>Search Google Maps</Text>
+                    <AddressLookup
+                      value={loc.streetAddress}
+                      onSelect={(result) => updateLocation(loc.id, {
+                        streetAddress: result.streetAddress,
+                        city: result.city,
+                        state: result.state,
+                        zipCode: result.zipCode,
+                        latitude: result.latitude,
+                        longitude: result.longitude,
+                        googlePlaceId: result.googlePlaceId,
+                      })}
+                    />
+
+                    {/* City / State / ZIP */}
+                    <View style={[s.row, { marginTop: 10 }]}>
+                      <View style={s.flex2}>
+                        <FormField label="City" value={loc.city} onChangeText={(v) => updateLocation(loc.id, { city: v })} placeholder="Philadelphia" />
+                      </View>
+                      <View style={s.gap} />
+                      <View style={s.flex1}>
+                        <FormField label="State" value={loc.state} onChangeText={(v) => updateLocation(loc.id, { state: v })} placeholder="PA" maxLength={2} autoCapitalize="characters" />
+                      </View>
+                      <View style={s.gap} />
+                      <View style={s.flex1}>
+                        <FormField label="ZIP" value={loc.zipCode} onChangeText={(v) => updateLocation(loc.id, { zipCode: v })} placeholder="19107" keyboardType="number-pad" maxLength={5} />
+                      </View>
+                    </View>
+
+                    {/* Lat / Lng */}
+                    <View style={s.row}>
+                      <View style={s.flex1}>
+                        <FormField label="Latitude" value={loc.latitude} onChangeText={(v) => updateLocation(loc.id, { latitude: v })} placeholder="39.9526" keyboardType="decimal-pad" />
+                      </View>
+                      <View style={s.gap} />
+                      <View style={s.flex1}>
+                        <FormField label="Longitude" value={loc.longitude} onChangeText={(v) => updateLocation(loc.id, { longitude: v })} placeholder="-75.1652" keyboardType="decimal-pad" />
+                      </View>
+                    </View>
+
+                    {/* Place ID badge */}
+                    {loc.googlePlaceId ? (
+                      <View style={s.placeIdRow}>
+                        <Feather name="check-circle" size={12} color="#00875D" />
+                        <Text style={s.placeIdText} numberOfLines={1}>Place ID: {loc.googlePlaceId}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ))}
               </View>
-              {form.googlePlaceId ? (
-                <View style={styles.placeIdRow}>
-                  <Feather name="check-circle" size={12} color="#00875D" />
-                  <Text style={styles.placeIdText} numberOfLines={1}>Place ID: {form.googlePlaceId}</Text>
-                </View>
-              ) : null}
             </View>
           );
+
         case "attributes":
           return (
-            <View style={styles.card}>
+            <View style={s.card}>
               <SectionHeader title="Physical Attributes" />
               <SelectField label="Property Type" value={form.propertyType} options={PROPERTY_TYPES} onChange={(v) => set("propertyType")(v)} required />
-              <View style={styles.row}>
-                <View style={styles.flex1}>
+              <View style={s.row}>
+                <View style={s.flex1}>
                   <FormField label="Gross Sq Ft" value={form.grossSqFt} onChangeText={set("grossSqFt")} placeholder="25,000" keyboardType="number-pad" />
                 </View>
-                <View style={styles.gap} />
-                <View style={styles.flex1}>
+                <View style={s.gap} />
+                <View style={s.flex1}>
                   <FormField label="Rentable Units" value={form.numberOfUnits} onChangeText={set("numberOfUnits")} placeholder="0" keyboardType="number-pad" />
                 </View>
               </View>
               <FormField label="Year Built" value={form.yearBuilt} onChangeText={set("yearBuilt")} placeholder="2005" keyboardType="number-pad" maxLength={4} />
             </View>
           );
+
         case "occupancy":
           return (
-            <View style={styles.card}>
+            <View style={s.card}>
               <SectionHeader title="Occupancy" subtitle="Unit-based vs rent-based — two distinct measures" />
               <FormField label="Physical Occupancy (%)" value={form.physicalOccupancyPct} onChangeText={set("physicalOccupancyPct")} placeholder="95.0" keyboardType="decimal-pad" suffix="%" hint="= Occupied units ÷ Total rentable units × 100" />
               <FormField label="Economic Occupancy (%)" value={form.economicOccupancyPct} onChangeText={set("economicOccupancyPct")} placeholder="91.0" keyboardType="decimal-pad" suffix="%" hint="= Collected rent ÷ Gross potential rent × 100" />
@@ -226,21 +376,84 @@ export default function PropertySection() {
       }
     } else {
       switch (activeTab) {
-        case "location":
+        case "location": {
+          const locs = property?.locations ?? [];
           return (
-            <View style={styles.card}>
-              <SectionHeader title="Location" />
-              <DetailRow label="Street Address" value={property?.streetAddress} />
-              <DetailRow label="City" value={property?.city} />
-              <DetailRow label="State" value={property?.state} />
-              <DetailRow label="ZIP Code" value={property?.zipCode} />
-              <DetailRow label="Coordinates" value={coordsDisplay} />
-              <DetailRow label="Google Place ID" value={property?.googlePlaceId || undefined} last />
+            <View>
+              {/* Legal Address */}
+              <View style={s.card}>
+                <SectionHeader title="Legal Address" subtitle="As recorded on deed, title, or APN" />
+                {property?.legalAddress ? (
+                  <Text style={s.legalText}>{property.legalAddress}</Text>
+                ) : (
+                  <Text style={s.emptyHint}>No legal address recorded. Tap Edit to add.</Text>
+                )}
+              </View>
+
+              {/* Physical Locations */}
+              <View style={s.card}>
+                <SectionHeader
+                  title="Physical Locations"
+                  subtitle={`${locs.length} location${locs.length !== 1 ? "s" : ""} · tap to open in Maps`}
+                />
+                {locs.length === 0 ? (
+                  <Text style={s.emptyHint}>No physical locations linked. Tap Edit to add.</Text>
+                ) : (
+                  locs.map((loc, idx) => {
+                    const hasMapData = loc.latitude || loc.longitude || loc.streetAddress;
+                    return (
+                      <View
+                        key={loc.id}
+                        style={[s.locCard, idx > 0 && s.locCardBorder]}
+                      >
+                        <View style={s.locCardHeader}>
+                          <View style={s.locLabelBadge}>
+                            <Feather name="map-pin" size={11} color={Colors.light.tint} />
+                            <Text style={s.locLabelText}>{loc.label || `Location ${idx + 1}`}</Text>
+                          </View>
+                          {hasMapData && (
+                            <TouchableOpacity
+                              onPress={() => openInMaps(loc)}
+                              style={s.mapBtn}
+                              activeOpacity={0.75}
+                            >
+                              <Feather name="map" size={13} color={Colors.light.tint} />
+                              <Text style={s.mapBtnText}>Open in Maps</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+
+                        {loc.streetAddress ? (
+                          <Text style={s.locStreet}>{loc.streetAddress}</Text>
+                        ) : null}
+                        {(loc.city || loc.state || loc.zipCode) ? (
+                          <Text style={s.locCityLine}>
+                            {[loc.city, [loc.state, loc.zipCode].filter(Boolean).join(" ")].filter(Boolean).join(", ")}
+                          </Text>
+                        ) : null}
+                        {(loc.latitude && loc.longitude) ? (
+                          <Text style={s.locCoords}>
+                            {Number(loc.latitude).toFixed(5)}, {Number(loc.longitude).toFixed(5)}
+                          </Text>
+                        ) : null}
+                        {loc.googlePlaceId ? (
+                          <View style={s.placeIdRow}>
+                            <Feather name="check-circle" size={11} color="#00875D" />
+                            <Text style={s.placeIdText} numberOfLines={1}>Place ID: {loc.googlePlaceId}</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    );
+                  })
+                )}
+              </View>
             </View>
           );
+        }
+
         case "attributes":
           return (
-            <View style={styles.card}>
+            <View style={s.card}>
               <SectionHeader title="Physical Attributes" />
               <DetailRow label="Property Type" value={property?.propertyType} />
               <DetailRow label="Gross Sq Ft" value={property?.grossSqFt ? formatSqFt(property.grossSqFt) : undefined} />
@@ -248,9 +461,10 @@ export default function PropertySection() {
               <DetailRow label="Year Built" value={property?.yearBuilt} last />
             </View>
           );
+
         case "occupancy":
           return (
-            <View style={styles.card}>
+            <View style={s.card}>
               <SectionHeader title="Occupancy" subtitle="Unit-based vs rent-based — two distinct measures" />
               <DetailRow label="Physical Occupancy" value={property?.physicalOccupancyPct ? `${formatPct(property.physicalOccupancyPct)} (unit-based)` : undefined} />
               <DetailRow label="Economic Occupancy" value={property?.economicOccupancyPct ? `${formatPct(property.economicOccupancyPct)} (rent-based)` : undefined} last />
@@ -284,28 +498,207 @@ export default function PropertySection() {
   );
 }
 
-const styles = StyleSheet.create({
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
   card: {
     backgroundColor: Colors.light.backgroundCard,
     borderWidth: 1, borderColor: Colors.light.border,
     borderRadius: 4, padding: 16,
+    marginBottom: 12,
   },
   row: { flexDirection: "row", alignItems: "flex-end" },
-  geoRow: { flexDirection: "row", alignItems: "flex-end", marginTop: 0 },
   flex1: { flex: 1 },
   flex2: { flex: 2 },
   gap: { width: 8 },
-  fieldLabel: {
-    fontSize: 12, fontFamily: "OpenSans_600SemiBold",
-    color: Colors.light.text, marginBottom: 6, marginTop: 4,
+
+  // ── Legal address ──────────────────────────────────────────────────────────
+  legalInput: {
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === "ios" ? 10 : 8,
+    paddingTop: 10,
+    fontSize: 14,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.text,
+    backgroundColor: Colors.light.background,
+    minHeight: 90,
+    marginTop: 4,
   },
+  legalText: {
+    fontSize: 13,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.text,
+    lineHeight: 20,
+    marginTop: 4,
+  },
+  emptyHint: {
+    fontSize: 12,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textTertiary,
+    fontStyle: "italic",
+    marginTop: 4,
+  },
+
+  // ── Physical locations (read) ───────────────────────────────────────────────
+  locCard: { paddingVertical: 12 },
+  locCardBorder: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.borderLight,
+  },
+  locCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  locLabelBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: Colors.light.tintLight,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  locLabelText: {
+    fontSize: 11,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.tint,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  mapBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.light.tint,
+    backgroundColor: Colors.light.tintLight,
+  },
+  mapBtnText: {
+    fontSize: 12,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.tint,
+  },
+  locStreet: {
+    fontSize: 13,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.text,
+    marginBottom: 1,
+  },
+  locCityLine: {
+    fontSize: 12,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textSecondary,
+    marginBottom: 2,
+  },
+  locCoords: {
+    fontSize: 11,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textTertiary,
+    marginTop: 2,
+  },
+
+  // ── Physical locations (edit) ───────────────────────────────────────────────
+  locSectionRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 4,
+  },
+  addLocBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.light.tint,
+    marginTop: 2,
+  },
+  addLocText: {
+    fontSize: 12,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.tint,
+  },
+  emptyLocBox: {
+    alignItems: "center",
+    paddingVertical: 20,
+    gap: 8,
+  },
+  emptyLocText: {
+    fontSize: 12,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textTertiary,
+    textAlign: "center",
+    fontStyle: "italic",
+  },
+  locEditCard: {
+    paddingTop: 12,
+  },
+  locEditCardBorder: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.borderLight,
+    marginTop: 12,
+  },
+  locEditHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 10,
+  },
+  locLabelInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 4,
+    paddingHorizontal: 10,
+    paddingVertical: Platform.OS === "ios" ? 8 : 6,
+    fontSize: 13,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.text,
+    backgroundColor: Colors.light.background,
+  },
+  removeBtn: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 4,
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  fieldSubLabel: {
+    fontSize: 11,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.textSecondary,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    marginBottom: 6,
+    marginTop: 2,
+  },
+
+  // ── Place ID ───────────────────────────────────────────────────────────────
   placeIdRow: {
-    flexDirection: "row", alignItems: "center", gap: 5,
-    marginTop: 8, paddingTop: 8,
-    borderTopWidth: 1, borderTopColor: Colors.light.borderLight,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.borderLight,
   },
   placeIdText: {
-    fontSize: 11, fontFamily: "OpenSans_400Regular",
-    color: Colors.light.textSecondary, flex: 1,
+    fontSize: 11,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textSecondary,
+    flex: 1,
   },
 });

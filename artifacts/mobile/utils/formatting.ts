@@ -73,12 +73,13 @@ export function getBorrowerDisplayName(borrower: Borrower | undefined): string {
 
 export function getPropertyShortAddress(property: Property | undefined): string {
   if (!property) return "No property set";
-  return property.streetAddress || "Address not set";
+  return property.locations?.[0]?.streetAddress || property.streetAddress || "Address not set";
 }
 
 export function getPropertyCityState(property: Property | undefined): string {
   if (!property) return "";
-  return [property.city, property.state].filter(Boolean).join(", ");
+  const primary = property.locations?.[0];
+  return [primary?.city ?? property.city, primary?.state ?? property.state].filter(Boolean).join(", ");
 }
 
 export function getTopLevelComments(comments: Comment[]): Comment[] {

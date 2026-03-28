@@ -95,8 +95,24 @@ export default function NewApplicationScreen() {
   const updateBor = (key: string) => (val: string) => setBorForm((f) => ({ ...f, [key]: val }));
 
   const saveAll = async () => {
+    const hasAddress = Boolean(propForm.streetAddress || propForm.city);
     await Promise.all([
-      updateProperty(property.id, { ...propForm, ...occForm }),
+      updateProperty(property.id, {
+        ...propForm,
+        ...occForm,
+        legalAddress: "",
+        locations: hasAddress ? [{
+          id: `loc_${property.id}_0`,
+          label: "Main",
+          streetAddress: propForm.streetAddress,
+          city: propForm.city,
+          state: propForm.state,
+          zipCode: propForm.zipCode,
+          latitude: "",
+          longitude: "",
+          googlePlaceId: "",
+        }] : [],
+      }),
       updateBorrower(borrower.id, {
         firstName: borForm.firstName,
         lastName: borForm.lastName,
