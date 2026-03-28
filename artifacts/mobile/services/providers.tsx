@@ -5,8 +5,6 @@ import { ClosingServiceProvider } from "@/services/closing";
 import { CommentsServiceProvider } from "@/services/comments";
 import { CoreServiceProvider } from "@/services/core";
 import { DocumentsServiceProvider } from "@/services/documents";
-import { DocsBackServiceProvider } from "@/services/docs-back";
-import { DocsDrawnServiceProvider } from "@/services/docs-drawn";
 import { FinalCreditReviewServiceProvider } from "@/services/final-credit-review";
 import { InquiryServiceProvider } from "@/services/inquiry";
 import { LetterOfInterestServiceProvider } from "@/services/letter-of-interest";
@@ -16,7 +14,7 @@ import { ReadyForDocsServiceProvider } from "@/services/ready-for-docs";
 import { TasksServiceProvider } from "@/services/tasks";
 
 /**
- * Composes all 14 microservice providers.
+ * Composes all 12 microservice providers.
  * Services are completely independent — no service imports from another.
  * They are linked only by applicationId strings at the UI layer.
  */
@@ -30,19 +28,15 @@ export function ServiceProviders({ children }: { children: React.ReactNode }) {
               <FinalCreditReviewServiceProvider>
                 <PreCloseServiceProvider>
                   <ReadyForDocsServiceProvider>
-                    <DocsDrawnServiceProvider>
-                      <DocsBackServiceProvider>
-                        <ClosingServiceProvider>
-                          <DocumentsServiceProvider>
-                            <TasksServiceProvider>
-                              <CommentsServiceProvider>
-                                {children}
-                              </CommentsServiceProvider>
-                            </TasksServiceProvider>
-                          </DocumentsServiceProvider>
-                        </ClosingServiceProvider>
-                      </DocsBackServiceProvider>
-                    </DocsDrawnServiceProvider>
+                    <ClosingServiceProvider>
+                      <DocumentsServiceProvider>
+                        <TasksServiceProvider>
+                          <CommentsServiceProvider>
+                            {children}
+                          </CommentsServiceProvider>
+                        </TasksServiceProvider>
+                      </DocumentsServiceProvider>
+                    </ClosingServiceProvider>
                   </ReadyForDocsServiceProvider>
                 </PreCloseServiceProvider>
               </FinalCreditReviewServiceProvider>

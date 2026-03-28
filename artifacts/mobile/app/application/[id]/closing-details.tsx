@@ -15,23 +15,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { useCoreService } from "@/services/core";
 import { useReadyForDocsService } from "@/services/ready-for-docs";
-import { useDocsDrawnService } from "@/services/docs-drawn";
-import { useDocsBackService } from "@/services/docs-back";
 import { useClosingService } from "@/services/closing";
 
 export default function ClosingDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication } = useCoreService();
   const { getOrCreateReadyForDocs, updateReadyForDocs } = useReadyForDocsService();
-  const { getOrCreateDocsDrawn, updateDocsDrawn } = useDocsDrawnService();
-  const { getOrCreateDocsBack, updateDocsBack } = useDocsBackService();
   const { getOrCreateClosing, updateClosing } = useClosingService();
   const insets = useSafeAreaInsets();
   const app = getApplication(id);
 
   const rfd = getOrCreateReadyForDocs(id);
-  const dd = getOrCreateDocsDrawn(id);
-  const db = getOrCreateDocsBack(id);
   const cl = getOrCreateClosing(id);
 
   const [insuranceCarrier, setInsuranceCarrier] = useState(rfd.insuranceCarrier);
@@ -41,11 +35,11 @@ export default function ClosingDetailsScreen() {
   const [escrowCompany, setEscrowCompany] = useState(rfd.escrowCompany);
   const [floodZoneDesignation, setFloodZoneDesignation] = useState(rfd.floodZoneDesignation);
   const [titleReportDate, setTitleReportDate] = useState(rfd.titleReportDate);
-  const [docsDrawnDate, setDocsDrawnDate] = useState(dd.docsDrawnDate);
-  const [settlementFeesUsd, setSettlementFeesUsd] = useState(dd.settlementFeesUsd);
-  const [settlementStatementDate, setSettlementStatementDate] = useState(dd.settlementStatementDate);
-  const [docsBackDate, setDocsBackDate] = useState(db.docsBackDate);
-  const [titleConfirmationDate, setTitleConfirmationDate] = useState(db.titleConfirmationDate);
+  const [docsDrawnDate, setDocsDrawnDate] = useState(cl.docsDrawnDate);
+  const [settlementFeesUsd, setSettlementFeesUsd] = useState(cl.settlementFeesUsd);
+  const [settlementStatementDate, setSettlementStatementDate] = useState(cl.settlementStatementDate);
+  const [docsBackDate, setDocsBackDate] = useState(cl.docsBackDate);
+  const [titleConfirmationDate, setTitleConfirmationDate] = useState(cl.titleConfirmationDate);
   const [wireAmountUsd, setWireAmountUsd] = useState(cl.wireAmountUsd);
   const [wireBankName, setWireBankName] = useState(cl.wireBankName);
   const [wireAbaNumber, setWireAbaNumber] = useState(cl.wireAbaNumber);
@@ -72,10 +66,16 @@ export default function ClosingDetailsScreen() {
   const handleSave = async () => {
     setSaving(true);
     await Promise.all([
-      updateReadyForDocs(id, { insuranceCarrier, insurancePolicyNumber, insuranceEffectiveDate, titleCompany, escrowCompany, floodZoneDesignation, titleReportDate }),
-      updateDocsDrawn(id, { docsDrawnDate, settlementFeesUsd, settlementStatementDate }),
-      updateDocsBack(id, { docsBackDate, titleConfirmationDate }),
-      updateClosing(id, { wireAmountUsd, wireBankName, wireAbaNumber, wireAccountNumber, servicingLoanNumber, bookingDate }),
+      updateReadyForDocs(id, {
+        insuranceCarrier, insurancePolicyNumber, insuranceEffectiveDate,
+        titleCompany, escrowCompany, floodZoneDesignation, titleReportDate,
+      }),
+      updateClosing(id, {
+        docsDrawnDate, settlementFeesUsd, settlementStatementDate,
+        docsBackDate, titleConfirmationDate,
+        wireAmountUsd, wireBankName, wireAbaNumber, wireAccountNumber,
+        servicingLoanNumber, bookingDate,
+      }),
     ]);
     setSaving(false);
     setDirty(false);

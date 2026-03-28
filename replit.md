@@ -97,7 +97,7 @@ Expo React Native app — LOA Origination System for commercial real estate lend
 
 **Design**: Salt Design System / J.P. Morgan Brand — teal-500 `#1B7F9E` primary, blue-900 `#001736` dark surface, `#E6E9EB` background, Open Sans typography.
 
-**Architecture**: Full microservices — 14 independent service contexts, zero cross-service imports. Services communicate only through `applicationId` strings.
+**Architecture**: Full microservices — 12 independent service contexts, zero cross-service imports. Services communicate only through `applicationId` strings.
 
 **Services** (`services/`):
 | Service | Storage Key | Responsibility |
@@ -110,14 +110,14 @@ Expo React Native app — LOA Origination System for commercial real estate lend
 | `final-credit-review` | `svc_fcr_v1` | FCR record, Conditions, Exceptions |
 | `pre-close` | `svc_pre_close_v1` | HMDA compliance |
 | `ready-for-docs` | `svc_ready_for_docs_v1` | Insurance, title, escrow, flood |
-| `docs-drawn` | `svc_docs_drawn_v1` | Docs drawn date, settlement fees |
-| `docs-back` | `svc_docs_back_v1` | Docs back date, title confirmation |
-| `closing` | `svc_closing_v1` | Wire info, servicing loan number, booking date |
+| `closing` | `svc_closing_v1` | **Closing persona (Docs Drawn + Docs Back + Wire/Booking)** — all three owned by the same Closing Team |
 | `documents` | `svc_documents_v1` | Attachment metadata |
 | `tasks` | `svc_tasks_v1` | LoanTask per application+phase, seed/toggle/custom |
 | `comments` | `svc_comments_v1` | Threaded comments via parentCommentId |
 
-**Providers**: `services/providers.tsx` wraps all 14 service providers. `services/seed-coordinator.tsx` orchestrates seeding across all services.
+**Providers**: `services/providers.tsx` wraps all 12 service providers. `services/seed-coordinator.tsx` orchestrates seeding across all services.
+
+**Rent Roll & Operating History**: Stored in the `inquiry` MS but surfaced in the overview nav for **Letter of Interest**, **Processing**, and **Credit Review** MS sections — reflecting the phases where these are actively reviewed.
 
 **Key screens** (all under `app/application/[id]/`):
 - `index.tsx` — Overview: badge counts from 5 services, status advance/retreat
