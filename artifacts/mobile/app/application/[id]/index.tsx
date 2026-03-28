@@ -52,7 +52,10 @@ function buildGroups(
   commentCount: number,
   attachmentCount: number,
   conditionCount: number,
-  exceptionCount: number
+  exceptionCount: number,
+  taskCount: number,
+  rentRollCount: number,
+  opHistCount: number
 ): SectionGroup[] {
   return [
     {
@@ -166,6 +169,43 @@ function buildGroups(
           icon: "map-pin",
           iconColor: "#00875D",
           iconBg: "#EAF5F2",
+        },
+        {
+          key: "rent-roll",
+          route: `/application/${id}/rent-roll`,
+          label: "Rent Roll",
+          description: "MISMO rent roll — unit-level lease data",
+          icon: "list",
+          iconColor: "#00875D",
+          iconBg: "#EAF5F2",
+          badge: rentRollCount,
+        },
+        {
+          key: "operating-history",
+          route: `/application/${id}/operating-history`,
+          label: "Operating History",
+          description: "Income & expense statements by period",
+          icon: "trending-up",
+          iconColor: "#00875D",
+          iconBg: "#EAF5F2",
+          badge: opHistCount,
+        },
+      ],
+    },
+    {
+      label: "Tasks",
+      groupColor: "#C75300",
+      groupIcon: "check-square",
+      sections: [
+        {
+          key: "tasks",
+          route: `/application/${id}/tasks`,
+          label: "Phase Task Checklist",
+          description: "Phase-by-phase task tracking for this loan",
+          icon: "check-square",
+          iconColor: "#C75300",
+          iconBg: "#FFECDC",
+          badge: taskCount,
         },
       ],
     },
@@ -359,6 +399,7 @@ export default function ApplicationOverviewScreen() {
     getApplication, getBorrower, getProperty,
     updateApplication, deleteApplication,
     getConditionsForApplication, getExceptionsForApplication,
+    getRentRollForProperty, getOperatingHistoryForProperty, getTasksForApplication,
   } = useApplications();
   const insets = useSafeAreaInsets();
   const [statusModal, setStatusModal] = useState(false);
@@ -407,7 +448,13 @@ export default function ApplicationOverviewScreen() {
 
   const conditionCount = getConditionsForApplication(id).length;
   const exceptionCount = getExceptionsForApplication(id).length;
-  const groups = buildGroups(id, app.comments.length, app.attachments.length, conditionCount, exceptionCount);
+  const rentRollCount = getRentRollForProperty(app.propertyId).length;
+  const opHistCount = getOperatingHistoryForProperty(app.propertyId).length;
+  const taskCount = getTasksForApplication(id).length;
+  const groups = buildGroups(
+    id, app.comments.length, app.attachments.length,
+    conditionCount, exceptionCount, taskCount, rentRollCount, opHistCount
+  );
 
   return (
     <>

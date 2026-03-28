@@ -15,6 +15,9 @@ export default function ApplicationLayout() {
       <Stack.Screen name="processing" />
       <Stack.Screen name="closing-details" />
       <Stack.Screen name="conditions" />
+      <Stack.Screen name="tasks" />
+      <Stack.Screen name="rent-roll" />
+      <Stack.Screen name="operating-history" />
     </Stack>
   );
 }

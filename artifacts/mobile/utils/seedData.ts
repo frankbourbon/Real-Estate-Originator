@@ -3,7 +3,9 @@ import type {
   Condition,
   Exception,
   LOAApplication,
+  OperatingYear,
   Property,
+  RentRollUnit,
 } from "@/context/ApplicationContext";
 
 function uid(seed: string): string {
@@ -778,5 +780,262 @@ export const SEED_EXCEPTIONS: Exception[] = [
     createdByPersona: "Credit Risk",
     approvedBy: "Alan Morse (Credit Risk Officer)",
     approvedAt: dt(2026, 1, 20),
+  },
+];
+
+// ─── Rent Roll (MISMO RentRollItemType) ───────────────────────────────────────
+// Seed units for: p04 (MF LA), p08 (MF Atlanta), p05 (Mixed Use Chicago), p02 (Retail NY)
+
+export const SEED_RENT_ROLL: RentRollUnit[] = [
+  // ── p04 Multifamily — 2800 Wilshire, Los Angeles (120 units) ──────────────
+  {
+    id: uid("rr_p04_01"), propertyId: uid("p04"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "101", unitType: "Studio", bedroomCount: "0", bathroomCount: "1",
+    squareFeet: "550", tenantName: "Rodriguez, M.", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2025, 6, 1), leaseEndDate: dateStr(2026, 5, 31),
+    monthlyRentAmount: "2,150", marketRentAmount: "2,200",
+    annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "",
+  },
+  {
+    id: uid("rr_p04_02"), propertyId: uid("p04"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "102", unitType: "1BR/1BA", bedroomCount: "1", bathroomCount: "1",
+    squareFeet: "720", tenantName: "Park, J.", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2025, 3, 1), leaseEndDate: dateStr(2026, 2, 28),
+    monthlyRentAmount: "2,850", marketRentAmount: "2,950",
+    annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "",
+  },
+  {
+    id: uid("rr_p04_03"), propertyId: uid("p04"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "201", unitType: "1BR/1BA", bedroomCount: "1", bathroomCount: "1",
+    squareFeet: "720", tenantName: "", leaseStatus: "Vacant",
+    leaseBeginDate: "", leaseEndDate: "",
+    monthlyRentAmount: "", marketRentAmount: "2,950",
+    annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "",
+  },
+  {
+    id: uid("rr_p04_04"), propertyId: uid("p04"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "205", unitType: "2BR/2BA", bedroomCount: "2", bathroomCount: "2",
+    squareFeet: "1,050", tenantName: "Williams, T. & S.", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2024, 9, 1), leaseEndDate: dateStr(2026, 8, 31),
+    monthlyRentAmount: "3,850", marketRentAmount: "4,000",
+    annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "",
+  },
+  {
+    id: uid("rr_p04_05"), propertyId: uid("p04"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "310", unitType: "2BR/2BA+Den", bedroomCount: "2", bathroomCount: "2",
+    squareFeet: "1,220", tenantName: "Kim, A.", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2025, 1, 1), leaseEndDate: dateStr(2026, 12, 31),
+    monthlyRentAmount: "4,400", marketRentAmount: "4,500",
+    annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "",
+  },
+  {
+    id: uid("rr_p04_06"), propertyId: uid("p04"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "401", unitType: "3BR/2BA", bedroomCount: "3", bathroomCount: "2",
+    squareFeet: "1,480", tenantName: "Johnson, R.", leaseStatus: "Notice",
+    leaseBeginDate: dateStr(2024, 4, 1), leaseEndDate: dateStr(2026, 3, 31),
+    monthlyRentAmount: "5,200", marketRentAmount: "5,500",
+    annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "",
+  },
+
+  // ── p08 Multifamily — 3200 Peachtree Rd, Atlanta (224 units) ─────────────
+  {
+    id: uid("rr_p08_01"), propertyId: uid("p08"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "1A", unitType: "Studio", bedroomCount: "0", bathroomCount: "1",
+    squareFeet: "490", tenantName: "Patel, S.", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2025, 8, 1), leaseEndDate: dateStr(2026, 7, 31),
+    monthlyRentAmount: "1,750", marketRentAmount: "1,800",
+    annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "",
+  },
+  {
+    id: uid("rr_p08_02"), propertyId: uid("p08"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "2B", unitType: "1BR/1BA", bedroomCount: "1", bathroomCount: "1",
+    squareFeet: "680", tenantName: "Thompson, C.", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2025, 2, 1), leaseEndDate: dateStr(2026, 1, 31),
+    monthlyRentAmount: "2,200", marketRentAmount: "2,300",
+    annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "",
+  },
+  {
+    id: uid("rr_p08_03"), propertyId: uid("p08"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "4C", unitType: "2BR/2BA", bedroomCount: "2", bathroomCount: "2",
+    squareFeet: "980", tenantName: "Garcia, M. & L.", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2024, 11, 1), leaseEndDate: dateStr(2026, 10, 31),
+    monthlyRentAmount: "3,100", marketRentAmount: "3,250",
+    annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "",
+  },
+  {
+    id: uid("rr_p08_04"), propertyId: uid("p08"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "5D", unitType: "2BR/2BA", bedroomCount: "2", bathroomCount: "2",
+    squareFeet: "980", tenantName: "Lee, H.", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2025, 5, 1), leaseEndDate: dateStr(2026, 4, 30),
+    monthlyRentAmount: "3,200", marketRentAmount: "3,250",
+    annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "",
+  },
+  {
+    id: uid("rr_p08_05"), propertyId: uid("p08"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "7A", unitType: "3BR/2BA", bedroomCount: "3", bathroomCount: "2",
+    squareFeet: "1,380", tenantName: "Brown, K.", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2025, 7, 1), leaseEndDate: dateStr(2027, 6, 30),
+    monthlyRentAmount: "4,100", marketRentAmount: "4,300",
+    annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "",
+  },
+  {
+    id: uid("rr_p08_06"), propertyId: uid("p08"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "8B", unitType: "1BR/1BA", bedroomCount: "1", bathroomCount: "1",
+    squareFeet: "680", tenantName: "", leaseStatus: "Vacant",
+    leaseBeginDate: "", leaseEndDate: "",
+    monthlyRentAmount: "", marketRentAmount: "2,300",
+    annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "",
+  },
+
+  // ── p05 Mixed Use — 330 N Michigan Ave, Chicago (48 units) ───────────────
+  {
+    id: uid("rr_p05_01"), propertyId: uid("p05"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "2A", unitType: "1BR/1BA", bedroomCount: "1", bathroomCount: "1",
+    squareFeet: "750", tenantName: "Walsh, D.", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2025, 4, 1), leaseEndDate: dateStr(2026, 3, 31),
+    monthlyRentAmount: "2,600", marketRentAmount: "2,700",
+    annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "",
+  },
+  {
+    id: uid("rr_p05_02"), propertyId: uid("p05"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "3B", unitType: "2BR/2BA", bedroomCount: "2", bathroomCount: "2",
+    squareFeet: "1,100", tenantName: "Chen, W. & Y.", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2024, 10, 1), leaseEndDate: dateStr(2026, 9, 30),
+    monthlyRentAmount: "3,700", marketRentAmount: "3,850",
+    annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "",
+  },
+  {
+    id: uid("rr_p05_03"), propertyId: uid("p05"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "Suite 101", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    squareFeet: "4,200", tenantName: "Lakeside Coffee Co.", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2023, 1, 1), leaseEndDate: dateStr(2028, 12, 31),
+    monthlyRentAmount: "", marketRentAmount: "",
+    annualBaseRentAmount: "210,000", baseRentPsf: "50.00",
+    leaseType: "NNN", renewalOptions: "Two 5-year options at 3% annual escalation",
+    tenantIndustry: "Food & Beverage",
+  },
+  {
+    id: uid("rr_p05_04"), propertyId: uid("p05"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "Suite 102", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    squareFeet: "2,800", tenantName: "Midwest Financial Group", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2022, 6, 1), leaseEndDate: dateStr(2027, 5, 31),
+    monthlyRentAmount: "", marketRentAmount: "",
+    annualBaseRentAmount: "168,000", baseRentPsf: "60.00",
+    leaseType: "Modified Gross", renewalOptions: "One 3-year option",
+    tenantIndustry: "Financial Services",
+  },
+
+  // ── p02 Retail — 850 Fifth Ave, New York (12 units) ──────────────────────
+  {
+    id: uid("rr_p02_01"), propertyId: uid("p02"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "G-01", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    squareFeet: "8,500", tenantName: "National Pharmacy Partners", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2017, 3, 1), leaseEndDate: dateStr(2035, 2, 28),
+    monthlyRentAmount: "", marketRentAmount: "",
+    annualBaseRentAmount: "1,275,000", baseRentPsf: "150.00",
+    leaseType: "NNN", renewalOptions: "Four 5-year options at fixed rent",
+    tenantIndustry: "Pharmacy / Healthcare Retail",
+  },
+  {
+    id: uid("rr_p02_02"), propertyId: uid("p02"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "G-02", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    squareFeet: "4,200", tenantName: "Luxe Apparel NYC", leaseStatus: "Occupied",
+    leaseBeginDate: dateStr(2021, 9, 1), leaseEndDate: dateStr(2028, 8, 31),
+    monthlyRentAmount: "", marketRentAmount: "",
+    annualBaseRentAmount: "756,000", baseRentPsf: "180.00",
+    leaseType: "NNN", renewalOptions: "One 5-year option",
+    tenantIndustry: "Luxury Retail",
+  },
+  {
+    id: uid("rr_p02_03"), propertyId: uid("p02"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    unitIdentifier: "G-03", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    squareFeet: "3,100", tenantName: "", leaseStatus: "Vacant",
+    leaseBeginDate: "", leaseEndDate: "",
+    monthlyRentAmount: "", marketRentAmount: "",
+    annualBaseRentAmount: "", baseRentPsf: "175.00",
+    leaseType: "NNN", renewalOptions: "", tenantIndustry: "",
+  },
+];
+
+// ─── Operating History (MISMO IncomeExpenseStatementType) ─────────────────────
+// Seed periods for: p04 (MF LA), p08 (MF Atlanta), p03 (Industrial ATL), p02 (Retail NY)
+
+export const SEED_OPERATING_HISTORY: OperatingYear[] = [
+  // ── p04 Multifamily LA — 120 units ───────────────────────────────────────
+  {
+    id: uid("oh_p04_1"), propertyId: uid("p04"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    periodType: "Actual Year 1", periodYear: "2023",
+    grossPotentialRent: "3,888,000", vacancyAndCreditLoss: "311,040", otherIncome: "72,000",
+    effectiveGrossIncome: "3,648,960",
+    realEstateTaxes: "268,000", insurance: "88,000", utilities: "172,000",
+    repairsAndMaintenance: "228,000", managementFee: "182,448", administrative: "80,000",
+    replacementReserves: "36,000", otherExpenses: "38,000", totalOperatingExpenses: "1,092,448",
+    netOperatingIncome: "2,556,512",
+  },
+  {
+    id: uid("oh_p04_2"), propertyId: uid("p04"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    periodType: "Actual Year 2", periodYear: "2024",
+    grossPotentialRent: "4,032,000", vacancyAndCreditLoss: "282,240", otherIncome: "80,000",
+    effectiveGrossIncome: "3,829,760",
+    realEstateTaxes: "278,000", insurance: "92,000", utilities: "176,000",
+    repairsAndMaintenance: "236,000", managementFee: "191,488", administrative: "83,000",
+    replacementReserves: "36,000", otherExpenses: "40,000", totalOperatingExpenses: "1,132,488",
+    netOperatingIncome: "2,697,272",
+  },
+  {
+    id: uid("oh_p04_3"), propertyId: uid("p04"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    periodType: "T12 (Trailing 12)", periodYear: "2025",
+    grossPotentialRent: "4,176,000", vacancyAndCreditLoss: "292,320", otherIncome: "85,000",
+    effectiveGrossIncome: "3,968,680",
+    realEstateTaxes: "285,000", insurance: "95,000", utilities: "180,000",
+    repairsAndMaintenance: "242,000", managementFee: "198,434", administrative: "86,000",
+    replacementReserves: "36,000", otherExpenses: "42,000", totalOperatingExpenses: "1,164,434",
+    netOperatingIncome: "2,804,246",
+  },
+
+  // ── p08 Multifamily Atlanta — 224 units ──────────────────────────────────
+  {
+    id: uid("oh_p08_1"), propertyId: uid("p08"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    periodType: "Actual Year 1", periodYear: "2024",
+    grossPotentialRent: "7,526,400", vacancyAndCreditLoss: "376,320", otherIncome: "145,000",
+    effectiveGrossIncome: "7,295,080",
+    realEstateTaxes: "510,000", insurance: "196,000", utilities: "324,000",
+    repairsAndMaintenance: "448,000", managementFee: "364,754", administrative: "158,000",
+    replacementReserves: "67,200", otherExpenses: "72,000", totalOperatingExpenses: "2,139,954",
+    netOperatingIncome: "5,155,126",
+  },
+  {
+    id: uid("oh_p08_2"), propertyId: uid("p08"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    periodType: "T12 (Trailing 12)", periodYear: "2025",
+    grossPotentialRent: "7,795,200", vacancyAndCreditLoss: "233,856", otherIncome: "158,000",
+    effectiveGrossIncome: "7,719,344",
+    realEstateTaxes: "525,000", insurance: "204,000", utilities: "332,000",
+    repairsAndMaintenance: "462,000", managementFee: "385,967", administrative: "164,000",
+    replacementReserves: "67,200", otherExpenses: "76,000", totalOperatingExpenses: "2,216,167",
+    netOperatingIncome: "5,503,177",
+  },
+
+  // ── p03 Industrial Atlanta — 312,000 sqft ─────────────────────────────────
+  {
+    id: uid("oh_p03_1"), propertyId: uid("p03"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    periodType: "T12 (Trailing 12)", periodYear: "2025",
+    grossPotentialRent: "4,368,000", vacancyAndCreditLoss: "218,400", otherIncome: "24,000",
+    effectiveGrossIncome: "4,173,600",
+    realEstateTaxes: "312,000", insurance: "145,000", utilities: "48,000",
+    repairsAndMaintenance: "186,000", managementFee: "208,680", administrative: "72,000",
+    replacementReserves: "62,400", otherExpenses: "28,000", totalOperatingExpenses: "1,062,080",
+    netOperatingIncome: "3,111,520",
+  },
+
+  // ── p02 Retail NY — 36,500 sqft ───────────────────────────────────────────
+  {
+    id: uid("oh_p02_1"), propertyId: uid("p02"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
+    periodType: "T12 (Trailing 12)", periodYear: "2025",
+    grossPotentialRent: "2,356,200", vacancyAndCreditLoss: "235,620", otherIncome: "18,000",
+    effectiveGrossIncome: "2,138,580",
+    realEstateTaxes: "188,000", insurance: "72,000", utilities: "0",
+    repairsAndMaintenance: "62,000", managementFee: "106,929", administrative: "38,000",
+    replacementReserves: "18,250", otherExpenses: "22,000", totalOperatingExpenses: "507,179",
+    netOperatingIncome: "1,631,401",
   },
 ];

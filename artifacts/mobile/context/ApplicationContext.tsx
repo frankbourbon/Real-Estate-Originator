@@ -2,7 +2,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import React, { useCallback, useEffect, useState } from "react";
 
-import { SEED_APPLICATIONS, SEED_BORROWERS, SEED_CONDITIONS, SEED_EXCEPTIONS, SEED_PROPERTIES } from "@/utils/seedData";
+import {
+  SEED_APPLICATIONS, SEED_BORROWERS, SEED_CONDITIONS, SEED_EXCEPTIONS,
+  SEED_OPERATING_HISTORY, SEED_PROPERTIES, SEED_RENT_ROLL,
+} from "@/utils/seedData";
 
 // ─── Domain Enums ────────────────────────────────────────────────────────────
 
@@ -118,6 +121,108 @@ export type Exception = {
   createdByPersona: string;               // e.g. "Credit Risk"
   approvedBy: string;                     // populated when status = Approved
   approvedAt: string;                     // ISO date string
+};
+
+// ─── Rent Roll entity (MISMO-inspired, 3NF) ──────────────────────────────────
+
+export type UnitType =
+  | "Studio" | "1BR/1BA" | "1BR/1BA+Den"
+  | "2BR/1BA" | "2BR/2BA" | "2BR/2BA+Den"
+  | "3BR/2BA" | "3BR/3BA" | "Penthouse"
+  | "Commercial" | "Other";
+
+export type LeaseStatusType = "Occupied" | "Vacant" | "Notice" | "Model" | "Down";
+export type LeaseType = "NNN" | "NN" | "Gross" | "Modified Gross" | "Absolute Net" | "Full Service";
+
+/** Per-unit rent roll record. Multifamily and commercial share this entity.
+ *  MISMO reference: RentRollItemType */
+export type RentRollUnit = {
+  id: string;
+  propertyId: string;
+  createdAt: string;
+  updatedAt: string;
+
+  unitIdentifier: string;       // MISMO: UnitIdentifier (e.g. "101", "Suite 200")
+  unitType: UnitType;           // MISMO: UnitTypeDescription
+  bedroomCount: string;         // MISMO: UnitBedroomCount (0 for studio/commercial)
+  bathroomCount: string;        // MISMO: UnitBathroomCount
+  squareFeet: string;           // MISMO: GrossLivingAreaSquareFeetCount / GrossLeasableAreaSquareFeetCount
+
+  tenantName: string;           // MISMO: TenantName
+  leaseBeginDate: string;       // MISMO: LeaseBeginDate
+  leaseEndDate: string;         // MISMO: LeaseEndDate
+  leaseStatus: LeaseStatusType; // MISMO: VacancyIndicator
+
+  // Multifamily-specific
+  monthlyRentAmount: string;    // MISMO: MonthlyRentAmount (contract rent)
+  marketRentAmount: string;     // MISMO: MarketRentAmount
+
+  // Commercial-specific
+  annualBaseRentAmount: string; // MISMO: AnnualBaseRentAmount
+  baseRentPsf: string;          // MISMO: BaseRentPerSquareFeetAmount
+  leaseType: LeaseType | "";    // MISMO: LeaseTypeDescription
+  renewalOptions: string;       // MISMO: OptionTypeDescription
+  tenantIndustry: string;       // MISMO: TenantIndustryDescription
+};
+
+// ─── Operating History entity (MISMO-inspired, 3NF) ─────────────────────────
+
+export type OperatingPeriodType =
+  | "Actual Year 1"
+  | "Actual Year 2"
+  | "T12 (Trailing 12)"
+  | "Current Year Budget"
+  | "Lender Underwriting";
+
+/** Annual operating statement per property.
+ *  Line items follow MISMO IncomeExpenseStatementType. */
+export type OperatingYear = {
+  id: string;
+  propertyId: string;
+  createdAt: string;
+  updatedAt: string;
+
+  periodType: OperatingPeriodType; // MISMO: FinancialStatementPeriodDescription
+  periodYear: string;              // Calendar year this represents (e.g. "2024")
+
+  // ── Income ───────────────────────────────────────────────────────────────
+  grossPotentialRent: string;       // MISMO: GrossPotentialRentAmount
+  vacancyAndCreditLoss: string;     // MISMO: VacancyAndCreditLossAmount (deduction)
+  otherIncome: string;              // MISMO: OtherIncomeAmount
+  effectiveGrossIncome: string;     // MISMO: EffectiveGrossIncomeAmount
+
+  // ── Expenses ─────────────────────────────────────────────────────────────
+  realEstateTaxes: string;          // MISMO: RealEstateTaxAndAssessmentAmount
+  insurance: string;                // MISMO: PropertyAndLiabilityInsuranceAmount
+  utilities: string;                // MISMO: UtilitiesAmount
+  repairsAndMaintenance: string;    // MISMO: RepairsAndMaintenanceAmount
+  managementFee: string;            // MISMO: ManagementFeeAmount
+  administrative: string;           // MISMO: AdministrativeAmount
+  replacementReserves: string;      // MISMO: ReplacementReservesAmount
+  otherExpenses: string;            // MISMO: OtherOperatingExpenseAmount
+  totalOperatingExpenses: string;   // MISMO: TotalOperatingExpensesAmount
+
+  // ── Net ──────────────────────────────────────────────────────────────────
+  netOperatingIncome: string;       // MISMO: NetOperatingIncomeAmount
+};
+
+// ─── Task entity (phase-keyed, per-loan) ────────────────────────────────────
+
+/** A task tied to a specific loan and phase.
+ *  Phase checklist items are auto-seeded on first open; users may add custom tasks. */
+export type LoanTask = {
+  id: string;
+  applicationId: string;
+  createdAt: string;
+  updatedAt: string;
+
+  phase: ApplicationStatus;
+  title: string;
+  description: string;
+  isComplete: boolean;
+  isCustom: boolean;    // false = from phase checklist, true = user-added
+  completedAt: string;  // ISO date when checked off, empty if incomplete
+  sortOrder: number;    // display order within the phase group
 };
 
 // ─── 3NF Entities ────────────────────────────────────────────────────────────
@@ -289,6 +394,9 @@ const KEYS = {
   properties: "loan_properties_v3",
   conditions: "loan_conditions_v1",
   exceptions: "loan_exceptions_v1",
+  rentRoll: "loan_rent_roll_v1",
+  operatingHistory: "loan_operating_history_v1",
+  tasks: "loan_tasks_v1",
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -379,6 +487,9 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [conditions, setConditions] = useState<Condition[]>([]);
   const [exceptions, setExceptions] = useState<Exception[]>([]);
+  const [rentRoll, setRentRoll] = useState<RentRollUnit[]>([]);
+  const [operatingHistory, setOperatingHistory] = useState<OperatingYear[]>([]);
+  const [tasks, setTasks] = useState<LoanTask[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -388,7 +499,10 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
       AsyncStorage.getItem(KEYS.properties),
       AsyncStorage.getItem(KEYS.conditions),
       AsyncStorage.getItem(KEYS.exceptions),
-    ]).then(([apps, bors, props, conds, excs]) => {
+      AsyncStorage.getItem(KEYS.rentRoll),
+      AsyncStorage.getItem(KEYS.operatingHistory),
+      AsyncStorage.getItem(KEYS.tasks),
+    ]).then(([apps, bors, props, conds, excs, rr, oh, tks]) => {
       if (apps) {
         const parsed: LOAApplication[] = JSON.parse(apps);
         setApplications(parsed.map((a) => ({
@@ -401,6 +515,9 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
       if (props) setProperties(JSON.parse(props));
       if (conds) setConditions(JSON.parse(conds));
       if (excs) setExceptions(JSON.parse(excs));
+      if (rr) setRentRoll(JSON.parse(rr));
+      if (oh) setOperatingHistory(JSON.parse(oh));
+      if (tks) setTasks(JSON.parse(tks));
       setLoading(false);
     });
   }, []);
@@ -428,6 +545,21 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
   const persistExceptions = useCallback(async (excs: Exception[]) => {
     setExceptions(excs);
     await AsyncStorage.setItem(KEYS.exceptions, JSON.stringify(excs));
+  }, []);
+
+  const persistRentRoll = useCallback(async (rr: RentRollUnit[]) => {
+    setRentRoll(rr);
+    await AsyncStorage.setItem(KEYS.rentRoll, JSON.stringify(rr));
+  }, []);
+
+  const persistOperatingHistory = useCallback(async (oh: OperatingYear[]) => {
+    setOperatingHistory(oh);
+    await AsyncStorage.setItem(KEYS.operatingHistory, JSON.stringify(oh));
+  }, []);
+
+  const persistTasks = useCallback(async (tks: LoanTask[]) => {
+    setTasks(tks);
+    await AsyncStorage.setItem(KEYS.tasks, JSON.stringify(tks));
   }, []);
 
   // ── Application CRUD ─────────────────────────────────────────────────────
@@ -492,10 +624,14 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
         persistProperties(properties.filter((p) => p.id !== app.propertyId)),
         persistConditions(conditions.filter((c) => c.applicationId !== id)),
         persistExceptions(exceptions.filter((e) => e.applicationId !== id)),
+        persistRentRoll(rentRoll.filter((u) => u.propertyId !== app.propertyId)),
+        persistOperatingHistory(operatingHistory.filter((y) => y.propertyId !== app.propertyId)),
+        persistTasks(tasks.filter((t) => t.applicationId !== id)),
       ]);
     },
-    [applications, borrowers, properties, conditions, exceptions,
-     persistApps, persistBorrowers, persistProperties, persistConditions, persistExceptions]
+    [applications, borrowers, properties, conditions, exceptions, rentRoll, operatingHistory, tasks,
+     persistApps, persistBorrowers, persistProperties, persistConditions, persistExceptions,
+     persistRentRoll, persistOperatingHistory, persistTasks]
   );
 
   // ── Condition CRUD ───────────────────────────────────────────────────────
@@ -550,6 +686,111 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
       await persistExceptions(exceptions.filter((e) => e.id !== id));
     },
     [exceptions, persistExceptions]
+  );
+
+  // ── Rent Roll CRUD ───────────────────────────────────────────────────────
+
+  const addRentRollUnit = useCallback(
+    async (unit: Omit<RentRollUnit, "id" | "createdAt" | "updatedAt">) => {
+      const full: RentRollUnit = { id: uid(), createdAt: now(), updatedAt: now(), ...unit };
+      await persistRentRoll([...rentRoll, full]);
+      return full;
+    },
+    [rentRoll, persistRentRoll]
+  );
+
+  const updateRentRollUnit = useCallback(
+    async (id: string, updates: Partial<RentRollUnit>) => {
+      await persistRentRoll(
+        rentRoll.map((u) => u.id === id ? { ...u, ...updates, updatedAt: now() } : u)
+      );
+    },
+    [rentRoll, persistRentRoll]
+  );
+
+  const deleteRentRollUnit = useCallback(
+    async (id: string) => {
+      await persistRentRoll(rentRoll.filter((u) => u.id !== id));
+    },
+    [rentRoll, persistRentRoll]
+  );
+
+  // ── Operating History CRUD ───────────────────────────────────────────────
+
+  const addOperatingYear = useCallback(
+    async (year: Omit<OperatingYear, "id" | "createdAt" | "updatedAt">) => {
+      const full: OperatingYear = { id: uid(), createdAt: now(), updatedAt: now(), ...year };
+      await persistOperatingHistory([...operatingHistory, full]);
+      return full;
+    },
+    [operatingHistory, persistOperatingHistory]
+  );
+
+  const updateOperatingYear = useCallback(
+    async (id: string, updates: Partial<OperatingYear>) => {
+      await persistOperatingHistory(
+        operatingHistory.map((y) => y.id === id ? { ...y, ...updates, updatedAt: now() } : y)
+      );
+    },
+    [operatingHistory, persistOperatingHistory]
+  );
+
+  const deleteOperatingYear = useCallback(
+    async (id: string) => {
+      await persistOperatingHistory(operatingHistory.filter((y) => y.id !== id));
+    },
+    [operatingHistory, persistOperatingHistory]
+  );
+
+  // ── Task CRUD ────────────────────────────────────────────────────────────
+
+  const addTask = useCallback(
+    async (task: Omit<LoanTask, "id" | "createdAt" | "updatedAt">) => {
+      const full: LoanTask = { id: uid(), createdAt: now(), updatedAt: now(), ...task };
+      await persistTasks([...tasks, full]);
+      return full;
+    },
+    [tasks, persistTasks]
+  );
+
+  const addTasksBatch = useCallback(
+    async (batch: Array<Omit<LoanTask, "id" | "createdAt" | "updatedAt">>) => {
+      const t = now();
+      const fulls: LoanTask[] = batch.map((task) => ({
+        id: uid(), createdAt: t, updatedAt: t, ...task,
+      }));
+      await persistTasks([...tasks, ...fulls]);
+    },
+    [tasks, persistTasks]
+  );
+
+  const toggleTask = useCallback(
+    async (id: string) => {
+      await persistTasks(
+        tasks.map((t) =>
+          t.id === id
+            ? { ...t, isComplete: !t.isComplete, completedAt: !t.isComplete ? now() : "", updatedAt: now() }
+            : t
+        )
+      );
+    },
+    [tasks, persistTasks]
+  );
+
+  const updateTask = useCallback(
+    async (id: string, updates: Partial<LoanTask>) => {
+      await persistTasks(
+        tasks.map((t) => t.id === id ? { ...t, ...updates, updatedAt: now() } : t)
+      );
+    },
+    [tasks, persistTasks]
+  );
+
+  const deleteTask = useCallback(
+    async (id: string) => {
+      await persistTasks(tasks.filter((t) => t.id !== id));
+    },
+    [tasks, persistTasks]
   );
 
   // ── Comments ─────────────────────────────────────────────────────────────
@@ -610,23 +851,31 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
       persistApps([...SEED_APPLICATIONS, ...applications.filter(a => !a.id.startsWith("seed_"))]),
       persistConditions([...SEED_CONDITIONS, ...conditions.filter(c => !c.id.startsWith("seed_"))]),
       persistExceptions([...SEED_EXCEPTIONS, ...exceptions.filter(e => !e.id.startsWith("seed_"))]),
+      persistRentRoll([...SEED_RENT_ROLL, ...rentRoll.filter(u => !u.id.startsWith("seed_"))]),
+      persistOperatingHistory([...SEED_OPERATING_HISTORY, ...operatingHistory.filter(y => !y.id.startsWith("seed_"))]),
     ]);
-  }, [applications, borrowers, properties, conditions, exceptions,
-      persistApps, persistBorrowers, persistProperties, persistConditions, persistExceptions]);
+  }, [applications, borrowers, properties, conditions, exceptions, rentRoll, operatingHistory,
+      persistApps, persistBorrowers, persistProperties, persistConditions, persistExceptions,
+      persistRentRoll, persistOperatingHistory]);
 
   const clearAllData = useCallback(async () => {
     const seedApps = applications.filter((a) => a.id.startsWith("seed_"));
     const seedBorrowerIds = new Set(seedApps.map((a) => a.borrowerId));
     const seedPropertyIds = new Set(seedApps.map((a) => a.propertyId));
+    const seedAppIds = new Set(seedApps.map((a) => a.id));
     await Promise.all([
       persistApps(applications.filter((a) => !a.id.startsWith("seed_"))),
       persistBorrowers(borrowers.filter((b) => !seedBorrowerIds.has(b.id))),
       persistProperties(properties.filter((p) => !seedPropertyIds.has(p.id))),
       persistConditions(conditions.filter((c) => !c.id.startsWith("seed_"))),
       persistExceptions(exceptions.filter((e) => !e.id.startsWith("seed_"))),
+      persistRentRoll(rentRoll.filter((u) => !u.id.startsWith("seed_"))),
+      persistOperatingHistory(operatingHistory.filter((y) => !y.id.startsWith("seed_"))),
+      persistTasks(tasks.filter((t) => !seedAppIds.has(t.applicationId))),
     ]);
-  }, [applications, borrowers, properties, conditions, exceptions,
-      persistApps, persistBorrowers, persistProperties, persistConditions, persistExceptions]);
+  }, [applications, borrowers, properties, conditions, exceptions, rentRoll, operatingHistory, tasks,
+      persistApps, persistBorrowers, persistProperties, persistConditions, persistExceptions,
+      persistRentRoll, persistOperatingHistory, persistTasks]);
 
   // ── Lookups ──────────────────────────────────────────────────────────────
 
@@ -650,6 +899,18 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
     (applicationId: string) => exceptions.filter((e) => e.applicationId === applicationId),
     [exceptions]
   );
+  const getRentRollForProperty = useCallback(
+    (propertyId: string) => rentRoll.filter((u) => u.propertyId === propertyId),
+    [rentRoll]
+  );
+  const getOperatingHistoryForProperty = useCallback(
+    (propertyId: string) => operatingHistory.filter((y) => y.propertyId === propertyId),
+    [operatingHistory]
+  );
+  const getTasksForApplication = useCallback(
+    (applicationId: string) => tasks.filter((t) => t.applicationId === applicationId),
+    [tasks]
+  );
 
   // ── Pipeline Stats ────────────────────────────────────────────────────────
 
@@ -667,13 +928,19 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
   };
 
   return {
-    applications, borrowers, properties, conditions, exceptions, loading, stats,
+    applications, borrowers, properties, conditions, exceptions,
+    rentRoll, operatingHistory, tasks,
+    loading, stats,
     createApplication, updateApplication, updateBorrower, updateProperty, deleteApplication,
     addCondition, updateCondition, deleteCondition,
     addException, updateException, deleteException,
+    addRentRollUnit, updateRentRollUnit, deleteRentRollUnit,
+    addOperatingYear, updateOperatingYear, deleteOperatingYear,
+    addTask, addTasksBatch, toggleTask, updateTask, deleteTask,
     addComment, addAttachment, deleteAttachment,
     getApplication, getBorrower, getProperty,
     getConditionsForApplication, getExceptionsForApplication,
+    getRentRollForProperty, getOperatingHistoryForProperty, getTasksForApplication,
     loadSampleData, clearAllData,
   };
 });

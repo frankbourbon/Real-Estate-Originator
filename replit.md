@@ -106,13 +106,34 @@ Expo React Native app for LOA (Letter of Authorization) origination in commercia
 - `Comment` — threaded via `parentCommentId: string | null` (null = root, string = reply)
 - `Attachment` — document metadata (uri, name, mimeType, sizeBytes) via expo-document-picker
 
-**Storage**: AsyncStorage keys `loa_applications_v2`, `loa_borrowers_v2`, `loa_properties_v2`
+**Storage**: AsyncStorage keys — `loa_applications_v2`, `loa_borrowers_v2`, `loa_properties_v2`, `loan_conditions_v1`, `loan_exceptions_v1`, `loan_rent_roll_v1`, `loan_operating_history_v1`, `loan_tasks_v1`
 
-**Key screens**:
-- `app/(tabs)/index.tsx` — Dashboard with pipeline stats and recent applications
-- `app/(tabs)/applications.tsx` — Full list with search and status filters
-- `app/new-application.tsx` — 5-step wizard: Property → Occupancy → Loan Terms → Borrower → Review
-- `app/application/[id].tsx` — Detail view with tabs: Property, Loan, Borrower, Comments, Docs
+**Data Model (3NF) — full entity list**:
+- `Borrower`, `Property`, `LOAApplication` (with `borrowerId` + `propertyId` FK)
+- `Condition`, `Exception` (per application)
+- `RentRollUnit` — MISMO RentRollItemType, per property. MF fields (monthly/market rent) + commercial fields (annual base rent, PSF, lease type, renewal options, tenant industry)
+- `OperatingYear` — MISMO IncomeExpenseStatementType, per property. Up to 5 periods (Actual Y1/Y2, T12, Budget, Lender UW). NOI = EGI − totalOperatingExpenses.
+- `LoanTask` — per application + phase. Auto-seeded from PHASE_INFO checklist on first screen open. Custom tasks flagged `isCustom: true`.
+- `Comment` — threaded via `parentCommentId`
+- `Attachment` — document metadata
+
+**Key screens** (all under `app/application/[id]/`):
+- `index.tsx` — Overview: timeline, metrics strip, nav groups (Loan / Client / Property / Tasks)
+- `loan.tsx` — Loan terms, inline editing
+- `borrower.tsx` — Borrower profile, inline editing
+- `property.tsx` — Property details, inline editing
+- `amortization.tsx` — Amortization calculator
+- `credit-evaluation.tsx` — Credit box, LOI, commitment letter
+- `processing.tsx` — Processing & compliance
+- `closing-details.tsx` — Closing details
+- `conditions.tsx` — Conditions & exceptions (3NF)
+- `comments.tsx` — Threaded comments
+- `documents.tsx` — Document attachments
+- `rent-roll.tsx` — MISMO rent roll: unit cards, occupancy stats, add/edit/delete units
+- `operating-history.tsx` — MISMO operating history: period cards with income/expense breakdown, NOI calc, add/edit/delete
+- `tasks.tsx` — Phase-grouped checklist: auto-seeded from PHASE_INFO, toggle, add custom tasks, progress bars
+
+**phases.ts**: PHASE_ORDER (10 phases), PHASE_INFO (phase metadata + checklists). Imported by screens, never by ApplicationContext (avoids circular import). Task seeding happens inside `tasks.tsx` by passing PHASE_INFO data into `addTasksBatch`.
 
 **Key components**:
 - `CommentThread.tsx` — Threaded comments with inline reply forms, collapse/expand
