@@ -218,10 +218,12 @@ function PhaseCard({
   status,
   onAdvance,
   onRetreat,
+  onSeeAllTasks,
 }: {
   status: ApplicationStatus;
   onAdvance: () => void;
   onRetreat: () => void;
+  onSeeAllTasks: () => void;
 }) {
   const info = PHASE_INFO[status];
   const currentIdx = PHASE_ORDER.indexOf(status);
@@ -267,10 +269,16 @@ function PhaseCard({
             <Text style={pc.checkText}>{item}</Text>
           </View>
         ))}
-        {info.checklist.length > 3 && (
-          <Text style={[pc.moreItems, { color: info.color }]}>
-            +{info.checklist.length - 3} more items
-          </Text>
+        {info.checklist.length > 3 ? (
+          <TouchableOpacity onPress={onSeeAllTasks} activeOpacity={0.7}>
+            <Text style={[pc.moreItems, { color: info.color }]}>
+              +{info.checklist.length - 3} more — view full checklist →
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={onSeeAllTasks} activeOpacity={0.7}>
+            <Text style={[pc.moreItems, { color: info.color }]}>View full checklist →</Text>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -524,7 +532,12 @@ export default function ApplicationOverviewScreen() {
       >
         {/* Phase info card */}
         <Text style={styles.groupLabel}>Current Phase</Text>
-        <PhaseCard status={app.status} onAdvance={handleAdvance} onRetreat={handleRetreat} />
+        <PhaseCard
+          status={app.status}
+          onAdvance={handleAdvance}
+          onRetreat={handleRetreat}
+          onSeeAllTasks={() => router.push(`/application/${id}/tasks` as any)}
+        />
 
         {/* Grouped section menu */}
         <Text style={styles.groupLabel}>Sections</Text>
