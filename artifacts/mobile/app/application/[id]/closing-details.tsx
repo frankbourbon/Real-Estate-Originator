@@ -12,22 +12,31 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
 import { useCoreService } from "@/services/core";
 import { useReadyForDocsService } from "@/services/ready-for-docs";
 import { useClosingService } from "@/services/closing";
 
+const TABS = [
+  { key: "third-party", label: "Third-Party", icon: "users"        as const },
+  { key: "legal-docs",  label: "Legal Docs",  icon: "file-text"    as const },
+  { key: "docs-back",   label: "Docs Back",   icon: "inbox"        as const },
+  { key: "wire",        label: "Wire",        icon: "send"         as const },
+];
+
 export default function ClosingDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication } = useCoreService();
-  const { getOrCreateReadyForDocs, updateReadyForDocs } = useReadyForDocsService();
+  const { getOrCreateRFD, updateRFD } = useReadyForDocsService();
   const { getOrCreateClosing, updateClosing } = useClosingService();
   const insets = useSafeAreaInsets();
   const app = getApplication(id);
 
-  const rfd = getOrCreateReadyForDocs(id);
+  const rfd = getOrCreateRFD(id);
   const cl = getOrCreateClosing(id);
 
+  const [activeTab, setActiveTab] = useState("third-party");
   const [insuranceCarrier, setInsuranceCarrier] = useState(rfd.insuranceCarrier);
   const [insurancePolicyNumber, setInsurancePolicyNumber] = useState(rfd.insurancePolicyNumber);
   const [insuranceEffectiveDate, setInsuranceEffectiveDate] = useState(rfd.insuranceEffectiveDate);
@@ -66,7 +75,7 @@ export default function ClosingDetailsScreen() {
   const handleSave = async () => {
     setSaving(true);
     await Promise.all([
-      updateReadyForDocs(id, {
+      updateRFD(id, {
         insuranceCarrier, insurancePolicyNumber, insuranceEffectiveDate,
         titleCompany, escrowCompany, floodZoneDesignation, titleReportDate,
       }),
@@ -85,6 +94,149 @@ export default function ClosingDetailsScreen() {
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   if (!app) return null;
+
+  function renderTabContent() {
+    switch (activeTab) {
+      case "third-party":
+        return (
+          <View style={styles.card}>
+            <Text style={styles.groupHeader}>Insurance Policy</Text>
+            <View style={styles.row2}>
+              <View style={styles.fieldHalf}>
+                <Text style={styles.label}>Carrier</Text>
+                <TextInput style={styles.input} value={insuranceCarrier} onChangeText={setInsuranceCarrier} placeholder="e.g. Lloyd's of London" placeholderTextColor={Colors.light.textTertiary} />
+              </View>
+              <View style={styles.fieldHalf}>
+                <Text style={styles.label}>Policy Number</Text>
+                <TextInput style={styles.input} value={insurancePolicyNumber} onChangeText={setInsurancePolicyNumber} placeholder="Policy #" placeholderTextColor={Colors.light.textTertiary} />
+              </View>
+            </View>
+            <View style={[styles.field, { marginTop: 10 }]}>
+              <Text style={styles.label}>Effective Date</Text>
+              <TextInput style={styles.input} value={insuranceEffectiveDate} onChangeText={setInsuranceEffectiveDate} placeholder="MM/DD/YYYY" placeholderTextColor={Colors.light.textTertiary} />
+            </View>
+
+            <View style={styles.divider} />
+
+            <Text style={styles.groupHeader}>Title, Escrow & Flood</Text>
+            <View style={styles.row2}>
+              <View style={styles.fieldHalf}>
+                <Text style={styles.label}>Title Company</Text>
+                <TextInput style={styles.input} value={titleCompany} onChangeText={setTitleCompany} placeholder="Company name" placeholderTextColor={Colors.light.textTertiary} />
+              </View>
+              <View style={styles.fieldHalf}>
+                <Text style={styles.label}>Escrow Company</Text>
+                <TextInput style={styles.input} value={escrowCompany} onChangeText={setEscrowCompany} placeholder="Company name" placeholderTextColor={Colors.light.textTertiary} />
+              </View>
+            </View>
+            <View style={[styles.row2, { marginTop: 10 }]}>
+              <View style={styles.fieldHalf}>
+                <Text style={styles.label}>Flood Zone</Text>
+                <TextInput style={styles.input} value={floodZoneDesignation} onChangeText={setFloodZoneDesignation} placeholder="e.g. Zone X, Zone AE" placeholderTextColor={Colors.light.textTertiary} />
+              </View>
+              <View style={styles.fieldHalf}>
+                <Text style={styles.label}>Title Report Date</Text>
+                <TextInput style={styles.input} value={titleReportDate} onChangeText={setTitleReportDate} placeholder="MM/DD/YYYY" placeholderTextColor={Colors.light.textTertiary} />
+              </View>
+            </View>
+          </View>
+        );
+
+      case "legal-docs":
+        return (
+          <>
+            <Text style={styles.sectionNote}>
+              Promissory note, security instrument, guarantee, loan disclosure, and settlement statement are generated at this stage.
+            </Text>
+            <View style={styles.card}>
+              <View style={styles.row2}>
+                <View style={styles.fieldHalf}>
+                  <Text style={styles.label}>Docs Drawn Date</Text>
+                  <TextInput style={styles.input} value={docsDrawnDate} onChangeText={setDocsDrawnDate} placeholder="MM/DD/YYYY" placeholderTextColor={Colors.light.textTertiary} />
+                </View>
+                <View style={styles.fieldHalf}>
+                  <Text style={styles.label}>Settlement Statement Date</Text>
+                  <TextInput style={styles.input} value={settlementStatementDate} onChangeText={setSettlementStatementDate} placeholder="MM/DD/YYYY" placeholderTextColor={Colors.light.textTertiary} />
+                </View>
+              </View>
+              <View style={[styles.field, { marginTop: 10 }]}>
+                <Text style={styles.label}>Settlement / Closing Fees (USD)</Text>
+                <TextInput style={styles.input} value={settlementFeesUsd} onChangeText={setSettlementFeesUsd} placeholder="e.g. 24,500" placeholderTextColor={Colors.light.textTertiary} keyboardType="numeric" />
+              </View>
+            </View>
+          </>
+        );
+
+      case "docs-back":
+        return (
+          <>
+            <Text style={styles.sectionNote}>
+              Title company returns signed legal documents. Closing team confirms receipt.
+            </Text>
+            <View style={styles.card}>
+              <View style={styles.row2}>
+                <View style={styles.fieldHalf}>
+                  <Text style={styles.label}>Signed Docs Received</Text>
+                  <TextInput style={styles.input} value={docsBackDate} onChangeText={setDocsBackDate} placeholder="MM/DD/YYYY" placeholderTextColor={Colors.light.textTertiary} />
+                </View>
+                <View style={styles.fieldHalf}>
+                  <Text style={styles.label}>Title Confirmation Date</Text>
+                  <TextInput style={styles.input} value={titleConfirmationDate} onChangeText={setTitleConfirmationDate} placeholder="MM/DD/YYYY" placeholderTextColor={Colors.light.textTertiary} />
+                </View>
+              </View>
+            </View>
+          </>
+        );
+
+      case "wire":
+        return (
+          <>
+            <Text style={styles.sectionNote}>
+              Funds are wired and the loan is booked to servicing. Keep wire instructions confidential.
+            </Text>
+            <View style={styles.card}>
+              <View style={styles.field}>
+                <Text style={styles.label}>Wire Amount (USD)</Text>
+                <TextInput style={styles.input} value={wireAmountUsd} onChangeText={setWireAmountUsd} placeholder="e.g. 3,250,000" placeholderTextColor={Colors.light.textTertiary} keyboardType="numeric" />
+              </View>
+
+              <View style={styles.divider} />
+
+              <Text style={styles.groupHeader}>Receiving Bank Wire Instructions</Text>
+              <View style={styles.field}>
+                <Text style={styles.label}>Bank Name</Text>
+                <TextInput style={styles.input} value={wireBankName} onChangeText={setWireBankName} placeholder="e.g. First National Bank" placeholderTextColor={Colors.light.textTertiary} />
+              </View>
+              <View style={[styles.row2, { marginTop: 10 }]}>
+                <View style={styles.fieldHalf}>
+                  <Text style={styles.label}>ABA / Routing Number</Text>
+                  <TextInput style={styles.input} value={wireAbaNumber} onChangeText={setWireAbaNumber} placeholder="9-digit ABA" placeholderTextColor={Colors.light.textTertiary} keyboardType="numeric" />
+                </View>
+                <View style={styles.fieldHalf}>
+                  <Text style={styles.label}>Account Number</Text>
+                  <TextInput style={styles.input} value={wireAccountNumber} onChangeText={setWireAccountNumber} placeholder="Account #" placeholderTextColor={Colors.light.textTertiary} keyboardType="numeric" />
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
+              <Text style={styles.groupHeader}>Servicing Booking</Text>
+              <View style={styles.row2}>
+                <View style={styles.fieldHalf}>
+                  <Text style={styles.label}>Servicing Loan Number</Text>
+                  <TextInput style={styles.input} value={servicingLoanNumber} onChangeText={setServicingLoanNumber} placeholder="Assigned by system" placeholderTextColor={Colors.light.textTertiary} />
+                </View>
+                <View style={styles.fieldHalf}>
+                  <Text style={styles.label}>Booking Date</Text>
+                  <TextInput style={styles.input} value={bookingDate} onChangeText={setBookingDate} placeholder="MM/DD/YYYY" placeholderTextColor={Colors.light.textTertiary} />
+                </View>
+              </View>
+            </View>
+          </>
+        );
+    }
+    return null;
+  }
 
   return (
     <>
@@ -118,142 +270,15 @@ export default function ClosingDetailsScreen() {
         )}
       </View>
 
+      <TabBar tabs={TABS} activeTab={activeTab} onSelect={setActiveTab} />
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* ── Third-Party Items ── */}
-        <Text style={styles.sectionLabel}>Third-Party Items (Ready for Docs)</Text>
-        <Text style={styles.sectionNote}>
-          Confirm insurance policy, title company, escrow company, flood zone certification, and title report are in place before doc generation.
-        </Text>
-        <View style={styles.card}>
-          <Text style={styles.groupHeader}>Insurance Policy</Text>
-          <View style={styles.row2}>
-            <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Carrier</Text>
-              <TextInput style={styles.input} value={insuranceCarrier} onChangeText={setInsuranceCarrier} placeholder="e.g. Lloyd's of London" placeholderTextColor={Colors.light.textTertiary} />
-            </View>
-            <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Policy Number</Text>
-              <TextInput style={styles.input} value={insurancePolicyNumber} onChangeText={setInsurancePolicyNumber} placeholder="Policy #" placeholderTextColor={Colors.light.textTertiary} />
-            </View>
-          </View>
-          <View style={[styles.field, { marginTop: 10 }]}>
-            <Text style={styles.label}>Effective Date</Text>
-            <TextInput style={styles.input} value={insuranceEffectiveDate} onChangeText={setInsuranceEffectiveDate} placeholder="MM/DD/YYYY" placeholderTextColor={Colors.light.textTertiary} />
-          </View>
-
-          <View style={styles.divider} />
-
-          <Text style={styles.groupHeader}>Title, Escrow & Flood</Text>
-          <View style={styles.row2}>
-            <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Title Company</Text>
-              <TextInput style={styles.input} value={titleCompany} onChangeText={setTitleCompany} placeholder="Company name" placeholderTextColor={Colors.light.textTertiary} />
-            </View>
-            <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Escrow Company</Text>
-              <TextInput style={styles.input} value={escrowCompany} onChangeText={setEscrowCompany} placeholder="Company name" placeholderTextColor={Colors.light.textTertiary} />
-            </View>
-          </View>
-          <View style={[styles.row2, { marginTop: 10 }]}>
-            <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Flood Zone</Text>
-              <TextInput style={styles.input} value={floodZoneDesignation} onChangeText={setFloodZoneDesignation} placeholder="e.g. Zone X, Zone AE" placeholderTextColor={Colors.light.textTertiary} />
-            </View>
-            <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Title Report Date</Text>
-              <TextInput style={styles.input} value={titleReportDate} onChangeText={setTitleReportDate} placeholder="MM/DD/YYYY" placeholderTextColor={Colors.light.textTertiary} />
-            </View>
-          </View>
-        </View>
-
-        {/* ── Legal Documents ── */}
-        <Text style={styles.sectionLabel}>Legal Documents (Docs Drawn)</Text>
-        <Text style={styles.sectionNote}>
-          Promissory note, security instrument, guarantee, loan disclosure, and settlement statement are generated at this stage.
-        </Text>
-        <View style={styles.card}>
-          <View style={styles.row2}>
-            <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Docs Drawn Date</Text>
-              <TextInput style={styles.input} value={docsDrawnDate} onChangeText={setDocsDrawnDate} placeholder="MM/DD/YYYY" placeholderTextColor={Colors.light.textTertiary} />
-            </View>
-            <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Settlement Statement Date</Text>
-              <TextInput style={styles.input} value={settlementStatementDate} onChangeText={setSettlementStatementDate} placeholder="MM/DD/YYYY" placeholderTextColor={Colors.light.textTertiary} />
-            </View>
-          </View>
-          <View style={[styles.field, { marginTop: 10 }]}>
-            <Text style={styles.label}>Settlement / Closing Fees (USD)</Text>
-            <TextInput style={styles.input} value={settlementFeesUsd} onChangeText={setSettlementFeesUsd} placeholder="e.g. 24,500" placeholderTextColor={Colors.light.textTertiary} keyboardType="numeric" />
-          </View>
-        </View>
-
-        {/* ── Docs Back ── */}
-        <Text style={styles.sectionLabel}>Docs Back</Text>
-        <Text style={styles.sectionNote}>
-          Title company returns signed legal documents. Closing team confirms receipt.
-        </Text>
-        <View style={styles.card}>
-          <View style={styles.row2}>
-            <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Signed Docs Received</Text>
-              <TextInput style={styles.input} value={docsBackDate} onChangeText={setDocsBackDate} placeholder="MM/DD/YYYY" placeholderTextColor={Colors.light.textTertiary} />
-            </View>
-            <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Title Confirmation Date</Text>
-              <TextInput style={styles.input} value={titleConfirmationDate} onChangeText={setTitleConfirmationDate} placeholder="MM/DD/YYYY" placeholderTextColor={Colors.light.textTertiary} />
-            </View>
-          </View>
-        </View>
-
-        {/* ── Wire & Booking ── */}
-        <Text style={styles.sectionLabel}>Wire & Servicing (Closing)</Text>
-        <Text style={styles.sectionNote}>
-          Funds are wired and the loan is booked to servicing. Keep wire instructions confidential.
-        </Text>
-        <View style={styles.card}>
-          <View style={styles.field}>
-            <Text style={styles.label}>Wire Amount (USD)</Text>
-            <TextInput style={styles.input} value={wireAmountUsd} onChangeText={setWireAmountUsd} placeholder="e.g. 3,250,000" placeholderTextColor={Colors.light.textTertiary} keyboardType="numeric" />
-          </View>
-
-          <View style={styles.divider} />
-
-          <Text style={styles.groupHeader}>Receiving Bank Wire Instructions</Text>
-          <View style={styles.field}>
-            <Text style={styles.label}>Bank Name</Text>
-            <TextInput style={styles.input} value={wireBankName} onChangeText={setWireBankName} placeholder="e.g. First National Bank" placeholderTextColor={Colors.light.textTertiary} />
-          </View>
-          <View style={[styles.row2, { marginTop: 10 }]}>
-            <View style={styles.fieldHalf}>
-              <Text style={styles.label}>ABA / Routing Number</Text>
-              <TextInput style={styles.input} value={wireAbaNumber} onChangeText={setWireAbaNumber} placeholder="9-digit ABA" placeholderTextColor={Colors.light.textTertiary} keyboardType="numeric" />
-            </View>
-            <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Account Number</Text>
-              <TextInput style={styles.input} value={wireAccountNumber} onChangeText={setWireAccountNumber} placeholder="Account #" placeholderTextColor={Colors.light.textTertiary} keyboardType="numeric" />
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          <Text style={styles.groupHeader}>Servicing Booking</Text>
-          <View style={styles.row2}>
-            <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Servicing Loan Number</Text>
-              <TextInput style={styles.input} value={servicingLoanNumber} onChangeText={setServicingLoanNumber} placeholder="Assigned by system" placeholderTextColor={Colors.light.textTertiary} />
-            </View>
-            <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Booking Date</Text>
-              <TextInput style={styles.input} value={bookingDate} onChangeText={setBookingDate} placeholder="MM/DD/YYYY" placeholderTextColor={Colors.light.textTertiary} />
-            </View>
-          </View>
-        </View>
+        {renderTabContent()}
 
         {dirty && (
           <TouchableOpacity
@@ -290,14 +315,9 @@ const styles = StyleSheet.create({
 
   scroll: { flex: 1, backgroundColor: Colors.light.background },
   content: { padding: 16, gap: 8 },
-  sectionLabel: {
-    fontSize: 10, fontFamily: "OpenSans_700Bold", color: Colors.light.textTertiary,
-    textTransform: "uppercase", letterSpacing: 0.8,
-    marginTop: 12, marginBottom: 4, marginLeft: 2,
-  },
   sectionNote: {
     fontSize: 12, fontFamily: "OpenSans_400Regular", color: Colors.light.textSecondary,
-    lineHeight: 18, marginBottom: 8, marginLeft: 2,
+    lineHeight: 18, marginBottom: 8,
   },
   card: {
     backgroundColor: Colors.light.backgroundCard, borderWidth: 1,

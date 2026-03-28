@@ -13,10 +13,17 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
 import { useFinalCreditReviewService } from "@/services/final-credit-review";
 import { useLetterOfInterestService } from "@/services/letter-of-interest";
 import { useCoreService } from "@/services/core";
+
+const TABS = [
+  { key: "loi",        label: "LOI",        icon: "file-text"   as const },
+  { key: "commitment", label: "Commitment",  icon: "check-circle" as const },
+  { key: "conditions", label: "Conditions",  icon: "shield"      as const },
+];
 
 export default function CreditEvaluationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,6 +38,7 @@ export default function CreditEvaluationScreen() {
   const conditions = getConditions(id);
   const exceptions = getExceptions(id);
 
+  const [activeTab, setActiveTab] = useState("loi");
   const [creditBoxNotes, setCreditBoxNotes] = useState(loi.creditBoxNotes);
   const [loiRecommended, setLoiRecommended] = useState(loi.loiRecommended);
   const [loiIssuedDate, setLoiIssuedDate] = useState(loi.loiIssuedDate);
@@ -70,9 +78,171 @@ export default function CreditEvaluationScreen() {
   const pendingConditions = conditions.filter((c) => c.status === "Pending").length;
   const pendingExceptions = exceptions.filter((e) => e.status === "Pending Approval").length;
 
+  function renderTabContent() {
+    switch (activeTab) {
+      case "loi":
+        return (
+          <>
+            <Text style={styles.sectionNote}>
+              Non-binding recommendation to issue. Does NOT require borrower financials or credit score.
+            </Text>
+            <View style={styles.card}>
+              <View style={styles.field}>
+                <Text style={styles.label}>Credit Box Assessment Notes</Text>
+                <TextInput
+                  style={[styles.input, styles.textarea]}
+                  value={creditBoxNotes}
+                  onChangeText={setCreditBoxNotes}
+                  placeholder="Notes on how this deal fits the credit box, debt yield, cap rate, market assessment…"
+                  placeholderTextColor={Colors.light.textTertiary}
+                  multiline
+                  numberOfLines={5}
+                />
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.switchRow}>
+                <View style={styles.switchLabel}>
+                  <Text style={styles.label}>LOI Recommended</Text>
+                  <Text style={styles.sublabel}>Credit Risk approves issuing Letter of Interest to borrower</Text>
+                </View>
+                <Switch
+                  value={loiRecommended}
+                  onValueChange={setLoiRecommended}
+                  trackColor={{ false: Colors.light.border, true: "#0078CF" }}
+                  thumbColor="#fff"
+                />
+              </View>
+
+              {loiRecommended && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.row2}>
+                    <View style={styles.fieldHalf}>
+                      <Text style={styles.label}>LOI Issued Date</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={loiIssuedDate}
+                        onChangeText={setLoiIssuedDate}
+                        placeholder="MM/DD/YYYY"
+                        placeholderTextColor={Colors.light.textTertiary}
+                      />
+                    </View>
+                    <View style={styles.fieldHalf}>
+                      <Text style={styles.label}>LOI Expiration Date</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={loiExpirationDate}
+                        onChangeText={setLoiExpirationDate}
+                        placeholder="MM/DD/YYYY"
+                        placeholderTextColor={Colors.light.textTertiary}
+                      />
+                    </View>
+                  </View>
+                </>
+              )}
+            </View>
+          </>
+        );
+
+      case "commitment":
+        return (
+          <>
+            <Text style={styles.sectionNote}>
+              Legally binding commitment to fund. Issued after Final Credit Review.
+            </Text>
+            <View style={styles.card}>
+              <View style={styles.switchRow}>
+                <View style={styles.switchLabel}>
+                  <Text style={styles.label}>CL Recommended</Text>
+                  <Text style={styles.sublabel}>Credit Risk approves issuing Commitment Letter</Text>
+                </View>
+                <Switch
+                  value={commitmentLetterRecommended}
+                  onValueChange={setCommitmentLetterRecommended}
+                  trackColor={{ false: Colors.light.border, true: "#0078CF" }}
+                  thumbColor="#fff"
+                />
+              </View>
+
+              {commitmentLetterRecommended && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Commitment Letter Issued Date</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={commitmentLetterIssuedDate}
+                      onChangeText={setCommitmentLetterIssuedDate}
+                      placeholder="MM/DD/YYYY"
+                      placeholderTextColor={Colors.light.textTertiary}
+                    />
+                  </View>
+                </>
+              )}
+            </View>
+          </>
+        );
+
+      case "conditions":
+        return (
+          <>
+            <Text style={styles.sectionNote}>
+              Conditions and exceptions are normalized records. Any persona can add them at any phase.
+            </Text>
+            <TouchableOpacity
+              style={styles.condExcCard}
+              activeOpacity={0.75}
+              onPress={() => router.push(`/application/${id}/conditions`)}
+            >
+              <View style={styles.condExcRow}>
+                <View style={styles.condExcBlock}>
+                  <View style={styles.condExcIconWrap}>
+                    <Feather name="check-square" size={18} color="#0078CF" />
+                  </View>
+                  <View style={styles.condExcText}>
+                    <Text style={styles.condExcCount}>{conditions.length}</Text>
+                    <Text style={styles.condExcLabel}>Condition{conditions.length !== 1 ? "s" : ""}</Text>
+                    {pendingConditions > 0 && (
+                      <Text style={styles.condExcPending}>{pendingConditions} pending</Text>
+                    )}
+                  </View>
+                </View>
+
+                <View style={styles.condExcDivider} />
+
+                <View style={styles.condExcBlock}>
+                  <View style={[styles.condExcIconWrap, { backgroundColor: "#FFECDC" }]}>
+                    <Feather name="shield-off" size={18} color="#C75300" />
+                  </View>
+                  <View style={styles.condExcText}>
+                    <Text style={[styles.condExcCount, { color: "#C75300" }]}>{exceptions.length}</Text>
+                    <Text style={styles.condExcLabel}>Exception{exceptions.length !== 1 ? "s" : ""}</Text>
+                    {pendingExceptions > 0 && (
+                      <Text style={[styles.condExcPending, { color: "#C75300" }]}>{pendingExceptions} pending approval</Text>
+                    )}
+                  </View>
+                </View>
+
+                <View style={styles.condExcArrow}>
+                  <Feather name="chevron-right" size={18} color={Colors.light.textTertiary} />
+                </View>
+              </View>
+
+              <View style={styles.condExcFooter}>
+                <Feather name="users" size={11} color="#72777D" />
+                <Text style={styles.condExcFooterText}>Any persona can add conditions or exceptions at any phase</Text>
+              </View>
+            </TouchableOpacity>
+          </>
+        );
+    }
+    return null;
+  }
+
   return (
     <>
-      {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
           <Feather name="arrow-left" size={18} color="rgba(255,255,255,0.7)" />
@@ -103,163 +273,16 @@ export default function CreditEvaluationScreen() {
         )}
       </View>
 
+      <TabBar tabs={TABS} activeTab={activeTab} onSelect={setActiveTab} />
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* ── Letter of Interest ── */}
-        <Text style={styles.sectionLabel}>Letter of Interest (LOI)</Text>
-        <Text style={styles.sectionNote}>
-          Non-binding recommendation to issue. Does NOT require borrower financials or credit score.
-        </Text>
-        <View style={styles.card}>
-          <View style={styles.field}>
-            <Text style={styles.label}>Credit Box Assessment Notes</Text>
-            <TextInput
-              style={[styles.input, styles.textarea]}
-              value={creditBoxNotes}
-              onChangeText={setCreditBoxNotes}
-              placeholder="Notes on how this deal fits the credit box, debt yield, cap rate, market assessment…"
-              placeholderTextColor={Colors.light.textTertiary}
-              multiline
-              numberOfLines={5}
-            />
-          </View>
+        {renderTabContent()}
 
-          <View style={styles.divider} />
-
-          <View style={styles.switchRow}>
-            <View style={styles.switchLabel}>
-              <Text style={styles.label}>LOI Recommended</Text>
-              <Text style={styles.sublabel}>Credit Risk approves issuing Letter of Interest to borrower</Text>
-            </View>
-            <Switch
-              value={loiRecommended}
-              onValueChange={setLoiRecommended}
-              trackColor={{ false: Colors.light.border, true: "#0078CF" }}
-              thumbColor="#fff"
-            />
-          </View>
-
-          {loiRecommended && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.row2}>
-                <View style={styles.fieldHalf}>
-                  <Text style={styles.label}>LOI Issued Date</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={loiIssuedDate}
-                    onChangeText={setLoiIssuedDate}
-                    placeholder="MM/DD/YYYY"
-                    placeholderTextColor={Colors.light.textTertiary}
-                  />
-                </View>
-                <View style={styles.fieldHalf}>
-                  <Text style={styles.label}>LOI Expiration Date</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={loiExpirationDate}
-                    onChangeText={setLoiExpirationDate}
-                    placeholder="MM/DD/YYYY"
-                    placeholderTextColor={Colors.light.textTertiary}
-                  />
-                </View>
-              </View>
-            </>
-          )}
-        </View>
-
-        {/* ── Commitment Letter ── */}
-        <Text style={styles.sectionLabel}>Commitment Letter (CL)</Text>
-        <Text style={styles.sectionNote}>
-          Legally binding commitment to fund. Issued after Final Credit Review.
-        </Text>
-        <View style={styles.card}>
-          <View style={styles.switchRow}>
-            <View style={styles.switchLabel}>
-              <Text style={styles.label}>CL Recommended</Text>
-              <Text style={styles.sublabel}>Credit Risk approves issuing Commitment Letter</Text>
-            </View>
-            <Switch
-              value={commitmentLetterRecommended}
-              onValueChange={setCommitmentLetterRecommended}
-              trackColor={{ false: Colors.light.border, true: "#0078CF" }}
-              thumbColor="#fff"
-            />
-          </View>
-
-          {commitmentLetterRecommended && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.field}>
-                <Text style={styles.label}>Commitment Letter Issued Date</Text>
-                <TextInput
-                  style={styles.input}
-                  value={commitmentLetterIssuedDate}
-                  onChangeText={setCommitmentLetterIssuedDate}
-                  placeholder="MM/DD/YYYY"
-                  placeholderTextColor={Colors.light.textTertiary}
-                />
-              </View>
-            </>
-          )}
-        </View>
-
-        {/* ── Conditions & Exceptions link card ── */}
-        <Text style={styles.sectionLabel}>Conditions & Exceptions</Text>
-        <Text style={styles.sectionNote}>
-          Conditions and exceptions are now normalized records. Any persona can add them at any phase.
-        </Text>
-
-        <TouchableOpacity
-          style={styles.condExcCard}
-          activeOpacity={0.75}
-          onPress={() => router.push(`/application/${id}/conditions`)}
-        >
-          <View style={styles.condExcRow}>
-            <View style={styles.condExcBlock}>
-              <View style={styles.condExcIconWrap}>
-                <Feather name="check-square" size={18} color="#0078CF" />
-              </View>
-              <View style={styles.condExcText}>
-                <Text style={styles.condExcCount}>{conditions.length}</Text>
-                <Text style={styles.condExcLabel}>Condition{conditions.length !== 1 ? "s" : ""}</Text>
-                {pendingConditions > 0 && (
-                  <Text style={styles.condExcPending}>{pendingConditions} pending</Text>
-                )}
-              </View>
-            </View>
-
-            <View style={styles.condExcDivider} />
-
-            <View style={styles.condExcBlock}>
-              <View style={[styles.condExcIconWrap, { backgroundColor: "#FFECDC" }]}>
-                <Feather name="shield-off" size={18} color="#C75300" />
-              </View>
-              <View style={styles.condExcText}>
-                <Text style={[styles.condExcCount, { color: "#C75300" }]}>{exceptions.length}</Text>
-                <Text style={styles.condExcLabel}>Exception{exceptions.length !== 1 ? "s" : ""}</Text>
-                {pendingExceptions > 0 && (
-                  <Text style={[styles.condExcPending, { color: "#C75300" }]}>{pendingExceptions} pending approval</Text>
-                )}
-              </View>
-            </View>
-
-            <View style={styles.condExcArrow}>
-              <Feather name="chevron-right" size={18} color={Colors.light.textTertiary} />
-            </View>
-          </View>
-
-          <View style={styles.condExcFooter}>
-            <Feather name="users" size={11} color="#72777D" />
-            <Text style={styles.condExcFooterText}>Any persona can add conditions or exceptions at any phase</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Save button */}
         {dirty && mounted && (
           <TouchableOpacity
             style={[styles.saveBtnFull, saving && styles.saveBtnDisabled]}
@@ -309,12 +332,6 @@ const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: Colors.light.background },
   content: { padding: 16, gap: 8 },
 
-  sectionLabel: {
-    fontSize: 10, fontFamily: "OpenSans_700Bold",
-    color: Colors.light.textTertiary,
-    textTransform: "uppercase", letterSpacing: 0.8,
-    marginTop: 12, marginBottom: 4, marginLeft: 2,
-  },
   sectionNote: {
     fontSize: 12, fontFamily: "OpenSans_400Regular",
     color: Colors.light.textSecondary,
@@ -358,7 +375,6 @@ const styles = StyleSheet.create({
   },
   textarea: { minHeight: 100, textAlignVertical: "top", paddingTop: 10 },
 
-  // Conditions & Exceptions link card
   condExcCard: {
     backgroundColor: Colors.light.backgroundCard,
     borderWidth: 1,
@@ -411,9 +427,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.border,
     marginHorizontal: 16,
   },
-  condExcArrow: {
-    paddingLeft: 8,
-  },
+  condExcArrow: { paddingLeft: 8 },
   condExcFooter: {
     flexDirection: "row",
     alignItems: "center",

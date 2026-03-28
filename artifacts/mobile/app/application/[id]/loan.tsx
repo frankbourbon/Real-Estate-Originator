@@ -15,6 +15,7 @@ import { FormField } from "@/components/FormField";
 import { SectionHeader } from "@/components/SectionHeader";
 import { SectionScreenLayout } from "@/components/SectionScreenLayout";
 import { SelectField } from "@/components/SelectField";
+import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
 import type {
   AmortizationType,
@@ -27,6 +28,11 @@ import { formatCurrencyFull } from "@/utils/formatting";
 const LOAN_TYPES: LoanType[] = ["Acquisition", "Refinance", "Construction", "Bridge", "Permanent"];
 const INTEREST_TYPES: InterestType[] = ["Fixed", "Floating", "Hybrid"];
 const AMORT_TYPES: AmortizationType[] = ["Full Amortizing", "Interest Only", "Partial IO"];
+
+const TABS = [
+  { key: "fundamentals", label: "Fundamentals", icon: "dollar-sign" as const },
+  { key: "rate",         label: "Rate & Term",  icon: "trending-up" as const },
+];
 
 function EditBtn({ onPress }: { onPress: () => void }) {
   return (
@@ -75,6 +81,7 @@ export default function LoanSection() {
   const { getApplication, updateApplication } = useCoreService();
   const app = getApplication(id);
 
+  const [activeTab, setActiveTab] = useState("fundamentals");
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     loanType: app?.loanType ?? ("Acquisition" as LoanType),
@@ -122,24 +129,13 @@ export default function LoanSection() {
 
   const handleCancel = () => setEditing(false);
 
-  return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <SectionScreenLayout
-        title="Loan Terms"
-        subtitle="Structure, rate, and amortization"
-        rightAction={
-          editing
-            ? <SaveCancelBtns onSave={handleSave} onCancel={handleCancel} />
-            : <EditBtn onPress={handleEdit} />
-        }
-      >
-        {editing ? (
-          <>
+  function renderTabContent() {
+    if (editing) {
+      switch (activeTab) {
+        case "fundamentals":
+          return (
             <View style={styles.card}>
-              <SectionHeader title="Loan Structure" />
+              <SectionHeader title="Loan Fundamentals" />
               <SelectField label="Loan Type" value={form.loanType} options={LOAN_TYPES} onChange={set("loanType")} required />
               <FormField label="Loan Amount (USD)" value={form.loanAmountUsd} onChangeText={set("loanAmountUsd")} placeholder="5,000,000" keyboardType="number-pad" prefix="$" required />
               <View style={styles.row}>
@@ -151,6 +147,12 @@ export default function LoanSection() {
                   <FormField label="DSCR (×)" value={form.dscrRatio} onChangeText={set("dscrRatio")} placeholder="1.25" keyboardType="decimal-pad" suffix="×" hint="Debt service coverage" />
                 </View>
               </View>
+            </View>
+          );
+        case "rate":
+          return (
+            <View style={styles.card}>
+              <SectionHeader title="Rate & Term" />
               <SelectField label="Interest Type" value={form.interestType} options={INTEREST_TYPES} onChange={set("interestType")} />
               <View style={styles.row}>
                 <View style={styles.flex1}>
@@ -164,21 +166,54 @@ export default function LoanSection() {
               <SelectField label="Amortization" value={form.amortizationType} options={AMORT_TYPES} onChange={set("amortizationType")} />
               <FormField label="Target Closing Date" value={form.targetClosingDate} onChangeText={set("targetClosingDate")} placeholder="MM/DD/YYYY" />
             </View>
-          </>
-        ) : (
-          <View style={styles.card}>
-            <SectionHeader title="Loan Structure" />
-            <DetailRow label="Loan Type" value={app?.loanType} />
-            <DetailRow label="Loan Amount (USD)" value={app?.loanAmountUsd ? formatCurrencyFull(app.loanAmountUsd) : undefined} />
-            <DetailRow label="LTV (%)" value={app?.ltvPct ? `${app.ltvPct}%` : undefined} />
-            <DetailRow label="DSCR (×)" value={app?.dscrRatio ? `${app.dscrRatio}×` : undefined} />
-            <DetailRow label="Interest Type" value={app?.interestType} />
-            <DetailRow label="Interest Rate (% p.a.)" value={app?.interestRatePct ? `${app.interestRatePct}%` : undefined} />
-            <DetailRow label="Loan Term" value={app?.loanTermYears ? `${app.loanTermYears} years` : undefined} />
-            <DetailRow label="Amortization" value={app?.amortizationType} />
-            <DetailRow label="Target Closing Date" value={app?.targetClosingDate} last />
-          </View>
-        )}
+          );
+      }
+    } else {
+      switch (activeTab) {
+        case "fundamentals":
+          return (
+            <View style={styles.card}>
+              <SectionHeader title="Loan Fundamentals" />
+              <DetailRow label="Loan Type" value={app?.loanType} />
+              <DetailRow label="Loan Amount (USD)" value={app?.loanAmountUsd ? formatCurrencyFull(app.loanAmountUsd) : undefined} />
+              <DetailRow label="LTV (%)" value={app?.ltvPct ? `${app.ltvPct}%` : undefined} />
+              <DetailRow label="DSCR (×)" value={app?.dscrRatio ? `${app.dscrRatio}×` : undefined} last />
+            </View>
+          );
+        case "rate":
+          return (
+            <View style={styles.card}>
+              <SectionHeader title="Rate & Term" />
+              <DetailRow label="Interest Type" value={app?.interestType} />
+              <DetailRow label="Interest Rate (% p.a.)" value={app?.interestRatePct ? `${app.interestRatePct}%` : undefined} />
+              <DetailRow label="Loan Term" value={app?.loanTermYears ? `${app.loanTermYears} years` : undefined} />
+              <DetailRow label="Amortization" value={app?.amortizationType} />
+              <DetailRow label="Target Closing Date" value={app?.targetClosingDate} last />
+            </View>
+          );
+      }
+    }
+    return null;
+  }
+
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <SectionScreenLayout
+        title="Loan Terms"
+        subtitle="Structure, rate, and amortization"
+        rightAction={
+          editing
+            ? <SaveCancelBtns onSave={handleSave} onCancel={handleCancel} />
+            : <EditBtn onPress={handleEdit} />
+        }
+        headerSlot={
+          <TabBar tabs={TABS} activeTab={activeTab} onSelect={setActiveTab} />
+        }
+      >
+        {renderTabContent()}
       </SectionScreenLayout>
     </KeyboardAvoidingView>
   );

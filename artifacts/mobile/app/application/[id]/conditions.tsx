@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
 import type {
   ApprovalAuthorityLevel,
@@ -25,6 +26,11 @@ import type {
 } from "@/services/final-credit-review";
 import { APPROVAL_LEVELS, useFinalCreditReviewService } from "@/services/final-credit-review";
 import { useCoreService } from "@/services/core";
+
+const TABS = [
+  { key: "conditions", label: "Conditions", icon: "check-square" as const },
+  { key: "exceptions", label: "Exceptions", icon: "shield-off"   as const },
+];
 
 // ─── Status chips ─────────────────────────────────────────────────────────────
 
@@ -494,6 +500,7 @@ export default function ConditionsScreen() {
   const conditions = getConditions(id);
   const exceptions = getExceptions(id);
 
+  const [activeTab, setActiveTab] = useState("conditions");
   const [modal, setModal] = useState<ModalState>({ mode: "none" });
   const [saving, setSaving] = useState(false);
 
@@ -668,79 +675,85 @@ export default function ConditionsScreen() {
         </View>
       )}
 
-      <ScrollView style={s.scroll} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        {/* Conditions section */}
-        <View style={s.sectionHeader}>
-          <View style={s.sectionTitle}>
-            <Feather name="check-square" size={15} color="#0078CF" />
-            <Text style={s.sectionTitleText}>Conditions</Text>
-            {conditions.length > 0 && (
-              <View style={s.countBadge}>
-                <Text style={s.countBadgeText}>{conditions.length}</Text>
-              </View>
-            )}
-          </View>
-          <TouchableOpacity style={s.addBtn} onPress={openAddCondition}>
-            <Feather name="plus" size={14} color="#0078CF" />
-            <Text style={s.addBtnText}>Add</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={s.sectionDesc}>
-          Requirements that must be satisfied before the loan can advance. Any persona can add conditions at any phase.
-        </Text>
+      <TabBar tabs={TABS} activeTab={activeTab} onSelect={setActiveTab} />
 
-        {conditions.length === 0 ? (
-          <View style={s.emptyState}>
-            <Feather name="check-square" size={28} color="#CBD2D9" />
-            <Text style={s.emptyText}>No conditions yet</Text>
-            <Text style={s.emptySubText}>Tap "Add" to record the first condition for this loan.</Text>
-          </View>
-        ) : (
-          conditions.map((item) => (
-            <ConditionCard
-              key={item.id}
-              item={item}
-              onEdit={() => openEditCondition(item)}
-              onDelete={() => handleDeleteCondition(item)}
-            />
-          ))
+      <ScrollView style={s.scroll} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+        {activeTab === "conditions" && (
+          <>
+            <View style={s.sectionHeader}>
+              <View style={s.sectionTitle}>
+                <Feather name="check-square" size={15} color="#0078CF" />
+                <Text style={s.sectionTitleText}>Conditions</Text>
+                {conditions.length > 0 && (
+                  <View style={s.countBadge}>
+                    <Text style={s.countBadgeText}>{conditions.length}</Text>
+                  </View>
+                )}
+              </View>
+              <TouchableOpacity style={s.addBtn} onPress={openAddCondition}>
+                <Feather name="plus" size={14} color="#0078CF" />
+                <Text style={s.addBtnText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={s.sectionDesc}>
+              Requirements that must be satisfied before the loan can advance. Any persona can add conditions at any phase.
+            </Text>
+            {conditions.length === 0 ? (
+              <View style={s.emptyState}>
+                <Feather name="check-square" size={28} color="#CBD2D9" />
+                <Text style={s.emptyText}>No conditions yet</Text>
+                <Text style={s.emptySubText}>Tap "Add" to record the first condition for this loan.</Text>
+              </View>
+            ) : (
+              conditions.map((item) => (
+                <ConditionCard
+                  key={item.id}
+                  item={item}
+                  onEdit={() => openEditCondition(item)}
+                  onDelete={() => handleDeleteCondition(item)}
+                />
+              ))
+            )}
+          </>
         )}
 
-        {/* Exceptions section */}
-        <View style={[s.sectionHeader, { marginTop: 28 }]}>
-          <View style={s.sectionTitle}>
-            <Feather name="shield-off" size={15} color="#C75300" />
-            <Text style={[s.sectionTitleText, { color: "#C75300" }]}>Exceptions</Text>
-            {exceptions.length > 0 && (
-              <View style={[s.countBadge, { backgroundColor: "#C75300" }]}>
-                <Text style={s.countBadgeText}>{exceptions.length}</Text>
+        {activeTab === "exceptions" && (
+          <>
+            <View style={s.sectionHeader}>
+              <View style={s.sectionTitle}>
+                <Feather name="shield-off" size={15} color="#C75300" />
+                <Text style={[s.sectionTitleText, { color: "#C75300" }]}>Exceptions</Text>
+                {exceptions.length > 0 && (
+                  <View style={[s.countBadge, { backgroundColor: "#C75300" }]}>
+                    <Text style={s.countBadgeText}>{exceptions.length}</Text>
+                  </View>
+                )}
               </View>
+              <TouchableOpacity style={[s.addBtn, { borderColor: "#C75300" }]} onPress={openAddException}>
+                <Feather name="plus" size={14} color="#C75300" />
+                <Text style={[s.addBtnText, { color: "#C75300" }]}>Add</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={s.sectionDesc}>
+              Policy deviations requiring approval authority sign-off. W1 = lowest authority (Loan Officer) · W30 = highest (Board).
+            </Text>
+            {exceptions.length === 0 ? (
+              <View style={s.emptyState}>
+                <Feather name="shield" size={28} color="#CBD2D9" />
+                <Text style={s.emptyText}>No exceptions</Text>
+                <Text style={s.emptySubText}>No policy exceptions have been recorded for this loan.</Text>
+              </View>
+            ) : (
+              exceptions.map((item) => (
+                <ExceptionCard
+                  key={item.id}
+                  item={item}
+                  onEdit={() => openEditException(item)}
+                  onDelete={() => handleDeleteException(item)}
+                />
+              ))
             )}
-          </View>
-          <TouchableOpacity style={[s.addBtn, { borderColor: "#C75300" }]} onPress={openAddException}>
-            <Feather name="plus" size={14} color="#C75300" />
-            <Text style={[s.addBtnText, { color: "#C75300" }]}>Add</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={s.sectionDesc}>
-          Policy deviations requiring approval authority sign-off. W1 = lowest authority (Loan Officer) · W30 = highest (Board).
-        </Text>
-
-        {exceptions.length === 0 ? (
-          <View style={s.emptyState}>
-            <Feather name="shield" size={28} color="#CBD2D9" />
-            <Text style={s.emptyText}>No exceptions</Text>
-            <Text style={s.emptySubText}>No policy exceptions have been recorded for this loan.</Text>
-          </View>
-        ) : (
-          exceptions.map((item) => (
-            <ExceptionCard
-              key={item.id}
-              item={item}
-              onEdit={() => openEditException(item)}
-              onDelete={() => handleDeleteException(item)}
-            />
-          ))
+          </>
         )}
       </ScrollView>
 

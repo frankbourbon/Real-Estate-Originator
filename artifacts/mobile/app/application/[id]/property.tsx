@@ -16,6 +16,7 @@ import { FormField } from "@/components/FormField";
 import { SectionHeader } from "@/components/SectionHeader";
 import { SectionScreenLayout } from "@/components/SectionScreenLayout";
 import { SelectField } from "@/components/SelectField";
+import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
 import type { PropertyType } from "@/services/core";
 import { useCoreService } from "@/services/core";
@@ -24,6 +25,12 @@ import { formatPct, formatSqFt, getPropertyCityState } from "@/utils/formatting"
 const PROPERTY_TYPES: PropertyType[] = [
   "Office", "Retail", "Industrial", "Multifamily", "Mixed Use",
   "Hotel", "Self Storage", "Healthcare", "Land",
+];
+
+const TABS = [
+  { key: "location",   label: "Location",   icon: "map-pin"   as const },
+  { key: "attributes", label: "Attributes", icon: "home"      as const },
+  { key: "occupancy",  label: "Occupancy",  icon: "percent"   as const },
 ];
 
 function EditBtn({ onPress }: { onPress: () => void }) {
@@ -74,6 +81,7 @@ export default function PropertySection() {
   const app = getApplication(id);
   const property = getProperty(app?.propertyId ?? "");
 
+  const [activeTab, setActiveTab] = useState("location");
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     streetAddress: property?.streetAddress ?? "",
@@ -139,25 +147,13 @@ export default function PropertySection() {
     ? `${Number(property!.latitude).toFixed(5)}, ${Number(property!.longitude).toFixed(5)}`
     : undefined;
 
-  return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <SectionScreenLayout
-        title="Property Details"
-        subtitle={getPropertyCityState(property) || property?.propertyType || ""}
-        rightAction={
-          editing
-            ? <SaveCancelBtns onSave={handleSave} onCancel={handleCancel} />
-            : <EditBtn onPress={handleEdit} />
-        }
-      >
-        {editing ? (
-          <>
+  function renderTabContent() {
+    if (editing) {
+      switch (activeTab) {
+        case "location":
+          return (
             <View style={styles.card}>
               <SectionHeader title="Location" subtitle="Use address search to auto-fill lat/long and Place ID" />
-
               <Text style={styles.fieldLabel}>Street Address</Text>
               <AddressLookup
                 value={form.streetAddress}
@@ -172,7 +168,6 @@ export default function PropertySection() {
                   googlePlaceId: result.googlePlaceId,
                 }))}
               />
-
               <View style={[styles.row, { marginTop: 12 }]}>
                 <View style={styles.flex2}>
                   <FormField label="City" value={form.city} onChangeText={set("city")} placeholder="Chicago" />
@@ -186,7 +181,6 @@ export default function PropertySection() {
                   <FormField label="ZIP" value={form.zipCode} onChangeText={set("zipCode")} placeholder="60601" keyboardType="number-pad" maxLength={5} />
                 </View>
               </View>
-
               <View style={styles.geoRow}>
                 <View style={styles.flex1}>
                   <FormField label="Latitude" value={form.latitude} onChangeText={set("latitude")} placeholder="41.8858" keyboardType="decimal-pad" />
@@ -196,7 +190,6 @@ export default function PropertySection() {
                   <FormField label="Longitude" value={form.longitude} onChangeText={set("longitude")} placeholder="-87.6245" keyboardType="decimal-pad" />
                 </View>
               </View>
-
               {form.googlePlaceId ? (
                 <View style={styles.placeIdRow}>
                   <Feather name="check-circle" size={12} color="#00875D" />
@@ -204,7 +197,9 @@ export default function PropertySection() {
                 </View>
               ) : null}
             </View>
-
+          );
+        case "attributes":
+          return (
             <View style={styles.card}>
               <SectionHeader title="Physical Attributes" />
               <SelectField label="Property Type" value={form.propertyType} options={PROPERTY_TYPES} onChange={(v) => set("propertyType")(v)} required />
@@ -219,15 +214,20 @@ export default function PropertySection() {
               </View>
               <FormField label="Year Built" value={form.yearBuilt} onChangeText={set("yearBuilt")} placeholder="2005" keyboardType="number-pad" maxLength={4} />
             </View>
-
+          );
+        case "occupancy":
+          return (
             <View style={styles.card}>
               <SectionHeader title="Occupancy" subtitle="Unit-based vs rent-based — two distinct measures" />
               <FormField label="Physical Occupancy (%)" value={form.physicalOccupancyPct} onChangeText={set("physicalOccupancyPct")} placeholder="95.0" keyboardType="decimal-pad" suffix="%" hint="= Occupied units ÷ Total rentable units × 100" />
               <FormField label="Economic Occupancy (%)" value={form.economicOccupancyPct} onChangeText={set("economicOccupancyPct")} placeholder="91.0" keyboardType="decimal-pad" suffix="%" hint="= Collected rent ÷ Gross potential rent × 100" />
             </View>
-          </>
-        ) : (
-          <>
+          );
+      }
+    } else {
+      switch (activeTab) {
+        case "location":
+          return (
             <View style={styles.card}>
               <SectionHeader title="Location" />
               <DetailRow label="Street Address" value={property?.streetAddress} />
@@ -237,7 +237,9 @@ export default function PropertySection() {
               <DetailRow label="Coordinates" value={coordsDisplay} />
               <DetailRow label="Google Place ID" value={property?.googlePlaceId || undefined} last />
             </View>
-
+          );
+        case "attributes":
+          return (
             <View style={styles.card}>
               <SectionHeader title="Physical Attributes" />
               <DetailRow label="Property Type" value={property?.propertyType} />
@@ -245,14 +247,38 @@ export default function PropertySection() {
               <DetailRow label="Rentable Units" value={property?.numberOfUnits} />
               <DetailRow label="Year Built" value={property?.yearBuilt} last />
             </View>
-
+          );
+        case "occupancy":
+          return (
             <View style={styles.card}>
               <SectionHeader title="Occupancy" subtitle="Unit-based vs rent-based — two distinct measures" />
               <DetailRow label="Physical Occupancy" value={property?.physicalOccupancyPct ? `${formatPct(property.physicalOccupancyPct)} (unit-based)` : undefined} />
               <DetailRow label="Economic Occupancy" value={property?.economicOccupancyPct ? `${formatPct(property.economicOccupancyPct)} (rent-based)` : undefined} last />
             </View>
-          </>
-        )}
+          );
+      }
+    }
+    return null;
+  }
+
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <SectionScreenLayout
+        title="Property Details"
+        subtitle={getPropertyCityState(property) || property?.propertyType || ""}
+        rightAction={
+          editing
+            ? <SaveCancelBtns onSave={handleSave} onCancel={handleCancel} />
+            : <EditBtn onPress={handleEdit} />
+        }
+        headerSlot={
+          <TabBar tabs={TABS} activeTab={activeTab} onSelect={setActiveTab} />
+        }
+      >
+        {renderTabContent()}
       </SectionScreenLayout>
     </KeyboardAvoidingView>
   );
