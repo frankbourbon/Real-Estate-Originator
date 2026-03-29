@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   },
 
   filterBar: {
-    paddingVertical: 36,
+    paddingVertical: 18,
     backgroundColor: Colors.light.backgroundCard,
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
