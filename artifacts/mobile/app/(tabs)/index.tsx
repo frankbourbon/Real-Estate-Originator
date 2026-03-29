@@ -23,7 +23,7 @@ import { PHASE_INFO } from "@/utils/phases";
 
 type PhaseStats = Record<string, number>;
 
-const STAGE_GROUPS: { label: string; icon: string; color: string; bg: string; phases: string[] }[] = [
+const STAGE_GROUPS: { label: string; icon: string; color: string; bg: string; phases: string[]; group?: string }[] = [
   { label: "Inquiry",     icon: "search",       color: "#1B7F9E", bg: "#DBF5F7",
     phases: ["Inquiry"] },
   { label: "LOI",         icon: "file-text",    color: "#0078CF", bg: "#EAF6FF",
@@ -34,6 +34,10 @@ const STAGE_GROUPS: { label: string; icon: string; color: string; bg: string; ph
     phases: ["Final Credit Review", "Pre-close"] },
   { label: "Closing",     icon: "check-circle", color: "#005C3C", bg: "#D0F0E5",
     phases: ["Ready for Docs", "Docs Drawn", "Docs Back", "Closing"] },
+  { label: "Adverse Disposition", icon: "alert-circle", color: "#B91C1C", bg: "#FEE2E2",
+    group: "Disposed",
+    phases: ["Inquiry Canceled", "Inquiry Withdrawn", "Inquiry Denied",
+             "Application Withdrawn", "Application Canceled", "Application Denied"] },
 ];
 
 function PipelineByStage({ stats }: { stats: PhaseStats }) {
@@ -41,12 +45,20 @@ function PipelineByStage({ stats }: { stats: PhaseStats }) {
     <View style={pb.card}>
       {STAGE_GROUPS.map((group, gi) => (
         <View key={group.label} style={[pb.group, gi < STAGE_GROUPS.length - 1 && pb.groupBorder]}>
-          <View style={pb.groupHeader}>
+          <TouchableOpacity
+            style={pb.groupHeader}
+            onPress={() => router.push({
+              pathname: "/(tabs)/applications",
+              params: group.group ? { group: group.group } : { phase: group.phases[0] },
+            })}
+            activeOpacity={0.6}
+          >
             <View style={[pb.personaIcon, { backgroundColor: group.bg }]}>
               <Feather name={group.icon as any} size={13} color={group.color} />
             </View>
             <Text style={[pb.personaLabel, { color: group.color }]}>{group.label}</Text>
-          </View>
+            <Feather name="chevron-right" size={12} color={group.color} style={{ marginLeft: 2, opacity: 0.6 }} />
+          </TouchableOpacity>
           {group.phases.map((phase, pi) => {
             const info = PHASE_INFO[phase as any];
             const count = stats[phase] ?? 0;
@@ -57,7 +69,10 @@ function PipelineByStage({ stats }: { stats: PhaseStats }) {
                 onPress={() => router.push({ pathname: "/(tabs)/applications", params: { phase } })}
                 activeOpacity={0.6}
               >
-                <Text style={pb.phaseNum}>{info.phase}</Text>
+                {info.phase > 0
+                  ? <Text style={pb.phaseNum}>{info.phase}</Text>
+                  : <View style={{ width: 20 }} />
+                }
                 <Text style={pb.phaseName}>{phase}</Text>
                 <View style={[pb.phaseBadge, count > 0 && { backgroundColor: info.bg }]}>
                   <Text style={[pb.phaseBadgeText, count > 0 && { color: info.color }]}>{count}</Text>
