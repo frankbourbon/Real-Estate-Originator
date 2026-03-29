@@ -33,6 +33,15 @@ const STATUS_FILTERS: (ApplicationStatus | "All")[] = [
   "Closing",
 ];
 
+const CHIP_LABEL: Partial<Record<ApplicationStatus | "All", string>> = {
+  "All":                   "All",
+  "Letter of Interest":    "LOI",
+  "Application Start":     "App Start",
+  "Application Processing":"Processing",
+  "Final Credit Review":   "Credit Review",
+  "Ready for Docs":        "Ready for Docs",
+};
+
 export default function ApplicationsScreen() {
   const { applications, loading, createBorrower, createProperty, createApplication, getBorrower, getProperty } = useCoreService();
   const insets = useSafeAreaInsets();
@@ -115,7 +124,7 @@ export default function ApplicationsScreen() {
               activeOpacity={0.7}
             >
               <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                {item}
+                {CHIP_LABEL[item] ?? item}
               </Text>
               <Text style={[styles.chipCount, active && styles.chipCountActive]}>
                 {count}
