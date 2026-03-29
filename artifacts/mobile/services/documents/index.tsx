@@ -19,7 +19,7 @@ export type Attachment = {
 
 // ─── Storage Key ──────────────────────────────────────────────────────────────
 
-const KEY = "svc_documents_v1";
+const KEY = "svc_documents_v2";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

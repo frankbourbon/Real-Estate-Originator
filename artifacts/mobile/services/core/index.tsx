@@ -94,9 +94,9 @@ export type LoanApplication = {
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 
 const KEYS = {
-  apps: "svc_core_apps_v1",
-  borrowers: "svc_core_borrowers_v1",
-  properties: "svc_core_properties_v2",
+  apps: "svc_core_apps_v2",
+  borrowers: "svc_core_borrowers_v2",
+  properties: "svc_core_properties_v3",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

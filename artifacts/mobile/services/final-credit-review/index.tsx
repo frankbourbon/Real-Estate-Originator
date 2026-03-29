@@ -40,8 +40,8 @@ export type Exception = {
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 
 const KEYS = {
-  records:    "svc_fcr_v1",
-  exceptions: "svc_exceptions_v1",
+  records:    "svc_fcr_v2",
+  exceptions: "svc_exceptions_v2",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

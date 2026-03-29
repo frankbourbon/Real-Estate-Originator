@@ -17,7 +17,7 @@ export type Comment = {
 
 // ─── Storage Key ──────────────────────────────────────────────────────────────
 
-const KEY = "svc_comments_v1";
+const KEY = "svc_comments_v2";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

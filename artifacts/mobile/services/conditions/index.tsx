@@ -23,7 +23,7 @@ export type Condition = {
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 
 const KEYS = {
-  conditions: "svc_conditions_v1",
+  conditions: "svc_conditions_v2",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

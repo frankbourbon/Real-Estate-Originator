@@ -14,7 +14,7 @@ export type PreCloseRecord = {
 
 // ─── Storage Key ──────────────────────────────────────────────────────────────
 
-const KEY = "svc_pre_close_v1";
+const KEY = "svc_pre_close_v2";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

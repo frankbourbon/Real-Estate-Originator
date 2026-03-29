@@ -19,7 +19,7 @@ export type ReadyForDocsRecord = {
 
 // ─── Storage Key ──────────────────────────────────────────────────────────────
 
-const KEY = "svc_ready_for_docs_v1";
+const KEY = "svc_ready_for_docs_v2";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

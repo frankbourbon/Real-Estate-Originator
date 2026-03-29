@@ -19,7 +19,7 @@ export type AppStartRecord = {
 
 // ─── Storage Key ──────────────────────────────────────────────────────────────
 
-const KEY = "svc_app_start_v1";
+const KEY = "svc_app_start_v2";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

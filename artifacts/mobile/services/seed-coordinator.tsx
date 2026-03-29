@@ -65,6 +65,7 @@ export function useSeedCoordinator() {
 
   const clearAllData = useCallback(async () => {
     await Promise.all([
+      admin.clearData(),
       core.clearData(),
       inquiry.clearData(),
       loi.clearData(),
@@ -79,10 +80,8 @@ export function useSeedCoordinator() {
       tasks.clearData(),
       comments.clearData(),
       loanTeam.clearData(),
-      // Admin is intentionally NOT cleared here — it is the global employee
-      // registry and is independent of loan lifecycle.
     ]);
-  }, [core, inquiry, loi, appStart, processing, fcr, conditions, preClose, rfd, closing, documents, tasks, comments, loanTeam]);
+  }, [admin, core, inquiry, loi, appStart, processing, fcr, conditions, preClose, rfd, closing, documents, tasks, comments, loanTeam]);
 
   /**
    * Clears all phase-service data for a specific application (cascade delete).

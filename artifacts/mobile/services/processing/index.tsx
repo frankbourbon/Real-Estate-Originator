@@ -20,7 +20,7 @@ export type ProcessingRecord = {
 
 // ─── Storage Key ──────────────────────────────────────────────────────────────
 
-const KEY = "svc_processing_v1";
+const KEY = "svc_processing_v2";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

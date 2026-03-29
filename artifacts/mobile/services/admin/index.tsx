@@ -19,7 +19,7 @@ export type AdminUser = {
 
 // ─── Storage Key ──────────────────────────────────────────────────────────────
 
-const KEY = "svc_admin_users_v1";
+const KEY = "svc_admin_users_v2";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

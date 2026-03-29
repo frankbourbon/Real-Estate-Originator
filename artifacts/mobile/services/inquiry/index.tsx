@@ -75,9 +75,9 @@ export type OperatingYear = {
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 
 const KEYS = {
-  notes: "svc_inquiry_notes_v1",
-  rentRoll: "svc_inquiry_rent_roll_v1",
-  opHistory: "svc_inquiry_op_history_v1",
+  notes: "svc_inquiry_notes_v2",
+  rentRoll: "svc_inquiry_rent_roll_v2",
+  opHistory: "svc_inquiry_op_history_v2",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

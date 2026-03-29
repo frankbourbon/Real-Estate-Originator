@@ -61,7 +61,7 @@ export type TeamMember = {
 
 // ─── Storage Key ──────────────────────────────────────────────────────────────
 
-const KEY = "svc_loan_team_v1";
+const KEY = "svc_loan_team_v2";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

@@ -30,7 +30,7 @@ export type ClosingRecord = {
 
 // ─── Storage Key ──────────────────────────────────────────────────────────────
 
-const KEY = "svc_closing_v1";
+const KEY = "svc_closing_v2";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
