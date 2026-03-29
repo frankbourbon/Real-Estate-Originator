@@ -16,30 +16,24 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
 import { useFinalCreditReviewService } from "@/services/final-credit-review";
-import { useConditionsService } from "@/services/conditions";
 import { useLetterOfInterestService } from "@/services/letter-of-interest";
 import { useCoreService } from "@/services/core";
-import type { Exception } from "@/services/final-credit-review";
 
 const TABS = [
   { key: "loi",        label: "LOI",        icon: "file-text"   as const },
   { key: "commitment", label: "Commitment",  icon: "check-circle" as const },
-  { key: "conditions", label: "Conditions",  icon: "shield"      as const },
 ];
 
 export default function CreditEvaluationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication } = useCoreService();
   const { getOrCreateLOI, updateLOI } = useLetterOfInterestService();
-  const { getOrCreateFCR, updateFCR, getExceptions } = useFinalCreditReviewService();
-  const { getConditions } = useConditionsService();
+  const { getOrCreateFCR, updateFCR } = useFinalCreditReviewService();
   const insets = useSafeAreaInsets();
   const app = getApplication(id);
 
   const loi = getOrCreateLOI(id);
   const fcr = getOrCreateFCR(id);
-  const conditions = getConditions(id);
-  const exceptions = getExceptions(id);
 
   const [activeTab, setActiveTab] = useState("loi");
   const [creditBoxNotes, setCreditBoxNotes] = useState(loi.creditBoxNotes);
@@ -77,9 +71,6 @@ export default function CreditEvaluationScreen() {
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   if (!app) return null;
-
-  const pendingConditions = conditions.filter((c) => c.status === "Pending").length;
-  const pendingExceptions = exceptions.filter((e) => e.status === "Pending Approval").length;
 
   function renderTabContent() {
     switch (activeTab) {
@@ -188,65 +179,6 @@ export default function CreditEvaluationScreen() {
           </>
         );
 
-      case "conditions":
-        return (
-          <>
-            <Text style={styles.sectionNote}>
-              Conditions and exceptions are normalized records. Any persona can add them at any phase.
-            </Text>
-            <TouchableOpacity
-              style={styles.condExcCard}
-              activeOpacity={0.75}
-              onPress={() => router.push(`/application/${id}/conditions`)}
-            >
-              <View style={styles.condExcRow}>
-                <View style={styles.condExcBlock}>
-                  <View style={styles.condExcIconWrap}>
-                    <Feather name="check-square" size={18} color="#0078CF" />
-                  </View>
-                  <View style={styles.condExcText}>
-                    <Text style={styles.condExcCount}>{conditions.length}</Text>
-                    <Text style={styles.condExcLabel}>Condition{conditions.length !== 1 ? "s" : ""}</Text>
-                    {pendingConditions > 0 && (
-                      <Text style={styles.condExcPending}>{pendingConditions} pending</Text>
-                    )}
-                  </View>
-                </View>
-                <View style={styles.condExcArrow}>
-                  <Feather name="chevron-right" size={18} color={Colors.light.textTertiary} />
-                </View>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.condExcCard, { marginTop: 8, borderColor: "#F5CBA7" }]}
-              activeOpacity={0.75}
-              onPress={() => router.push(`/application/${id}/exceptions`)}
-            >
-              <View style={styles.condExcRow}>
-                <View style={styles.condExcBlock}>
-                  <View style={[styles.condExcIconWrap, { backgroundColor: "#FFECDC" }]}>
-                    <Feather name="shield-off" size={18} color="#C75300" />
-                  </View>
-                  <View style={styles.condExcText}>
-                    <Text style={[styles.condExcCount, { color: "#C75300" }]}>{exceptions.length}</Text>
-                    <Text style={styles.condExcLabel}>Policy Exception{exceptions.length !== 1 ? "s" : ""}</Text>
-                    {pendingExceptions > 0 && (
-                      <Text style={[styles.condExcPending, { color: "#C75300" }]}>{pendingExceptions} pending approval</Text>
-                    )}
-                  </View>
-                </View>
-                <View style={styles.condExcArrow}>
-                  <Feather name="chevron-right" size={18} color={Colors.light.textTertiary} />
-                </View>
-              </View>
-              <View style={styles.condExcFooter}>
-                <Feather name="users" size={11} color="#72777D" />
-                <Text style={styles.condExcFooterText}>Policy deviations requiring authority sign-off — managed in Final Credit Review</Text>
-              </View>
-            </TouchableOpacity>
-          </>
-        );
     }
     return null;
   }
@@ -384,75 +316,6 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
   },
   textarea: { minHeight: 100, textAlignVertical: "top", paddingTop: 10 },
-
-  condExcCard: {
-    backgroundColor: Colors.light.backgroundCard,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  condExcRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    gap: 0,
-  },
-  condExcBlock: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  condExcIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: "#EAF6FF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  condExcText: { flex: 1 },
-  condExcCount: {
-    fontSize: 22,
-    fontFamily: "OpenSans_700Bold",
-    color: "#0078CF",
-    lineHeight: 26,
-  },
-  condExcLabel: {
-    fontSize: 11,
-    fontFamily: "OpenSans_600SemiBold",
-    color: Colors.light.textSecondary,
-    marginTop: 1,
-  },
-  condExcPending: {
-    fontSize: 11,
-    fontFamily: "OpenSans_400Regular",
-    color: "#C75300",
-    marginTop: 2,
-  },
-  condExcDivider: {
-    width: 1,
-    height: 44,
-    backgroundColor: Colors.light.border,
-    marginHorizontal: 16,
-  },
-  condExcArrow: { paddingLeft: 8 },
-  condExcFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: "#F7F8FA",
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.borderLight,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  condExcFooterText: {
-    fontSize: 11,
-    fontFamily: "OpenSans_400Regular",
-    color: Colors.light.textTertiary,
-  },
 
   saveBtnFull: {
     flexDirection: "row",
