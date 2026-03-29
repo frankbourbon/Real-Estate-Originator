@@ -1,7 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  Alert,
   FlatList,
   Modal,
   Platform,
@@ -111,6 +110,69 @@ function UserFormModal({
   );
 }
 
+// ─── Delete Confirmation Modal ────────────────────────────────────────────────
+
+function DeleteConfirmModal({
+  user,
+  onConfirm,
+  onClose,
+}: {
+  user: AdminUser | null;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  if (!user) return null;
+  const initials = `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase();
+
+  return (
+    <Modal visible={!!user} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={d.backdrop} onPress={onClose} />
+      <View style={d.centeredOuter}>
+        <View style={d.card}>
+          {/* Icon */}
+          <View style={d.iconRing}>
+            <Feather name="trash-2" size={22} color="#C0392B" />
+          </View>
+
+          <Text style={d.title}>Remove from registry?</Text>
+
+          {/* Employee pill */}
+          <View style={d.pill}>
+            <View style={d.pillAvatar}>
+              <Text style={d.pillAvatarText}>{initials}</Text>
+            </View>
+            <View>
+              <Text style={d.pillName}>{user.lastName}, {user.firstName}</Text>
+              <Text style={d.pillSid}>{user.sid}</Text>
+            </View>
+          </View>
+
+          {/* Non-cascade notice */}
+          <View style={d.notice}>
+            <Feather name="info" size={13} color={Colors.light.tint} style={{ marginTop: 1 }} />
+            <Text style={d.noticeText}>
+              Existing loan team records that reference this employee will{" "}
+              <Text style={d.noticeBold}>not</Text> be changed. Historical attributions
+              on closed loans are preserved.
+            </Text>
+          </View>
+
+          {/* Actions */}
+          <View style={d.actions}>
+            <TouchableOpacity style={d.cancelBtn} onPress={onClose} activeOpacity={0.7}>
+              <Text style={d.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={d.removeBtn} onPress={onConfirm} activeOpacity={0.8}>
+              <Feather name="trash-2" size={14} color="#fff" />
+              <Text style={d.removeText}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 // ─── User Row ─────────────────────────────────────────────────────────────────
 
 function UserRow({
@@ -137,7 +199,7 @@ function UserRow({
         style={s.deleteBtn}
         onPress={onDelete}
         hitSlop={12}
-        activeOpacity={0.7}
+        activeOpacity={0.6}
       >
         <Feather name="trash-2" size={15} color={Colors.light.textTertiary} />
       </TouchableOpacity>
@@ -155,6 +217,7 @@ export default function AdminScreen() {
   const [query, setQuery] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [editTarget, setEditTarget] = useState<AdminUser | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
 
   const results = searchUsers(query);
 
@@ -168,19 +231,14 @@ export default function AdminScreen() {
     setModalVisible(true);
   };
 
-  const handleDelete = (user: AdminUser) => {
-    Alert.alert(
-      "Remove user",
-      `Remove ${user.firstName} ${user.lastName} (${user.sid}) from the employee registry?\n\nExisting loan team records for this user will not be affected.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: () => deleteUser(user.sid),
-        },
-      ]
-    );
+  const handleDeleteRequest = (user: AdminUser) => {
+    setDeleteTarget(user);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    await deleteUser(deleteTarget.sid);
+    setDeleteTarget(null);
   };
 
   const handleSave = async (form: FormState) => {
@@ -193,7 +251,8 @@ export default function AdminScreen() {
     } else {
       const existing = users.find((u) => u.sid === form.sid.trim().toUpperCase());
       if (existing) {
-        Alert.alert("Duplicate SID", `A user with SID ${form.sid.trim().toUpperCase()} already exists.`);
+        setEditTarget(null);
+        setModalVisible(false);
         return;
       }
       await addUser({
@@ -268,7 +327,7 @@ export default function AdminScreen() {
               <UserRow
                 user={item}
                 onEdit={() => handleEdit(item)}
-                onDelete={() => handleDelete(item)}
+                onDelete={() => handleDeleteRequest(item)}
               />
             </View>
           )}
@@ -280,6 +339,12 @@ export default function AdminScreen() {
         user={editTarget}
         onSave={handleSave}
         onClose={() => setModalVisible(false)}
+      />
+
+      <DeleteConfirmModal
+        user={deleteTarget}
+        onConfirm={handleDeleteConfirm}
+        onClose={() => setDeleteTarget(null)}
       />
     </View>
   );
@@ -429,7 +494,7 @@ const s = StyleSheet.create({
   },
 });
 
-// ─── Modal Styles ─────────────────────────────────────────────────────────────
+// ─── Add/Edit Modal Styles ─────────────────────────────────────────────────────
 
 const m = StyleSheet.create({
   backdrop: {
@@ -520,6 +585,141 @@ const m = StyleSheet.create({
   },
   saveBtnDisabled: { opacity: 0.4 },
   saveText: {
+    fontSize: 14,
+    fontFamily: "OpenSans_700Bold",
+    color: "#fff",
+  },
+});
+
+// ─── Delete Confirm Modal Styles ───────────────────────────────────────────────
+
+const d = StyleSheet.create({
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  centeredOuter: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  card: {
+    width: "100%",
+    backgroundColor: Colors.light.backgroundCard,
+    borderRadius: 12,
+    padding: 24,
+    alignItems: "center",
+    gap: 0,
+  },
+
+  iconRing: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#FDF0EF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+
+  title: {
+    fontSize: 17,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.text,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: Colors.light.background,
+    borderWidth: 1,
+    borderColor: Colors.light.borderLight,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    alignSelf: "stretch",
+    marginBottom: 14,
+  },
+  pillAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Colors.light.tintLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pillAvatarText: {
+    fontSize: 12,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.tint,
+  },
+  pillName: {
+    fontSize: 13,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.text,
+    marginBottom: 1,
+  },
+  pillSid: {
+    fontSize: 11,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textTertiary,
+    letterSpacing: 0.3,
+  },
+
+  notice: {
+    flexDirection: "row",
+    gap: 8,
+    backgroundColor: Colors.light.tintLight,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    alignSelf: "stretch",
+    marginBottom: 20,
+  },
+  noticeText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.text,
+    lineHeight: 18,
+  },
+  noticeBold: {
+    fontFamily: "OpenSans_700Bold",
+  },
+
+  actions: {
+    flexDirection: "row",
+    gap: 10,
+    alignSelf: "stretch",
+  },
+  cancelBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 4,
+    paddingVertical: 11,
+    alignItems: "center",
+  },
+  cancelText: {
+    fontSize: 14,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.textSecondary,
+  },
+  removeBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#C0392B",
+    borderRadius: 4,
+    paddingVertical: 11,
+  },
+  removeText: {
     fontSize: 14,
     fontFamily: "OpenSans_700Bold",
     color: "#fff",
