@@ -35,16 +35,20 @@ const PHASE_FILTERS: (ApplicationStatus | "All")[] = [
   "Closing",
 ];
 
-type GroupKey = "Sales" | "Closing";
+type GroupKey = "Sales" | "Processing" | "Credit" | "Closing";
 
 const GROUP_PHASES: Record<GroupKey, ApplicationStatus[]> = {
-  Sales:   ["Inquiry", "Application Start"],
-  Closing: ["Ready for Docs", "Docs Drawn", "Docs Back", "Closing"],
+  Sales:      ["Inquiry", "Application Start"],
+  Processing: ["Letter of Interest", "Application Processing"],
+  Credit:     ["Final Credit Review", "Pre-close"],
+  Closing:    ["Ready for Docs", "Docs Drawn", "Docs Back", "Closing"],
 };
 
 const GROUP_COLOR: Record<GroupKey, string> = {
-  Sales:   "#1B7F9E",
-  Closing: "#005C3C",
+  Sales:      "#1B7F9E",
+  Processing: "#C75300",
+  Credit:     "#6B4FBB",
+  Closing:    "#005C3C",
 };
 
 const CHIP_LABEL: Partial<Record<ApplicationStatus | "All", string>> = {
