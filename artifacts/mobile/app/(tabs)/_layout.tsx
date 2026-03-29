@@ -21,6 +21,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "list.bullet.rectangle", selected: "list.bullet.rectangle.fill" }} />
         <Label>Applications</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="admin">
+        <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
+        <Label>Admin</Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -88,6 +92,18 @@ function ClassicTabLayout() {
               <SymbolView name="list.bullet.rectangle" tintColor={color} size={22} />
             ) : (
               <Feather name="file-text" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="admin"
+        options={{
+          title: "Admin",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="person.2" tintColor={color} size={22} />
+            ) : (
+              <Feather name="users" size={22} color={color} />
             ),
         }}
       />

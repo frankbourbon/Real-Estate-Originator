@@ -20,6 +20,7 @@ export default function ApplicationLayout() {
       <Stack.Screen name="tasks" />
       <Stack.Screen name="rent-roll" />
       <Stack.Screen name="operating-history" />
+      <Stack.Screen name="loan-team" />
     </Stack>
   );
 }

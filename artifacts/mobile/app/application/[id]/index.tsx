@@ -22,6 +22,7 @@ import { useCommentsService } from "@/services/comments";
 import { useDocumentsService } from "@/services/documents";
 import { useConditionsService } from "@/services/conditions";
 import { useTasksService } from "@/services/tasks";
+import { useLoanTeamService } from "@/services/loan-team";
 import {
   formatCurrencyFull,
   formatFullDate,
@@ -431,6 +432,7 @@ export default function ApplicationOverviewScreen() {
   const { getDocuments } = useDocumentsService();
   const { getConditions } = useConditionsService();
   const { getTasksForApplication } = useTasksService();
+  const { getTeamMembers } = useLoanTeamService();
   const insets = useSafeAreaInsets();
   const [statusModal, setStatusModal] = useState(false);
 
@@ -478,6 +480,7 @@ export default function ApplicationOverviewScreen() {
 
   const conditionCount = getConditions(id).length;
   const taskCount = getTasksForApplication(id).length;
+  const teamCount = getTeamMembers(id).length;
   const phaseSections = buildPhaseSections(id);
 
   return (
@@ -580,6 +583,13 @@ export default function ApplicationOverviewScreen() {
               iconColor: "#6B46C1", iconBg: "#F3F0FF",
               badge: getComments(id).length,
               desc: "Threaded discussion",
+            },
+            {
+              key: "loan-team", route: `/application/${id}/loan-team`,
+              label: "Loan Team", icon: "users" as const,
+              iconColor: "#005C3C", iconBg: "#D0F0E5",
+              badge: teamCount,
+              desc: "Team members assigned to this loan",
             },
             {
               key: "documents", route: `/application/${id}/documents`,
