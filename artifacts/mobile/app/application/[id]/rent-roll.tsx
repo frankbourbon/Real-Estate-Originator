@@ -619,7 +619,7 @@ const s = StyleSheet.create({
   backLink: { marginTop: 12, fontSize: 14, color: Colors.light.tint, fontFamily: "OpenSans_600SemiBold" },
 
   header: {
-    backgroundColor: Colors.light.darkSurface,
+    backgroundColor: Colors.light.surface,
     flexDirection: "row", alignItems: "center",
     paddingHorizontal: 16, paddingBottom: 14, gap: 12,
   },

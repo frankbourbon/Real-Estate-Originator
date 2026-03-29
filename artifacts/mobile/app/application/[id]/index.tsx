@@ -21,7 +21,6 @@ import { useCoreService } from "@/services/core";
 import { useCommentsService } from "@/services/comments";
 import { useDocumentsService } from "@/services/documents";
 import { useConditionsService } from "@/services/conditions";
-import { useInquiryService } from "@/services/inquiry";
 import { useTasksService } from "@/services/tasks";
 import {
   formatCurrencyFull,
@@ -45,28 +44,12 @@ type SectionItem = {
   badge?: number;
 };
 
-/** Maps each loan phase to the screens accessible from it. */
+/** Maps each loan phase to the domain-specific screens accessible from it.
+ *  Tasks, conditions, comments, and documents are globally accessible via the
+ *  Activity section below the phase timeline — they do not appear here. */
 function buildPhaseSections(
   id: string,
-  commentCount: number,
-  attachmentCount: number,
-  conditionCount: number,
-  exceptionCount: number,
-  taskCount: number,
-  rentRollCount: number,
-  opHistCount: number,
 ): Record<ApplicationStatus, SectionItem[]> {
-  // ── Shared items ───────────────────────────────────────────────────────────
-  const rentRoll: SectionItem = {
-    key: "rent-roll", route: `/application/${id}/rent-roll`,
-    label: "Rent Roll", description: "MISMO rent roll — unit-level lease data",
-    icon: "list", iconColor: "#00875D", iconBg: "#EAF5F2", badge: rentRollCount,
-  };
-  const opHist: SectionItem = {
-    key: "operating-history", route: `/application/${id}/operating-history`,
-    label: "Operating History", description: "Income & expense statements by period",
-    icon: "trending-up", iconColor: "#00875D", iconBg: "#EAF5F2", badge: opHistCount,
-  };
   const borrower: SectionItem = {
     key: "borrower", route: `/application/${id}/borrower`,
     label: "Borrower Profile", description: "Identity, contact information, and financial profile",
@@ -74,7 +57,7 @@ function buildPhaseSections(
   };
   const property: SectionItem = {
     key: "property", route: `/application/${id}/property`,
-    label: "Property Details", description: "Location, property type, size, and occupancy",
+    label: "Property Details", description: "Location, attributes, occupancy, rent roll, and operating history",
     icon: "map-pin", iconColor: "#00875D", iconBg: "#EAF5F2",
   };
   const loanTerms: SectionItem = {
@@ -89,7 +72,7 @@ function buildPhaseSections(
   };
   const creditEval: SectionItem = {
     key: "credit-evaluation", route: `/application/${id}/credit-evaluation`,
-    label: "Credit Evaluation", description: "Credit box assessment, LOI, and commitment letter",
+    label: "Credit Evaluation", description: "Credit box assessment, LOI, commitment letter, and policy exceptions",
     icon: "shield", iconColor: "#6B4FBB", iconBg: "#F0EEFF",
   };
   const processing: SectionItem = {
@@ -97,46 +80,23 @@ function buildPhaseSections(
     label: "Processing & Compliance", description: "Appraisal, environmental, borrower forms, HMDA",
     icon: "clipboard", iconColor: "#C75300", iconBg: "#FFECDC",
   };
-  const conditions: SectionItem = {
-    key: "conditions", route: `/application/${id}/conditions`,
-    label: "Conditions & Exceptions", description: "Loan conditions and policy exceptions",
-    icon: "check-square", iconColor: "#1B7F9E", iconBg: "#DBF5F7",
-    badge: conditionCount + exceptionCount,
-  };
   const closingDetails: SectionItem = {
     key: "closing-details", route: `/application/${id}/closing-details`,
     label: "Closing Details", description: "Third-party items, legal docs, wire instructions, booking",
     icon: "check-circle", iconColor: "#005C3C", iconBg: "#D0F0E5",
   };
-  const tasks: SectionItem = {
-    key: "tasks", route: `/application/${id}/tasks`,
-    label: "Task Checklist", description: "Phase-by-phase task tracking for this loan",
-    icon: "check-square", iconColor: "#C75300", iconBg: "#FFECDC", badge: taskCount,
-  };
-  const comments: SectionItem = {
-    key: "comments", route: `/application/${id}/comments`,
-    label: "Comments", description: "Threaded discussion on this application",
-    icon: "message-circle", iconColor: "#6B46C1", iconBg: "#F3F0FF", badge: commentCount,
-  };
-  const documents: SectionItem = {
-    key: "documents", route: `/application/${id}/documents`,
-    label: "Documents", description: "Attached files and supporting materials",
-    icon: "paperclip", iconColor: "#5F646A", iconBg: "#E6E9EB", badge: attachmentCount,
-  };
-
-  const activity = [tasks, conditions, comments, documents];
 
   return {
-    "Inquiry":               [borrower, property, rentRoll, opHist, ...activity],
-    "Letter of Interest":    [creditEval, rentRoll, opHist, borrower, property, loanTerms, ...activity],
-    "Application Start":     [borrower, property, loanTerms, amortization, ...activity],
-    "Application Processing":[processing, rentRoll, opHist, ...activity],
-    "Final Credit Review":   [creditEval, rentRoll, opHist, ...activity],
-    "Pre-close":             [...activity],
-    "Ready for Docs":        [closingDetails, ...activity],
-    "Docs Drawn":            [closingDetails, ...activity],
-    "Docs Back":             [closingDetails, ...activity],
-    "Closing":               [closingDetails, ...activity],
+    "Inquiry":               [borrower, property],
+    "Letter of Interest":    [creditEval, borrower, property, loanTerms],
+    "Application Start":     [borrower, property, loanTerms, amortization],
+    "Application Processing":[processing],
+    "Final Credit Review":   [creditEval],
+    "Pre-close":             [],
+    "Ready for Docs":        [closingDetails],
+    "Docs Drawn":            [closingDetails],
+    "Docs Back":             [closingDetails],
+    "Closing":               [closingDetails],
   };
 }
 
@@ -464,8 +424,7 @@ export default function ApplicationOverviewScreen() {
   const { getApplication, getBorrower, getProperty, updateApplication, deleteApplication } = useCoreService();
   const { getComments } = useCommentsService();
   const { getDocuments } = useDocumentsService();
-  const { getConditions, getExceptions } = useConditionsService();
-  const { getRentRoll, getOpHistory } = useInquiryService();
+  const { getConditions } = useConditionsService();
   const { getTasksForApplication } = useTasksService();
   const insets = useSafeAreaInsets();
   const [statusModal, setStatusModal] = useState(false);
@@ -513,14 +472,8 @@ export default function ApplicationOverviewScreen() {
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   const conditionCount = getConditions(id).length;
-  const exceptionCount = getExceptions(id).length;
-  const rentRollCount = getRentRoll(id).length;
-  const opHistCount = getOpHistory(id).length;
   const taskCount = getTasksForApplication(id).length;
-  const phaseSections = buildPhaseSections(
-    id, getComments(id).length, getDocuments(id).length,
-    conditionCount, exceptionCount, taskCount, rentRollCount, opHistCount
-  );
+  const phaseSections = buildPhaseSections(id);
 
   return (
     <>
@@ -611,10 +564,10 @@ export default function ApplicationOverviewScreen() {
             },
             {
               key: "conditions", route: `/application/${id}/conditions`,
-              label: "Conditions & Exceptions", icon: "shield" as const,
+              label: "Loan Conditions", icon: "shield" as const,
               iconColor: "#1B7F9E", iconBg: "#DBF5F7",
-              badge: conditionCount + exceptionCount,
-              desc: "Loan conditions and policy exceptions",
+              badge: conditionCount,
+              desc: "Conditions that must be satisfied before closing",
             },
             {
               key: "comments", route: `/application/${id}/comments`,

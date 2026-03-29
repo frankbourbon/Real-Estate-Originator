@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -22,6 +22,7 @@ import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
 import type { PropertyLocation, PropertyType } from "@/services/core";
 import { useCoreService } from "@/services/core";
+import { useInquiryService } from "@/services/inquiry";
 import { formatPct, formatSqFt, getPropertyCityState } from "@/utils/formatting";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -32,9 +33,11 @@ const PROPERTY_TYPES: PropertyType[] = [
 ];
 
 const TABS = [
-  { key: "location",   label: "Location",   icon: "map-pin"   as const },
-  { key: "attributes", label: "Attributes", icon: "home"      as const },
-  { key: "occupancy",  label: "Occupancy",  icon: "percent"   as const },
+  { key: "location",          label: "Location",    icon: "map-pin"      as const },
+  { key: "attributes",        label: "Attributes",  icon: "home"         as const },
+  { key: "occupancy",         label: "Occupancy",   icon: "percent"      as const },
+  { key: "rent-roll",         label: "Rent Roll",   icon: "list"         as const },
+  { key: "operating-history", label: "Op. History", icon: "trending-up"  as const },
 ];
 
 // ─── Header buttons ───────────────────────────────────────────────────────────
@@ -125,8 +128,11 @@ type FormState = {
 export default function PropertySection() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication, getProperty, updateProperty } = useCoreService();
+  const { getRentRoll, getOpHistory } = useInquiryService();
   const app = getApplication(id);
   const property = getProperty(app?.propertyId ?? "");
+  const rentRoll = getRentRoll(id);
+  const opHistory = getOpHistory(id);
 
   const [activeTab, setActiveTab] = useState("location");
   const [editing, setEditing] = useState(false);
@@ -470,6 +476,128 @@ export default function PropertySection() {
               <DetailRow label="Economic Occupancy" value={property?.economicOccupancyPct ? `${formatPct(property.economicOccupancyPct)} (rent-based)` : undefined} last />
             </View>
           );
+
+        case "rent-roll": {
+          const occupied = rentRoll.filter((u) => u.leaseStatus === "Occupied").length;
+          return (
+            <View>
+              <View style={s.card}>
+                <SectionHeader
+                  title="Rent Roll"
+                  subtitle={`${rentRoll.length} unit${rentRoll.length !== 1 ? "s" : ""} · ${occupied} occupied`}
+                />
+                <TouchableOpacity
+                  style={s.openEditorBtn}
+                  onPress={() => router.push(`/application/${id}/rent-roll` as any)}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="external-link" size={14} color={Colors.light.tint} />
+                  <Text style={s.openEditorText}>Open Full Rent Roll Editor</Text>
+                </TouchableOpacity>
+              </View>
+              {rentRoll.length === 0 ? (
+                <View style={[s.card, s.emptyCard]}>
+                  <Feather name="list" size={28} color={Colors.light.border} />
+                  <Text style={s.emptyCardText}>No units yet</Text>
+                  <Text style={s.emptyCardSub}>Open the rent roll editor to add units.</Text>
+                </View>
+              ) : (
+                rentRoll.map((unit, idx) => {
+                  const statusColor =
+                    unit.leaseStatus === "Occupied" ? "#00875D"
+                    : unit.leaseStatus === "Vacant" ? "#B91C1C"
+                    : unit.leaseStatus === "Notice" ? "#C75300"
+                    : "#72777D";
+                  return (
+                    <View key={unit.id} style={[s.unitCard, idx < rentRoll.length - 1 && s.unitCardBorder]}>
+                      <View style={s.unitRow}>
+                        <Text style={s.unitId} numberOfLines={1}>{unit.unitIdentifier || "—"}</Text>
+                        <View style={[s.statusPill, { backgroundColor: statusColor + "20", borderColor: statusColor + "60" }]}>
+                          <Text style={[s.statusPillText, { color: statusColor }]}>{unit.leaseStatus}</Text>
+                        </View>
+                      </View>
+                      <View style={s.unitMeta}>
+                        {unit.tenantName ? (
+                          <View style={s.unitMetaItem}>
+                            <Feather name="user" size={11} color={Colors.light.textTertiary} />
+                            <Text style={s.unitMetaText} numberOfLines={1}>{unit.tenantName}</Text>
+                          </View>
+                        ) : null}
+                        {unit.squareFeet ? (
+                          <View style={s.unitMetaItem}>
+                            <Feather name="maximize-2" size={11} color={Colors.light.textTertiary} />
+                            <Text style={s.unitMetaText}>{formatSqFt(unit.squareFeet)} SF</Text>
+                          </View>
+                        ) : null}
+                        {unit.monthlyRentAmount ? (
+                          <View style={s.unitMetaItem}>
+                            <Feather name="dollar-sign" size={11} color={Colors.light.textTertiary} />
+                            <Text style={s.unitMetaText}>${Number(unit.monthlyRentAmount).toLocaleString()}/mo</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          );
+        }
+
+        case "operating-history": {
+          const formatCur = (v: string) =>
+            v ? `$${Number(v.replace(/,/g, "")).toLocaleString()}` : "—";
+          return (
+            <View>
+              <View style={s.card}>
+                <SectionHeader
+                  title="Operating History"
+                  subtitle={`${opHistory.length} period${opHistory.length !== 1 ? "s" : ""} — MISMO DSCR underwriting`}
+                />
+                <TouchableOpacity
+                  style={s.openEditorBtn}
+                  onPress={() => router.push(`/application/${id}/operating-history` as any)}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="external-link" size={14} color={Colors.light.tint} />
+                  <Text style={s.openEditorText}>Open Full Operating History Editor</Text>
+                </TouchableOpacity>
+              </View>
+              {opHistory.length === 0 ? (
+                <View style={[s.card, s.emptyCard]}>
+                  <Feather name="trending-up" size={28} color={Colors.light.border} />
+                  <Text style={s.emptyCardText}>No periods yet</Text>
+                  <Text style={s.emptyCardSub}>Open the operating history editor to add periods.</Text>
+                </View>
+              ) : (
+                opHistory.map((yr, idx) => (
+                  <View key={yr.id} style={[s.card, { marginBottom: 10 }]}>
+                    <View style={s.opPeriodHeader}>
+                      <Text style={s.opPeriodType}>{yr.periodType}</Text>
+                      {yr.periodYear ? (
+                        <Text style={s.opPeriodYear}>{yr.periodYear}</Text>
+                      ) : null}
+                    </View>
+                    <View style={s.opGrid}>
+                      <View style={s.opCell}>
+                        <Text style={s.opCellLabel}>EGI</Text>
+                        <Text style={s.opCellValue}>{formatCur(yr.effectiveGrossIncome)}</Text>
+                      </View>
+                      <View style={s.opCell}>
+                        <Text style={s.opCellLabel}>NOI</Text>
+                        <Text style={s.opCellValue}>{formatCur(yr.netOperatingIncome)}</Text>
+                      </View>
+                      <View style={s.opCell}>
+                        <Text style={s.opCellLabel}>Total Expenses</Text>
+                        <Text style={s.opCellValue}>{formatCur(yr.totalOperatingExpenses)}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+          );
+        }
       }
     }
     return null;
@@ -700,5 +828,113 @@ const s = StyleSheet.create({
     fontFamily: "OpenSans_400Regular",
     color: Colors.light.textSecondary,
     flex: 1,
+  },
+
+  // ── Rent Roll / Operating History ──────────────────────────────────────────
+  openEditorBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.light.tint,
+    backgroundColor: Colors.light.tintLight,
+    alignSelf: "flex-start",
+  },
+  openEditorText: {
+    fontSize: 13,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.tint,
+  },
+  emptyCard: {
+    alignItems: "center",
+    paddingVertical: 28,
+    gap: 8,
+  },
+  emptyCardText: {
+    fontSize: 14,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.textTertiary,
+  },
+  emptyCardSub: {
+    fontSize: 12,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textTertiary,
+    textAlign: "center",
+  },
+  unitCard: {
+    backgroundColor: Colors.light.backgroundCard,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 4,
+    padding: 12,
+    marginBottom: 8,
+  },
+  unitCardBorder: {},
+  unitRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  unitId: {
+    fontSize: 13,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.text,
+    flex: 1,
+  },
+  statusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginLeft: 8,
+  },
+  statusPillText: { fontSize: 11, fontFamily: "OpenSans_600SemiBold" },
+  unitMeta: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  unitMetaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+  unitMetaText: { fontSize: 11, fontFamily: "OpenSans_400Regular", color: Colors.light.textSecondary },
+  opPeriodHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  opPeriodType: {
+    fontSize: 13,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.text,
+  },
+  opPeriodYear: {
+    fontSize: 12,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textSecondary,
+  },
+  opGrid: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  opCell: {
+    flex: 1,
+    backgroundColor: Colors.light.background,
+    borderRadius: 4,
+    padding: 8,
+    alignItems: "center",
+  },
+  opCellLabel: {
+    fontSize: 10,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  opCellValue: {
+    fontSize: 13,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.text,
   },
 });

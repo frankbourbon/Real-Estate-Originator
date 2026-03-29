@@ -19,6 +19,7 @@ import { useFinalCreditReviewService } from "@/services/final-credit-review";
 import { useConditionsService } from "@/services/conditions";
 import { useLetterOfInterestService } from "@/services/letter-of-interest";
 import { useCoreService } from "@/services/core";
+import type { Exception } from "@/services/final-credit-review";
 
 const TABS = [
   { key: "loi",        label: "LOI",        icon: "file-text"   as const },
@@ -30,8 +31,8 @@ export default function CreditEvaluationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication } = useCoreService();
   const { getOrCreateLOI, updateLOI } = useLetterOfInterestService();
-  const { getOrCreateFCR, updateFCR } = useFinalCreditReviewService();
-  const { getConditions, getExceptions } = useConditionsService();
+  const { getOrCreateFCR, updateFCR, getExceptions } = useFinalCreditReviewService();
+  const { getConditions } = useConditionsService();
   const insets = useSafeAreaInsets();
   const app = getApplication(id);
 
@@ -211,30 +212,37 @@ export default function CreditEvaluationScreen() {
                     )}
                   </View>
                 </View>
+                <View style={styles.condExcArrow}>
+                  <Feather name="chevron-right" size={18} color={Colors.light.textTertiary} />
+                </View>
+              </View>
+            </TouchableOpacity>
 
-                <View style={styles.condExcDivider} />
-
+            <TouchableOpacity
+              style={[styles.condExcCard, { marginTop: 8, borderColor: "#F5CBA7" }]}
+              activeOpacity={0.75}
+              onPress={() => router.push(`/application/${id}/exceptions`)}
+            >
+              <View style={styles.condExcRow}>
                 <View style={styles.condExcBlock}>
                   <View style={[styles.condExcIconWrap, { backgroundColor: "#FFECDC" }]}>
                     <Feather name="shield-off" size={18} color="#C75300" />
                   </View>
                   <View style={styles.condExcText}>
                     <Text style={[styles.condExcCount, { color: "#C75300" }]}>{exceptions.length}</Text>
-                    <Text style={styles.condExcLabel}>Exception{exceptions.length !== 1 ? "s" : ""}</Text>
+                    <Text style={styles.condExcLabel}>Policy Exception{exceptions.length !== 1 ? "s" : ""}</Text>
                     {pendingExceptions > 0 && (
                       <Text style={[styles.condExcPending, { color: "#C75300" }]}>{pendingExceptions} pending approval</Text>
                     )}
                   </View>
                 </View>
-
                 <View style={styles.condExcArrow}>
                   <Feather name="chevron-right" size={18} color={Colors.light.textTertiary} />
                 </View>
               </View>
-
               <View style={styles.condExcFooter}>
                 <Feather name="users" size={11} color="#72777D" />
-                <Text style={styles.condExcFooterText}>Any persona can add conditions or exceptions at any phase</Text>
+                <Text style={styles.condExcFooterText}>Policy deviations requiring authority sign-off — managed in Final Credit Review</Text>
               </View>
             </TouchableOpacity>
           </>
