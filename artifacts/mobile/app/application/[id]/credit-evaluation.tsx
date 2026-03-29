@@ -13,16 +13,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
 import { useFinalCreditReviewService } from "@/services/final-credit-review";
 import { useLetterOfInterestService } from "@/services/letter-of-interest";
 import { useCoreService } from "@/services/core";
-
-const TABS = [
-  { key: "loi",        label: "LOI",        icon: "file-text"   as const },
-  { key: "commitment", label: "Commitment",  icon: "check-circle" as const },
-];
 
 export default function CreditEvaluationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,7 +29,6 @@ export default function CreditEvaluationScreen() {
   const loi = getOrCreateLOI(id);
   const fcr = getOrCreateFCR(id);
 
-  const [activeTab, setActiveTab] = useState("loi");
   const [creditBoxNotes, setCreditBoxNotes] = useState(loi.creditBoxNotes);
   const [loiRecommended, setLoiRecommended] = useState(loi.loiRecommended);
   const [loiIssuedDate, setLoiIssuedDate] = useState(loi.loiIssuedDate);
@@ -72,117 +65,6 @@ export default function CreditEvaluationScreen() {
 
   if (!app) return null;
 
-  function renderTabContent() {
-    switch (activeTab) {
-      case "loi":
-        return (
-          <>
-            <Text style={styles.sectionNote}>
-              Non-binding recommendation to issue. Does NOT require borrower financials or credit score.
-            </Text>
-            <View style={styles.card}>
-              <View style={styles.field}>
-                <Text style={styles.label}>Credit Box Assessment Notes</Text>
-                <TextInput
-                  style={[styles.input, styles.textarea]}
-                  value={creditBoxNotes}
-                  onChangeText={setCreditBoxNotes}
-                  placeholder="Notes on how this deal fits the credit box, debt yield, cap rate, market assessment…"
-                  placeholderTextColor={Colors.light.textTertiary}
-                  multiline
-                  numberOfLines={5}
-                />
-              </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.switchRow}>
-                <View style={styles.switchLabel}>
-                  <Text style={styles.label}>LOI Recommended</Text>
-                  <Text style={styles.sublabel}>Credit Risk approves issuing Letter of Interest to borrower</Text>
-                </View>
-                <Switch
-                  value={loiRecommended}
-                  onValueChange={setLoiRecommended}
-                  trackColor={{ false: Colors.light.border, true: "#0078CF" }}
-                  thumbColor="#fff"
-                />
-              </View>
-
-              {loiRecommended && (
-                <>
-                  <View style={styles.divider} />
-                  <View style={styles.row2}>
-                    <View style={styles.fieldHalf}>
-                      <Text style={styles.label}>LOI Issued Date</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={loiIssuedDate}
-                        onChangeText={setLoiIssuedDate}
-                        placeholder="MM/DD/YYYY"
-                        placeholderTextColor={Colors.light.textTertiary}
-                      />
-                    </View>
-                    <View style={styles.fieldHalf}>
-                      <Text style={styles.label}>LOI Expiration Date</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={loiExpirationDate}
-                        onChangeText={setLoiExpirationDate}
-                        placeholder="MM/DD/YYYY"
-                        placeholderTextColor={Colors.light.textTertiary}
-                      />
-                    </View>
-                  </View>
-                </>
-              )}
-            </View>
-          </>
-        );
-
-      case "commitment":
-        return (
-          <>
-            <Text style={styles.sectionNote}>
-              Legally binding commitment to fund. Issued after Final Credit Review.
-            </Text>
-            <View style={styles.card}>
-              <View style={styles.switchRow}>
-                <View style={styles.switchLabel}>
-                  <Text style={styles.label}>CL Recommended</Text>
-                  <Text style={styles.sublabel}>Credit Risk approves issuing Commitment Letter</Text>
-                </View>
-                <Switch
-                  value={commitmentLetterRecommended}
-                  onValueChange={setCommitmentLetterRecommended}
-                  trackColor={{ false: Colors.light.border, true: "#0078CF" }}
-                  thumbColor="#fff"
-                />
-              </View>
-
-              {commitmentLetterRecommended && (
-                <>
-                  <View style={styles.divider} />
-                  <View style={styles.field}>
-                    <Text style={styles.label}>Commitment Letter Issued Date</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={commitmentLetterIssuedDate}
-                      onChangeText={setCommitmentLetterIssuedDate}
-                      placeholder="MM/DD/YYYY"
-                      placeholderTextColor={Colors.light.textTertiary}
-                    />
-                  </View>
-                </>
-              )}
-            </View>
-          </>
-        );
-
-    }
-    return null;
-  }
-
   return (
     <>
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
@@ -215,15 +97,110 @@ export default function CreditEvaluationScreen() {
         )}
       </View>
 
-      <TabBar tabs={TABS} activeTab={activeTab} onSelect={setActiveTab} />
-
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {renderTabContent()}
+        {/* ── Letter of Interest ─────────────────────────────────────────── */}
+        <Text style={styles.sectionHeader}>Letter of Interest</Text>
+        <Text style={styles.sectionNote}>
+          Non-binding recommendation to issue. Does not require full borrower financials or credit score.
+        </Text>
+        <View style={styles.card}>
+          <View style={styles.field}>
+            <Text style={styles.label}>Credit Box Assessment Notes</Text>
+            <TextInput
+              style={[styles.input, styles.textarea]}
+              value={creditBoxNotes}
+              onChangeText={setCreditBoxNotes}
+              placeholder="Notes on how this deal fits the credit box, debt yield, cap rate, market assessment…"
+              placeholderTextColor={Colors.light.textTertiary}
+              multiline
+              numberOfLines={5}
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.switchRow}>
+            <View style={styles.switchLabel}>
+              <Text style={styles.label}>LOI Recommended</Text>
+              <Text style={styles.sublabel}>Credit Risk approves issuing Letter of Interest to borrower</Text>
+            </View>
+            <Switch
+              value={loiRecommended}
+              onValueChange={setLoiRecommended}
+              trackColor={{ false: Colors.light.border, true: "#0078CF" }}
+              thumbColor="#fff"
+            />
+          </View>
+
+          {loiRecommended && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.row2}>
+                <View style={styles.fieldHalf}>
+                  <Text style={styles.label}>LOI Issued Date</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={loiIssuedDate}
+                    onChangeText={setLoiIssuedDate}
+                    placeholder="MM/DD/YYYY"
+                    placeholderTextColor={Colors.light.textTertiary}
+                  />
+                </View>
+                <View style={styles.fieldHalf}>
+                  <Text style={styles.label}>LOI Expiration Date</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={loiExpirationDate}
+                    onChangeText={setLoiExpirationDate}
+                    placeholder="MM/DD/YYYY"
+                    placeholderTextColor={Colors.light.textTertiary}
+                  />
+                </View>
+              </View>
+            </>
+          )}
+        </View>
+
+        {/* ── Commitment Letter ──────────────────────────────────────────── */}
+        <Text style={[styles.sectionHeader, styles.sectionHeaderSpaced]}>Commitment Letter</Text>
+        <Text style={styles.sectionNote}>
+          Legally binding commitment to fund. Issued after Final Credit Review approval.
+        </Text>
+        <View style={styles.card}>
+          <View style={styles.switchRow}>
+            <View style={styles.switchLabel}>
+              <Text style={styles.label}>CL Recommended</Text>
+              <Text style={styles.sublabel}>Credit Risk approves issuing Commitment Letter</Text>
+            </View>
+            <Switch
+              value={commitmentLetterRecommended}
+              onValueChange={setCommitmentLetterRecommended}
+              trackColor={{ false: Colors.light.border, true: "#0078CF" }}
+              thumbColor="#fff"
+            />
+          </View>
+
+          {commitmentLetterRecommended && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.field}>
+                <Text style={styles.label}>Commitment Letter Issued Date</Text>
+                <TextInput
+                  style={styles.input}
+                  value={commitmentLetterIssuedDate}
+                  onChangeText={setCommitmentLetterIssuedDate}
+                  placeholder="MM/DD/YYYY"
+                  placeholderTextColor={Colors.light.textTertiary}
+                />
+              </View>
+            </>
+          )}
+        </View>
 
         {dirty && mounted && (
           <TouchableOpacity
@@ -274,6 +251,17 @@ const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: Colors.light.background },
   content: { padding: 16, gap: 8 },
 
+  sectionHeader: {
+    fontSize: 11,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.tint,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginTop: 4,
+    marginBottom: 2,
+    marginLeft: 2,
+  },
+  sectionHeaderSpaced: { marginTop: 20 },
   sectionNote: {
     fontSize: 12, fontFamily: "OpenSans_400Regular",
     color: Colors.light.textSecondary,
