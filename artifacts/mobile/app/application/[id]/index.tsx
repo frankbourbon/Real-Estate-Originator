@@ -72,8 +72,13 @@ function buildPhaseSections(
   };
   const creditEval: SectionItem = {
     key: "credit-evaluation", route: `/application/${id}/credit-evaluation`,
-    label: "Credit Evaluation", description: "Credit box assessment, LOI, commitment letter, and policy exceptions",
-    icon: "shield", iconColor: "#6B4FBB", iconBg: "#F0EEFF",
+    label: "Letter of Interest", description: "Credit box assessment and LOI recommendation",
+    icon: "shield", iconColor: "#0078CF", iconBg: "#EAF6FF",
+  };
+  const commitmentLetter: SectionItem = {
+    key: "commitment-letter", route: `/application/${id}/commitment-letter`,
+    label: "Commitment Letter", description: "Commitment Letter recommendation and issued date",
+    icon: "shield", iconColor: "#6B46C1", iconBg: "#F3F0FF",
   };
   const processing: SectionItem = {
     key: "processing", route: `/application/${id}/processing`,
@@ -91,7 +96,7 @@ function buildPhaseSections(
     "Letter of Interest":    [creditEval, borrower, property, loanTerms],
     "Application Start":     [borrower, property, loanTerms, amortization],
     "Application Processing":[processing],
-    "Final Credit Review":   [creditEval],
+    "Final Credit Review":   [commitmentLetter],
     "Pre-close":             [],
     "Ready for Docs":        [closingDetails],
     "Docs Drawn":            [closingDetails],

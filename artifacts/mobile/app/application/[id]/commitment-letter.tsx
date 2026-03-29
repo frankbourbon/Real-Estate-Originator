@@ -14,32 +14,34 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
-import { useLetterOfInterestService } from "@/services/letter-of-interest";
+import { useFinalCreditReviewService } from "@/services/final-credit-review";
 import { useCoreService } from "@/services/core";
 
-export default function CreditEvaluationScreen() {
+export default function CommitmentLetterScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication } = useCoreService();
-  const { getOrCreateLOI, updateLOI } = useLetterOfInterestService();
+  const { getOrCreateFCR, updateFCR } = useFinalCreditReviewService();
   const insets = useSafeAreaInsets();
   const app = getApplication(id);
-  const loi = getOrCreateLOI(id);
+  const fcr = getOrCreateFCR(id);
 
-  const [creditBoxNotes, setCreditBoxNotes] = useState(loi.creditBoxNotes);
-  const [loiRecommended, setLoiRecommended] = useState(loi.loiRecommended);
-  const [loiIssuedDate, setLoiIssuedDate] = useState(loi.loiIssuedDate);
-  const [loiExpirationDate, setLoiExpirationDate] = useState(loi.loiExpirationDate);
+  const [commitmentLetterRecommended, setCommitmentLetterRecommended] = useState(
+    fcr.commitmentLetterRecommended
+  );
+  const [commitmentLetterIssuedDate, setCommitmentLetterIssuedDate] = useState(
+    fcr.commitmentLetterIssuedDate
+  );
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { setDirty(true); }, [creditBoxNotes, loiRecommended, loiIssuedDate, loiExpirationDate]);
+  useEffect(() => { setDirty(true); }, [commitmentLetterRecommended, commitmentLetterIssuedDate]);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); setDirty(false); }, []);
 
   const handleSave = async () => {
     setSaving(true);
-    await updateLOI(id, { creditBoxNotes, loiRecommended, loiIssuedDate, loiExpirationDate });
+    await updateFCR(id, { commitmentLetterRecommended, commitmentLetterIssuedDate });
     setSaving(false);
     setDirty(false);
   };
@@ -57,11 +59,11 @@ export default function CreditEvaluationScreen() {
         </TouchableOpacity>
         <View style={styles.headerTitle}>
           <View style={styles.headerIconWrap}>
-            <Feather name="shield" size={14} color="#0078CF" />
+            <Feather name="shield" size={14} color="#6B46C1" />
           </View>
           <View>
-            <Text style={styles.headerEyebrow}>Credit Risk</Text>
-            <Text style={styles.headerLabel}>Letter of Interest</Text>
+            <Text style={styles.headerEyebrow}>Credit Risk · Final Credit Review</Text>
+            <Text style={styles.headerLabel}>Commitment Letter</Text>
           </View>
         </View>
         {dirty && mounted ? (
@@ -88,62 +90,35 @@ export default function CreditEvaluationScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.sectionNote}>
-          Non-binding recommendation to issue. Does not require full borrower financials or credit score.
+          Legally binding commitment to fund. Issued after Final Credit Review approval. All conditions and exceptions must be documented before issuance.
         </Text>
 
         <View style={styles.card}>
-          <View style={styles.field}>
-            <Text style={styles.label}>Credit Box Assessment Notes</Text>
-            <TextInput
-              style={[styles.input, styles.textarea]}
-              value={creditBoxNotes}
-              onChangeText={setCreditBoxNotes}
-              placeholder="Notes on how this deal fits the credit box, debt yield, cap rate, market assessment…"
-              placeholderTextColor={Colors.light.textTertiary}
-              multiline
-              numberOfLines={5}
-            />
-          </View>
-
-          <View style={styles.divider} />
-
           <View style={styles.switchRow}>
             <View style={styles.switchLabel}>
-              <Text style={styles.label}>LOI Recommended</Text>
-              <Text style={styles.sublabel}>Credit Risk approves issuing Letter of Interest to borrower</Text>
+              <Text style={styles.label}>CL Recommended</Text>
+              <Text style={styles.sublabel}>Credit Risk approves issuing Commitment Letter to borrower</Text>
             </View>
             <Switch
-              value={loiRecommended}
-              onValueChange={setLoiRecommended}
-              trackColor={{ false: Colors.light.border, true: "#0078CF" }}
+              value={commitmentLetterRecommended}
+              onValueChange={setCommitmentLetterRecommended}
+              trackColor={{ false: Colors.light.border, true: "#6B46C1" }}
               thumbColor="#fff"
             />
           </View>
 
-          {loiRecommended && (
+          {commitmentLetterRecommended && (
             <>
               <View style={styles.divider} />
-              <View style={styles.row2}>
-                <View style={styles.fieldHalf}>
-                  <Text style={styles.label}>LOI Issued Date</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={loiIssuedDate}
-                    onChangeText={setLoiIssuedDate}
-                    placeholder="MM/DD/YYYY"
-                    placeholderTextColor={Colors.light.textTertiary}
-                  />
-                </View>
-                <View style={styles.fieldHalf}>
-                  <Text style={styles.label}>LOI Expiration Date</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={loiExpirationDate}
-                    onChangeText={setLoiExpirationDate}
-                    placeholder="MM/DD/YYYY"
-                    placeholderTextColor={Colors.light.textTertiary}
-                  />
-                </View>
+              <View style={styles.field}>
+                <Text style={styles.label}>Commitment Letter Issued Date</Text>
+                <TextInput
+                  style={styles.input}
+                  value={commitmentLetterIssuedDate}
+                  onChangeText={setCommitmentLetterIssuedDate}
+                  placeholder="MM/DD/YYYY"
+                  placeholderTextColor={Colors.light.textTertiary}
+                />
               </View>
             </>
           )}
@@ -179,7 +154,7 @@ const styles = StyleSheet.create({
   headerIconWrap: {
     width: 30, height: 30,
     borderRadius: 6,
-    backgroundColor: "#EAF6FF",
+    backgroundColor: "#F3F0FF",
     alignItems: "center", justifyContent: "center",
   },
   headerEyebrow: { fontSize: 9, fontFamily: "OpenSans_600SemiBold", color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: 0.8 },
@@ -211,9 +186,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     padding: 16,
   },
-  field: { gap: 6, marginBottom: 4 },
-  fieldHalf: { flex: 1, gap: 6 },
-  row2: { flexDirection: "row", gap: 12 },
+  field: { gap: 6 },
   divider: { height: 1, backgroundColor: Colors.light.borderLight, marginVertical: 12 },
 
   switchRow: {
@@ -238,7 +211,6 @@ const styles = StyleSheet.create({
     fontFamily: "OpenSans_400Regular",
     color: Colors.light.text,
   },
-  textarea: { minHeight: 100, textAlignVertical: "top", paddingTop: 10 },
 
   saveBtnFull: {
     flexDirection: "row",
