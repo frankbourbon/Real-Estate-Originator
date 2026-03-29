@@ -24,6 +24,11 @@ import type {
 } from "@/services/inquiry";
 import { useInquiryService } from "@/services/inquiry";
 import { useCoreService } from "@/services/core";
+import {
+  computeMFPhysicalOccupancy,
+  computeCommPhysicalOccupancy,
+  fmtPct,
+} from "@/utils/occupancy";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -616,6 +621,53 @@ export default function RentRollScreen() {
         contentContainerStyle={[s.content, { paddingBottom: bottomPad + 24 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Physical Occupancy Cards ── */}
+        {(() => {
+          const mf = computeMFPhysicalOccupancy(units);
+          const comm = computeCommPhysicalOccupancy(units);
+          const hasMF = mf.source === "rent-roll";
+          const hasComm = comm.source === "rent-roll";
+          if (!hasMF && !hasComm) return null;
+          return (
+            <View style={s.occRow}>
+              {hasMF && (
+                <View style={[s.occCard, { flex: hasComm ? 1 : undefined, width: hasComm ? undefined : "100%" }]}>
+                  <View style={s.occCardHeader}>
+                    <View style={s.occIconBox}>
+                      <Feather name="home" size={11} color={Colors.light.tint} />
+                    </View>
+                    <Text style={s.occCardLabel}>MF Physical Occ.</Text>
+                  </View>
+                  <Text style={s.occPct}>{fmtPct(mf.pct)}</Text>
+                  <View style={s.occBreakRow}>
+                    <Text style={s.occBreakItem}><Text style={s.occBreakVal}>{mf.occupied}</Text> occ</Text>
+                    {mf.notice > 0 && <Text style={[s.occBreakItem, { color: "#C75300" }]}><Text style={[s.occBreakVal, { color: "#C75300" }]}>{mf.notice}</Text> ntc</Text>}
+                    <Text style={[s.occBreakItem, { color: Colors.light.textTertiary }]}><Text style={[s.occBreakVal, { color: Colors.light.textTertiary }]}>{mf.total - mf.occupied - mf.notice}</Text> vac</Text>
+                    <Text style={s.occBreakTotal}>/{mf.total}</Text>
+                  </View>
+                </View>
+              )}
+              {hasComm && (
+                <View style={[s.occCard, { flex: hasMF ? 1 : undefined, width: hasMF ? undefined : "100%" }]}>
+                  <View style={s.occCardHeader}>
+                    <View style={s.occIconBox}>
+                      <Feather name="briefcase" size={11} color={Colors.light.tint} />
+                    </View>
+                    <Text style={s.occCardLabel}>Comm. Physical Occ.</Text>
+                  </View>
+                  <Text style={s.occPct}>{fmtPct(comm.pct)}</Text>
+                  <View style={s.occBreakRow}>
+                    <Text style={s.occBreakItem}><Text style={s.occBreakVal}>{comm.occupied}</Text> occ</Text>
+                    {comm.notice > 0 && <Text style={[s.occBreakItem, { color: "#C75300" }]}><Text style={[s.occBreakVal, { color: "#C75300" }]}>{comm.notice}</Text> ntc</Text>}
+                    <Text style={[s.occBreakItem, { color: Colors.light.textTertiary }]}><Text style={[s.occBreakVal, { color: Colors.light.textTertiary }]}>{comm.total - comm.occupied - comm.notice}</Text> vac</Text>
+                    <Text style={s.occBreakTotal}>/{comm.total}</Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          );
+        })()}
+
         <SummaryBar units={units} />
 
         {units.length === 0 ? (
@@ -688,4 +740,24 @@ const s = StyleSheet.create({
   empty: { alignItems: "center", paddingVertical: 48, gap: 8 },
   emptyTitle: { fontSize: 15, fontFamily: "OpenSans_700Bold", color: Colors.light.textTertiary },
   emptyText: { fontSize: 13, fontFamily: "OpenSans_400Regular", color: Colors.light.textTertiary, textAlign: "center", maxWidth: 240 },
+
+  occRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
+  occCard: {
+    backgroundColor: Colors.light.card,
+    borderRadius: 10, padding: 12,
+    borderWidth: 1, borderColor: Colors.light.border,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2, elevation: 1,
+  },
+  occCardHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
+  occIconBox: {
+    width: 20, height: 20, borderRadius: 4,
+    backgroundColor: Colors.light.tintLight,
+    alignItems: "center", justifyContent: "center",
+  },
+  occCardLabel: { fontSize: 11, fontFamily: "OpenSans_600SemiBold", color: Colors.light.textSecondary, flex: 1 },
+  occPct: { fontSize: 24, fontFamily: "OpenSans_700Bold", color: Colors.light.tint, marginBottom: 6 },
+  occBreakRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", alignItems: "center" },
+  occBreakItem: { fontSize: 11, fontFamily: "OpenSans_400Regular", color: Colors.light.text },
+  occBreakVal: { fontFamily: "OpenSans_700Bold" },
+  occBreakTotal: { fontSize: 11, fontFamily: "OpenSans_400Regular", color: Colors.light.textTertiary },
 });

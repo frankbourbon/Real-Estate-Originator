@@ -19,6 +19,11 @@ import Colors from "@/constants/colors";
 import type { OperatingPeriodType, OperatingYear } from "@/services/inquiry";
 import { useInquiryService } from "@/services/inquiry";
 import { useCoreService } from "@/services/core";
+import {
+  computeEconomicOccupancy,
+  fmtPct,
+  fmtCur,
+} from "@/utils/occupancy";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -470,6 +475,52 @@ export default function OperatingHistoryScreen() {
         contentContainerStyle={[s.content, { paddingBottom: bottomPad + 24 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Economic Occupancy Card ── */}
+        {(() => {
+          const econ = computeEconomicOccupancy(history);
+          return (
+            <View style={ec.card}>
+              <View style={ec.header}>
+                <View style={ec.iconBox}>
+                  <Feather name="trending-up" size={11} color={Colors.light.tint} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={ec.label}>ECONOMIC OCCUPANCY</Text>
+                  <Text style={ec.subtitle}>Effective Gross Income ÷ Gross Potential Rent</Text>
+                </View>
+                <Text style={[ec.pct, econ.pct === null && ec.pctNone]}>{fmtPct(econ.pct)}</Text>
+              </View>
+              {econ.source === "operating-history" ? (
+                <View style={ec.breakdown}>
+                  <Text style={ec.sourceLabel}>Source: {econ.periodLabel}</Text>
+                  <View style={ec.row}>
+                    <View style={ec.item}>
+                      <Text style={ec.itemVal}>{fmtCur(econ.egi)}</Text>
+                      <Text style={ec.itemKey}>EGI</Text>
+                    </View>
+                    <View style={ec.divider} />
+                    <View style={ec.item}>
+                      <Text style={ec.itemVal}>{fmtCur(econ.gpr)}</Text>
+                      <Text style={ec.itemKey}>Gross Potential Rent</Text>
+                    </View>
+                    {econ.gpr && econ.egi !== null && (
+                      <>
+                        <View style={ec.divider} />
+                        <View style={ec.item}>
+                          <Text style={[ec.itemVal, { color: "#B91C1C" }]}>{fmtCur(econ.gpr - econ.egi)}</Text>
+                          <Text style={ec.itemKey}>Vacancy Loss</Text>
+                        </View>
+                      </>
+                    )}
+                  </View>
+                </View>
+              ) : (
+                <Text style={ec.noData}>Add a period below to compute economic occupancy.</Text>
+              )}
+            </View>
+          );
+        })()}
+
         {history.length === 0 ? (
           <View style={s.empty}>
             <Feather name="trending-up" size={32} color={Colors.light.textTertiary} />
@@ -538,4 +589,45 @@ const s = StyleSheet.create({
   empty: { alignItems: "center", paddingVertical: 48, gap: 8 },
   emptyTitle: { fontSize: 15, fontFamily: "OpenSans_700Bold", color: Colors.light.textTertiary },
   emptyText: { fontSize: 13, fontFamily: "OpenSans_400Regular", color: Colors.light.textTertiary, textAlign: "center", maxWidth: 240 },
+});
+
+const ec = StyleSheet.create({
+  card: {
+    backgroundColor: Colors.light.card,
+    borderRadius: 10, padding: 14, marginBottom: 14,
+    borderWidth: 1, borderColor: Colors.light.border,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2, elevation: 1,
+  },
+  header: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 10 },
+  iconBox: {
+    width: 24, height: 24, borderRadius: 5,
+    backgroundColor: Colors.light.tintLight,
+    alignItems: "center", justifyContent: "center",
+    marginTop: 1,
+  },
+  label: {
+    fontSize: 10, fontFamily: "OpenSans_700Bold", color: Colors.light.textSecondary,
+    letterSpacing: 0.7, textTransform: "uppercase",
+  },
+  subtitle: {
+    fontSize: 11, fontFamily: "OpenSans_400Regular", color: Colors.light.textTertiary, marginTop: 2,
+  },
+  pct: { fontSize: 26, fontFamily: "OpenSans_700Bold", color: Colors.light.tint },
+  pctNone: { fontSize: 20, color: Colors.light.textTertiary },
+  breakdown: {
+    backgroundColor: Colors.light.background, borderRadius: 6,
+    borderWidth: 1, borderColor: Colors.light.border, padding: 10,
+  },
+  sourceLabel: {
+    fontSize: 11, fontFamily: "OpenSans_600SemiBold", color: Colors.light.textSecondary, marginBottom: 8,
+  },
+  row: { flexDirection: "row", alignItems: "center", gap: 6 },
+  item: { flex: 1, alignItems: "center" },
+  itemVal: { fontSize: 14, fontFamily: "OpenSans_700Bold", color: Colors.light.tint },
+  itemKey: { fontSize: 10, fontFamily: "OpenSans_400Regular", color: Colors.light.textTertiary, textAlign: "center", marginTop: 2 },
+  divider: { width: 1, height: 30, backgroundColor: Colors.light.border },
+  noData: {
+    fontSize: 12, fontFamily: "OpenSans_400Regular", color: Colors.light.textTertiary,
+    textAlign: "center", paddingVertical: 4,
+  },
 });
