@@ -229,30 +229,26 @@ export default function DashboardScreen() {
           {/* 2×2 group grid */}
           <View style={styles.groupGrid}>
             {([
-              { key: "Sales",      color: "#1B7F9E",
+              { group: "Sales",      label: "SALES",   color: "#1B7F9E",
                 count: (stats.byPhase["Inquiry"] ?? 0) + (stats.byPhase["Application Start"] ?? 0) },
-              { key: "Processing", color: "#C75300",
+              { group: "Processing", label: "PROCESS", color: "#C75300",
                 count: (stats.byPhase["Letter of Interest"] ?? 0) + (stats.byPhase["Application Processing"] ?? 0) },
-              { key: "Credit",     color: "#6B4FBB",
+              { group: "Credit",     label: "CREDIT",  color: "#6B4FBB",
                 count: (stats.byPhase["Final Credit Review"] ?? 0) + (stats.byPhase["Pre-close"] ?? 0) },
-              { key: "Closing",    color: "#005C3C",
+              { group: "Closing",    label: "CLOSE",   color: "#005C3C",
                 count: (stats.byPhase["Ready for Docs"] ?? 0) + (stats.byPhase["Docs Drawn"] ?? 0) +
                        (stats.byPhase["Docs Back"] ?? 0) + (stats.byPhase["Closing"] ?? 0) },
-            ] as { key: string; color: string; count: number }[]).map((g, i) => (
+            ] as { group: string; label: string; color: string; count: number }[]).map((g, i, arr) => (
               <TouchableOpacity
-                key={g.key}
-                style={[
-                  styles.groupChip,
-                  i % 2 === 0 && styles.groupChipLeft,
-                  i < 2      && styles.groupChipTop,
-                ]}
-                onPress={() => router.push({ pathname: "/(tabs)/applications", params: { group: g.key } })}
+                key={g.group}
+                style={[styles.groupChip, i < arr.length - 1 && styles.groupChipDivider]}
+                onPress={() => router.push({ pathname: "/(tabs)/applications", params: { group: g.group } })}
                 activeOpacity={0.6}
               >
                 <View style={styles.groupChipRow}>
                   <View style={[styles.groupChipAccent, { backgroundColor: g.color }]} />
                   <Text style={[styles.groupChipNum, { color: g.color }]}>{g.count}</Text>
-                  <Text style={styles.groupChipLabel}>{g.key.toUpperCase()}</Text>
+                  <Text style={styles.groupChipLabel}>{g.label}</Text>
                 </View>
               </TouchableOpacity>
             ))}
@@ -425,23 +421,16 @@ const styles = StyleSheet.create({
   // 2×2 group grid
   groupGrid: {
     flexDirection: "row",
-    flexWrap: "wrap",
   },
   groupChip: {
-    width: "50%",
+    flex: 1,
     paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     justifyContent: "center",
-    borderTopWidth: 0,
-    borderLeftWidth: 0,
   },
-  groupChipLeft: {
+  groupChipDivider: {
     borderRightWidth: 1,
     borderRightColor: Colors.light.border,
-  },
-  groupChipTop: {
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
   },
   groupChipRow: {
     flexDirection: "row",
