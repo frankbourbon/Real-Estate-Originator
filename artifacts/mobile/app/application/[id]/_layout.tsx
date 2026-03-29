@@ -21,6 +21,8 @@ export default function ApplicationLayout() {
       <Stack.Screen name="rent-roll" />
       <Stack.Screen name="operating-history" />
       <Stack.Screen name="loan-team" />
+      <Stack.Screen name="inquiry-disposition" />
+      <Stack.Screen name="application-disposition" />
     </Stack>
   );
 }

@@ -41,6 +41,11 @@ export type PhaseInfo = {
   notes?: string;        // regulatory / process notes
 };
 
+export const DISPOSITION_STATUSES = new Set<ApplicationStatus>([
+  "Inquiry Canceled", "Inquiry Withdrawn", "Inquiry Denied",
+  "Application Withdrawn", "Application Canceled", "Application Denied",
+]);
+
 export const PHASE_INFO: Record<ApplicationStatus, PhaseInfo> = {
   "Inquiry": {
     status: "Inquiry",
@@ -203,6 +208,42 @@ export const PHASE_INFO: Record<ApplicationStatus, PhaseInfo> = {
       "Booked to servicing system",
       "Servicing loan number assigned",
     ],
+  },
+  "Inquiry Canceled": {
+    status: "Inquiry Canceled", phase: 0, persona: "Sales", personaIcon: "briefcase",
+    color: "#B91C1C", bg: "#FEE2E2",
+    description: "The borrower's inquiry was canceled before a Letter of Interest was issued.",
+    checklist: ["Cancellation reason documented", "Borrower notified"],
+  },
+  "Inquiry Withdrawn": {
+    status: "Inquiry Withdrawn", phase: 0, persona: "Sales", personaIcon: "briefcase",
+    color: "#B91C1C", bg: "#FEE2E2",
+    description: "The borrower withdrew their inquiry before a Letter of Interest was issued.",
+    checklist: ["Withdrawal reason documented", "Borrower notified"],
+  },
+  "Inquiry Denied": {
+    status: "Inquiry Denied", phase: 0, persona: "Credit Risk", personaIcon: "shield",
+    color: "#B91C1C", bg: "#FEE2E2",
+    description: "Credit Risk declined to issue a Letter of Interest based on the initial credit box assessment.",
+    checklist: ["Denial reason documented", "Adverse action notice issued"],
+  },
+  "Application Withdrawn": {
+    status: "Application Withdrawn", phase: 0, persona: "Sales", personaIcon: "briefcase",
+    color: "#B91C1C", bg: "#FEE2E2",
+    description: "The borrower withdrew their application after a Letter of Interest was issued.",
+    checklist: ["Withdrawal reason documented", "HMDA reportable event recorded", "Borrower notified"],
+  },
+  "Application Canceled": {
+    status: "Application Canceled", phase: 0, persona: "Sales", personaIcon: "briefcase",
+    color: "#B91C1C", bg: "#FEE2E2",
+    description: "The application was canceled after a Letter of Interest was issued.",
+    checklist: ["Cancellation reason documented", "HMDA reportable event recorded", "Borrower notified"],
+  },
+  "Application Denied": {
+    status: "Application Denied", phase: 0, persona: "Credit Risk", personaIcon: "shield",
+    color: "#B91C1C", bg: "#FEE2E2",
+    description: "Credit Risk declined to issue a Commitment Letter based on the final credit review.",
+    checklist: ["Denial reason documented", "Adverse action notice issued", "HMDA reportable event recorded"],
   },
 };
 

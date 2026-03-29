@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 
 import { useAdminService } from "@/services/admin";
+import { useApplicationDispositionService } from "@/services/application-disposition";
 import { useApplicationStartService } from "@/services/application-start";
 import { useClosingService } from "@/services/closing";
 import { useCommentsService } from "@/services/comments";
@@ -8,6 +9,7 @@ import { useConditionsService } from "@/services/conditions";
 import { useCoreService } from "@/services/core";
 import { useDocumentsService } from "@/services/documents";
 import { useFinalCreditReviewService } from "@/services/final-credit-review";
+import { useInquiryDispositionService } from "@/services/inquiry-disposition";
 import { useInquiryService } from "@/services/inquiry";
 import { useLetterOfInterestService } from "@/services/letter-of-interest";
 import { useLoanTeamService } from "@/services/loan-team";
@@ -30,8 +32,10 @@ export function useSeedCoordinator() {
   const admin = useAdminService();
   const core = useCoreService();
   const inquiry = useInquiryService();
+  const inquiryDisposition = useInquiryDispositionService();
   const loi = useLetterOfInterestService();
   const appStart = useApplicationStartService();
+  const appDisposition = useApplicationDispositionService();
   const processing = useProcessingService();
   const fcr = useFinalCreditReviewService();
   const conditions = useConditionsService();
@@ -48,8 +52,10 @@ export function useSeedCoordinator() {
       admin.loadSeedData(),
       core.loadSeedData(),
       inquiry.loadSeedData(),
+      inquiryDisposition.loadSeedData(),
       loi.loadSeedData(),
       appStart.loadSeedData(),
+      appDisposition.loadSeedData(),
       processing.loadSeedData(),
       fcr.loadSeedData(),
       conditions.loadSeedData(),
@@ -61,15 +67,17 @@ export function useSeedCoordinator() {
       comments.loadSeedData(),
       loanTeam.loadSeedData(),
     ]);
-  }, [admin, core, inquiry, loi, appStart, processing, fcr, conditions, preClose, rfd, closing, documents, tasks, comments, loanTeam]);
+  }, [admin, core, inquiry, inquiryDisposition, loi, appStart, appDisposition, processing, fcr, conditions, preClose, rfd, closing, documents, tasks, comments, loanTeam]);
 
   const clearAllData = useCallback(async () => {
     await Promise.all([
       admin.clearData(),
       core.clearData(),
       inquiry.clearData(),
+      inquiryDisposition.clearData(),
       loi.clearData(),
       appStart.clearData(),
+      appDisposition.clearData(),
       processing.clearData(),
       fcr.clearData(),
       conditions.clearData(),
@@ -81,7 +89,7 @@ export function useSeedCoordinator() {
       comments.clearData(),
       loanTeam.clearData(),
     ]);
-  }, [admin, core, inquiry, loi, appStart, processing, fcr, conditions, preClose, rfd, closing, documents, tasks, comments, loanTeam]);
+  }, [admin, core, inquiry, inquiryDisposition, loi, appStart, appDisposition, processing, fcr, conditions, preClose, rfd, closing, documents, tasks, comments, loanTeam]);
 
   /**
    * Clears all phase-service data for a specific application (cascade delete).
@@ -91,8 +99,10 @@ export function useSeedCoordinator() {
   const clearForApplication = useCallback(async (applicationId: string) => {
     await Promise.all([
       inquiry.clearForApplication(applicationId),
+      inquiryDisposition.clearForApplication(applicationId),
       loi.clearForApplication(applicationId),
       appStart.clearForApplication(applicationId),
+      appDisposition.clearForApplication(applicationId),
       processing.clearForApplication(applicationId),
       fcr.clearForApplication(applicationId),
       conditions.clearForApplication(applicationId),
@@ -105,7 +115,7 @@ export function useSeedCoordinator() {
       loanTeam.clearForApplication(applicationId),
     ]);
     await core.deleteApplication(applicationId);
-  }, [core, inquiry, loi, appStart, processing, fcr, conditions, preClose, rfd, closing, documents, tasks, comments, loanTeam]);
+  }, [core, inquiry, inquiryDisposition, loi, appStart, appDisposition, processing, fcr, conditions, preClose, rfd, closing, documents, tasks, comments, loanTeam]);
 
   return { loadAllSeedData, clearAllData, clearForApplication };
 }

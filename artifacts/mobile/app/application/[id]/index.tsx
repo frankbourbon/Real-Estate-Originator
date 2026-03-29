@@ -30,7 +30,7 @@ import {
   getPropertyCityState,
   getPropertyShortAddress,
 } from "@/utils/formatting";
-import { PHASE_INFO, PHASE_ORDER } from "@/utils/phases";
+import { DISPOSITION_STATUSES, PHASE_INFO, PHASE_ORDER } from "@/utils/phases";
 
 // ─── Section menu definition ──────────────────────────────────────────────────
 
@@ -92,6 +92,22 @@ function buildPhaseSections(
     icon: "check-circle", iconColor: "#005C3C", iconBg: "#D0F0E5",
   };
 
+  const inquiryDisposition: SectionItem = {
+    key: "inquiry-disposition", route: `/application/${id}/inquiry-disposition`,
+    label: "Inquiry Disposition", description: "Cancellation, withdrawal, or denial at the inquiry stage",
+    icon: "alert-octagon", iconColor: "#B91C1C", iconBg: "#FEE2E2",
+  };
+  const applicationDisposition: SectionItem = {
+    key: "application-disposition", route: `/application/${id}/application-disposition`,
+    label: "Application Disposition", description: "Withdrawal or cancellation after LOI issuance",
+    icon: "alert-octagon", iconColor: "#B91C1C", iconBg: "#FEE2E2",
+  };
+  const finalCreditDenial: SectionItem = {
+    key: "commitment-letter", route: `/application/${id}/commitment-letter`,
+    label: "Credit Denial", description: "Commitment Letter decline and adverse action",
+    icon: "shield", iconColor: "#B91C1C", iconBg: "#FEE2E2",
+  };
+
   return {
     "Inquiry":               [borrower, property],
     "Letter of Interest":    [creditEval, borrower, property, loanTerms],
@@ -103,6 +119,12 @@ function buildPhaseSections(
     "Docs Drawn":            [closingDetails],
     "Docs Back":             [closingDetails],
     "Closing":               [closingDetails],
+    "Inquiry Canceled":      [inquiryDisposition, borrower, property],
+    "Inquiry Withdrawn":     [inquiryDisposition, borrower, property],
+    "Inquiry Denied":        [inquiryDisposition, creditEval, borrower, property],
+    "Application Withdrawn": [applicationDisposition, borrower, property, loanTerms],
+    "Application Canceled":  [applicationDisposition, borrower, property, loanTerms],
+    "Application Denied":    [finalCreditDenial, borrower, property, loanTerms],
   };
 }
 
@@ -463,7 +485,7 @@ export default function ApplicationOverviewScreen() {
 
   const handleAdvance = async () => {
     const idx = PHASE_ORDER.indexOf(app.status);
-    if (idx < PHASE_ORDER.length - 1) {
+    if (idx >= 0 && idx < PHASE_ORDER.length - 1) {
       await updateApplication(id, { status: PHASE_ORDER[idx + 1] });
     }
   };
@@ -549,15 +571,48 @@ export default function ApplicationOverviewScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Phase timeline — tap any phase to reveal its screens */}
-        <Text style={styles.groupLabel}>Loan Phases</Text>
-        <PhaseTimeline
-          status={app.status}
-          phaseSections={phaseSections}
-          onAdvance={handleAdvance}
-          onRetreat={handleRetreat}
-          onNavigate={(route) => router.push(route as any)}
-        />
+        {/* Phase timeline — or disposition card for adverse terminal statuses */}
+        <Text style={styles.groupLabel}>
+          {DISPOSITION_STATUSES.has(app.status) ? "Adverse Disposition" : "Loan Phases"}
+        </Text>
+        {DISPOSITION_STATUSES.has(app.status) ? (
+          <View style={styles.dispositionCard}>
+            <View style={styles.dispositionRow}>
+              <Feather name="alert-octagon" size={18} color="#B91C1C" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.dispositionStatus}>{app.status}</Text>
+                <Text style={styles.dispositionDesc}>
+                  {PHASE_INFO[app.status]?.description ?? ""}
+                </Text>
+              </View>
+            </View>
+            {(phaseSections[app.status] ?? []).map((section, si, arr) => (
+              <TouchableOpacity
+                key={section.key}
+                style={[styles.dispositionSection, si < arr.length - 1 && styles.dispositionSectionBorder]}
+                onPress={() => router.push(section.route as any)}
+                activeOpacity={0.75}
+              >
+                <View style={[pt.sectionIcon, { backgroundColor: section.iconBg }]}>
+                  <Feather name={section.icon as any} size={14} color={section.iconColor} />
+                </View>
+                <View style={pt.sectionText}>
+                  <Text style={pt.sectionLabel}>{section.label}</Text>
+                  <Text style={pt.sectionDesc} numberOfLines={1}>{section.description}</Text>
+                </View>
+                <Feather name="chevron-right" size={14} color={Colors.light.textTertiary} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <PhaseTimeline
+            status={app.status}
+            phaseSections={phaseSections}
+            onAdvance={handleAdvance}
+            onRetreat={handleRetreat}
+            onNavigate={(route) => router.push(route as any)}
+          />
+        )}
 
         {/* Activity — always accessible regardless of phase */}
         <Text style={styles.groupLabel}>Activity</Text>
@@ -798,6 +853,29 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.tintLight + "40",
     borderRadius: 4, paddingHorizontal: 8,
   },
+
+  dispositionCard: {
+    backgroundColor: Colors.light.backgroundCard,
+    borderWidth: 1, borderColor: "#FECACA",
+    borderRadius: 4, overflow: "hidden",
+    marginBottom: 16,
+  },
+  dispositionRow: {
+    flexDirection: "row", alignItems: "flex-start", gap: 10,
+    padding: 14, borderBottomWidth: 1, borderBottomColor: "#FECACA",
+  },
+  dispositionStatus: {
+    fontSize: 14, fontFamily: "OpenSans_700Bold", color: "#B91C1C", marginBottom: 2,
+  },
+  dispositionDesc: {
+    fontSize: 12, fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textSecondary, lineHeight: 18,
+  },
+  dispositionSection: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 14, paddingVertical: 12, gap: 12,
+  },
+  dispositionSectionBorder: { borderBottomWidth: 1, borderBottomColor: Colors.light.borderLight },
 
   activityCard: {
     backgroundColor: Colors.light.backgroundCard,

@@ -15,11 +15,15 @@ export type AmortizationType = "Full Amortizing" | "Interest Only" | "Partial IO
 export type ApplicationStatus =
   | "Inquiry" | "Letter of Interest" | "Application Start" | "Application Processing"
   | "Final Credit Review" | "Pre-close" | "Ready for Docs" | "Docs Drawn"
-  | "Docs Back" | "Closing";
+  | "Docs Back" | "Closing"
+  | "Inquiry Canceled" | "Inquiry Withdrawn" | "Inquiry Denied"
+  | "Application Withdrawn" | "Application Canceled" | "Application Denied";
 
 export const APPLICATION_STATUSES: ApplicationStatus[] = [
   "Inquiry", "Letter of Interest", "Application Start", "Application Processing",
   "Final Credit Review", "Pre-close", "Ready for Docs", "Docs Drawn", "Docs Back", "Closing",
+  "Inquiry Canceled", "Inquiry Withdrawn", "Inquiry Denied",
+  "Application Withdrawn", "Application Canceled", "Application Denied",
 ];
 
 /** A labeled contact entry — e.g. { label: "Work", value: "james@hartleycap.com" } */
