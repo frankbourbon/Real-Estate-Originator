@@ -13,6 +13,7 @@ import {
 } from "react-native";
 
 import { AddressLookup } from "@/components/AddressLookup";
+import { PropertyMapView } from "@/components/PropertyMapView";
 import { DetailRow } from "@/components/DetailRow";
 import { FormField } from "@/components/FormField";
 import { SectionHeader } from "@/components/SectionHeader";
@@ -448,6 +449,8 @@ export default function PropertySection() {
                             <Text style={s.placeIdText} numberOfLines={1}>Place ID: {loc.googlePlaceId}</Text>
                           </View>
                         ) : null}
+
+                        <PropertyMapView loc={loc} height={180} />
                       </View>
                     );
                   })
