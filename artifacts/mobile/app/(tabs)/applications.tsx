@@ -354,6 +354,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 10,
+    zIndex: 2,
+    elevation: 2,
   },
   searchInput: {
     flex: 1,
@@ -367,7 +369,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.backgroundCard,
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
-    overflow: "hidden",
+    zIndex: 1,
+    elevation: 1,
   },
   filterBarContent: {
     paddingHorizontal: 12,
