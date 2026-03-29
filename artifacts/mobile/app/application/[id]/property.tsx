@@ -26,7 +26,8 @@ import { useCoreService } from "@/services/core";
 import { useInquiryService } from "@/services/inquiry";
 import { formatSqFt, getPropertyCityState } from "@/utils/formatting";
 import {
-  computePhysicalOccupancy,
+  computeMFPhysicalOccupancy,
+  computeCommPhysicalOccupancy,
   computeEconomicOccupancy,
   fmtPct,
   fmtCur,
@@ -231,8 +232,12 @@ export default function PropertySection() {
   // ─── Occupancy (always computed — never directly editable) ──────────────────
 
   function renderOccupancyTab() {
-    const phys = computePhysicalOccupancy(rentRoll);
+    const mfPhys = computeMFPhysicalOccupancy(rentRoll);
+    const commPhys = computeCommPhysicalOccupancy(rentRoll);
     const econ = computeEconomicOccupancy(opHistory);
+
+    const hasMFUnits = mfPhys.source === "rent-roll";
+    const hasCommUnits = commPhys.source === "rent-roll";
 
     return (
       <View>
@@ -244,51 +249,51 @@ export default function PropertySection() {
           </Text>
         </View>
 
-        {/* Physical Occupancy */}
+        {/* ── Multifamily Physical Occupancy ── */}
         <View style={s.card}>
           <View style={s.occHeader}>
             <View>
-              <Text style={s.occMetricLabel}>PHYSICAL OCCUPANCY</Text>
-              <Text style={s.occMetricSubtitle}>Occupied units ÷ Total rentable units</Text>
+              <Text style={s.occMetricLabel}>MULTIFAMILY PHYSICAL OCCUPANCY</Text>
+              <Text style={s.occMetricSubtitle}>Occupied MF units ÷ Total MF units (Studio, 1BR/1BA, etc.)</Text>
             </View>
-            <Text style={[s.occBigPct, phys.pct === null && s.occBigPctNone]}>
-              {fmtPct(phys.pct)}
+            <Text style={[s.occBigPct, mfPhys.pct === null && s.occBigPctNone]}>
+              {fmtPct(mfPhys.pct)}
             </Text>
           </View>
 
-          {phys.source === "rent-roll" ? (
+          {hasMFUnits ? (
             <View style={s.occSourceBox}>
               <View style={s.occSourceRow}>
                 <View style={s.occSourceIcon}>
-                  <Feather name="list" size={11} color={Colors.light.tint} />
+                  <Feather name="home" size={11} color={Colors.light.tint} />
                 </View>
-                <Text style={s.occSourceLabel}>Source: Rent Roll</Text>
+                <Text style={s.occSourceLabel}>Source: Rent Roll — Residential Units</Text>
               </View>
               <View style={s.occBreakdownRow}>
                 <View style={s.occBreakdownItem}>
-                  <Text style={s.occBreakdownValue}>{phys.occupied}</Text>
+                  <Text style={s.occBreakdownValue}>{mfPhys.occupied}</Text>
                   <Text style={s.occBreakdownKey}>Occupied</Text>
                 </View>
-                {phys.notice > 0 && (
+                {mfPhys.notice > 0 && (
                   <View style={s.occBreakdownItem}>
-                    <Text style={[s.occBreakdownValue, { color: "#C75300" }]}>{phys.notice}</Text>
+                    <Text style={[s.occBreakdownValue, { color: "#C75300" }]}>{mfPhys.notice}</Text>
                     <Text style={s.occBreakdownKey}>Notice</Text>
                   </View>
                 )}
                 <View style={s.occBreakdownItem}>
-                  <Text style={s.occBreakdownValue}>{phys.total - phys.occupied - phys.notice}</Text>
+                  <Text style={s.occBreakdownValue}>{mfPhys.total - mfPhys.occupied - mfPhys.notice}</Text>
                   <Text style={s.occBreakdownKey}>Vacant/Other</Text>
                 </View>
                 <View style={s.occBreakdownItem}>
-                  <Text style={[s.occBreakdownValue, { color: Colors.light.text }]}>{phys.total}</Text>
-                  <Text style={s.occBreakdownKey}>Total Units</Text>
+                  <Text style={[s.occBreakdownValue, { color: Colors.light.text }]}>{mfPhys.total}</Text>
+                  <Text style={s.occBreakdownKey}>MF Units</Text>
                 </View>
               </View>
             </View>
           ) : (
             <View style={s.occNoData}>
-              <Feather name="list" size={16} color={Colors.light.textTertiary} />
-              <Text style={s.occNoDataText}>No rent roll data. Add units to compute physical occupancy.</Text>
+              <Feather name="home" size={16} color={Colors.light.textTertiary} />
+              <Text style={s.occNoDataText}>No multifamily units on rent roll (Studio, 1BR, 2BR, etc.).</Text>
               <TouchableOpacity onPress={() => router.push(`/application/${id}/rent-roll` as any)} style={s.occLink} activeOpacity={0.75}>
                 <Feather name="external-link" size={12} color={Colors.light.tint} />
                 <Text style={s.occLinkText}>Open Rent Roll Editor</Text>
@@ -297,7 +302,60 @@ export default function PropertySection() {
           )}
         </View>
 
-        {/* Economic Occupancy */}
+        {/* ── Commercial Physical Occupancy ── */}
+        <View style={s.card}>
+          <View style={s.occHeader}>
+            <View>
+              <Text style={s.occMetricLabel}>COMMERCIAL PHYSICAL OCCUPANCY</Text>
+              <Text style={s.occMetricSubtitle}>Occupied commercial units ÷ Total commercial units (Office, Retail, Industrial)</Text>
+            </View>
+            <Text style={[s.occBigPct, commPhys.pct === null && s.occBigPctNone]}>
+              {fmtPct(commPhys.pct)}
+            </Text>
+          </View>
+
+          {hasCommUnits ? (
+            <View style={s.occSourceBox}>
+              <View style={s.occSourceRow}>
+                <View style={s.occSourceIcon}>
+                  <Feather name="briefcase" size={11} color={Colors.light.tint} />
+                </View>
+                <Text style={s.occSourceLabel}>Source: Rent Roll — Commercial Units</Text>
+              </View>
+              <View style={s.occBreakdownRow}>
+                <View style={s.occBreakdownItem}>
+                  <Text style={s.occBreakdownValue}>{commPhys.occupied}</Text>
+                  <Text style={s.occBreakdownKey}>Occupied</Text>
+                </View>
+                {commPhys.notice > 0 && (
+                  <View style={s.occBreakdownItem}>
+                    <Text style={[s.occBreakdownValue, { color: "#C75300" }]}>{commPhys.notice}</Text>
+                    <Text style={s.occBreakdownKey}>Notice</Text>
+                  </View>
+                )}
+                <View style={s.occBreakdownItem}>
+                  <Text style={s.occBreakdownValue}>{commPhys.total - commPhys.occupied - commPhys.notice}</Text>
+                  <Text style={s.occBreakdownKey}>Vacant/Other</Text>
+                </View>
+                <View style={s.occBreakdownItem}>
+                  <Text style={[s.occBreakdownValue, { color: Colors.light.text }]}>{commPhys.total}</Text>
+                  <Text style={s.occBreakdownKey}>Comm. Units</Text>
+                </View>
+              </View>
+            </View>
+          ) : (
+            <View style={s.occNoData}>
+              <Feather name="briefcase" size={16} color={Colors.light.textTertiary} />
+              <Text style={s.occNoDataText}>No commercial units on rent roll (Office, Retail, Industrial, Other).</Text>
+              <TouchableOpacity onPress={() => router.push(`/application/${id}/rent-roll` as any)} style={s.occLink} activeOpacity={0.75}>
+                <Feather name="external-link" size={12} color={Colors.light.tint} />
+                <Text style={s.occLinkText}>Open Rent Roll Editor</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* ── Economic Occupancy ── */}
         <View style={s.card}>
           <View style={s.occHeader}>
             <View>

@@ -129,7 +129,7 @@ export type UnitType =
   | "Studio" | "1BR/1BA" | "1BR/1BA+Den"
   | "2BR/1BA" | "2BR/2BA" | "2BR/2BA+Den"
   | "3BR/2BA" | "3BR/3BA" | "Penthouse"
-  | "Commercial" | "Other";
+  | "Office" | "Retail" | "Industrial" | "Other";
 
 export type LeaseStatusType = "Occupied" | "Vacant" | "Notice" | "Model" | "Down";
 export type LeaseType = "NNN" | "NN" | "Gross" | "Modified Gross" | "Absolute Net" | "Full Service";

@@ -8,7 +8,7 @@ export type UnitType =
   | "Studio" | "1BR/1BA" | "1BR/1BA+Den"
   | "2BR/1BA" | "2BR/2BA" | "2BR/2BA+Den"
   | "3BR/2BA" | "3BR/3BA" | "Penthouse"
-  | "Commercial" | "Other";
+  | "Office" | "Retail" | "Industrial" | "Other";
 
 export type LeaseStatusType = "Occupied" | "Vacant" | "Notice" | "Model" | "Down";
 export type LeaseType = "NNN" | "NN" | "Gross" | "Modified Gross" | "Absolute Net" | "Full Service";
@@ -209,14 +209,14 @@ const SEED_RENT_ROLL: RentRollUnit[] = [
     monthlyRentAmount: "3,700", marketRentAmount: "3,850",
     annualBaseRentAmount: "", baseRentPsf: "", leaseType: "", renewalOptions: "", tenantIndustry: "" },
   { id: "seed_rr_a05_03", applicationId: "seed_a05", createdAt: d(2026,1,1), updatedAt: d(2026,1,1),
-    unitIdentifier: "Suite 101", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    unitIdentifier: "Suite 101", unitType: "Retail", bedroomCount: "0", bathroomCount: "0",
     squareFeet: "4,200", tenantName: "Lakeside Coffee Co.", leaseStatus: "Occupied",
     leaseBeginDate: ds(2023,1,1), leaseEndDate: ds(2028,12,31),
     monthlyRentAmount: "", marketRentAmount: "",
     annualBaseRentAmount: "210,000", baseRentPsf: "50.00",
     leaseType: "NNN", renewalOptions: "Two 5-year options at 3% annual escalation", tenantIndustry: "Food & Beverage" },
   { id: "seed_rr_a05_04", applicationId: "seed_a05", createdAt: d(2026,1,1), updatedAt: d(2026,1,1),
-    unitIdentifier: "Suite 102", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    unitIdentifier: "Suite 102", unitType: "Office", bedroomCount: "0", bathroomCount: "0",
     squareFeet: "2,800", tenantName: "Midwest Financial Group", leaseStatus: "Occupied",
     leaseBeginDate: ds(2022,6,1), leaseEndDate: ds(2027,5,31),
     monthlyRentAmount: "", marketRentAmount: "",
@@ -224,21 +224,21 @@ const SEED_RENT_ROLL: RentRollUnit[] = [
     leaseType: "Modified Gross", renewalOptions: "One 3-year option", tenantIndustry: "Financial Services" },
   // a02 — Retail NY (12 units, p02→a02)
   { id: "seed_rr_a02_01", applicationId: "seed_a02", createdAt: d(2026,1,1), updatedAt: d(2026,1,1),
-    unitIdentifier: "G-01", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    unitIdentifier: "G-01", unitType: "Retail", bedroomCount: "0", bathroomCount: "0",
     squareFeet: "8,500", tenantName: "National Pharmacy Partners", leaseStatus: "Occupied",
     leaseBeginDate: ds(2017,3,1), leaseEndDate: ds(2035,2,28),
     monthlyRentAmount: "", marketRentAmount: "",
     annualBaseRentAmount: "1,275,000", baseRentPsf: "150.00",
     leaseType: "NNN", renewalOptions: "Four 5-year options at fixed rent", tenantIndustry: "Pharmacy / Healthcare Retail" },
   { id: "seed_rr_a02_02", applicationId: "seed_a02", createdAt: d(2026,1,1), updatedAt: d(2026,1,1),
-    unitIdentifier: "G-02", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    unitIdentifier: "G-02", unitType: "Retail", bedroomCount: "0", bathroomCount: "0",
     squareFeet: "4,200", tenantName: "Luxe Apparel NYC", leaseStatus: "Occupied",
     leaseBeginDate: ds(2021,9,1), leaseEndDate: ds(2028,8,31),
     monthlyRentAmount: "", marketRentAmount: "",
     annualBaseRentAmount: "756,000", baseRentPsf: "180.00",
     leaseType: "NNN", renewalOptions: "One 5-year option", tenantIndustry: "Luxury Retail" },
   { id: "seed_rr_a02_03", applicationId: "seed_a02", createdAt: d(2026,1,1), updatedAt: d(2026,1,1),
-    unitIdentifier: "G-03", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    unitIdentifier: "G-03", unitType: "Retail", bedroomCount: "0", bathroomCount: "0",
     squareFeet: "3,100", tenantName: "", leaseStatus: "Vacant",
     leaseBeginDate: "", leaseEndDate: "",
     monthlyRentAmount: "", marketRentAmount: "",

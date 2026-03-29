@@ -1,4 +1,27 @@
-import type { RentRollUnit, OperatingYear } from "@/services/inquiry";
+import type { RentRollUnit, OperatingYear, UnitType } from "@/services/inquiry";
+
+// ─── Unit type classification ─────────────────────────────────────────────────
+
+export const MF_UNIT_TYPES: UnitType[] = [
+  "Studio", "1BR/1BA", "1BR/1BA+Den",
+  "2BR/1BA", "2BR/2BA", "2BR/2BA+Den",
+  "3BR/2BA", "3BR/3BA", "Penthouse",
+];
+
+export const COMM_UNIT_TYPES: UnitType[] = [
+  "Office", "Retail", "Industrial", "Other",
+];
+
+const MF_SET = new Set<UnitType>(MF_UNIT_TYPES);
+const COMM_SET = new Set<UnitType>(COMM_UNIT_TYPES);
+
+export function isMFUnitType(t: UnitType): boolean {
+  return MF_SET.has(t);
+}
+
+export function isCommUnitType(t: UnitType): boolean {
+  return COMM_SET.has(t);
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -6,7 +29,7 @@ export type PhysicalOccupancyResult = {
   pct: number | null;           // 0–100 or null if no data
   occupied: number;             // units with status "Occupied"
   notice: number;               // units with status "Notice"
-  total: number;                // total units in rent roll
+  total: number;                // total units in this segment
   source: "rent-roll" | "none";
 };
 
@@ -25,36 +48,37 @@ function parseNum(v: string | undefined | null): number {
   return Number(String(v).replace(/,/g, "")) || 0;
 }
 
-// Priority order for selecting the most representative operating period
-const PERIOD_PRIORITY: Record<string, number> = {
-  "T12 (Trailing 12)": 0,
-  "Lender Underwriting": 1,
-  "Current Year Budget": 2,
-  "Actual Year 2": 3,
-  "Actual Year 1": 4,
-};
-
-// ─── Physical Occupancy ───────────────────────────────────────────────────────
-//
-// Physical Occupancy = Occupied units ÷ Total rentable units × 100
-// Source of truth: Rent Roll (leaseStatus per unit)
-// "Occupied" = tenant in place, paying rent
-// "Notice"   = tenant still physically there but gave notice — shown separately
-
-export function computePhysicalOccupancy(
-  rentRoll: RentRollUnit[],
-): PhysicalOccupancyResult {
-  if (rentRoll.length === 0) {
+function calcPhysical(units: RentRollUnit[]): PhysicalOccupancyResult {
+  if (units.length === 0) {
     return { pct: null, occupied: 0, notice: 0, total: 0, source: "none" };
   }
-
-  const total = rentRoll.length;
-  const occupied = rentRoll.filter((u) => u.leaseStatus === "Occupied").length;
-  const notice = rentRoll.filter((u) => u.leaseStatus === "Notice").length;
-
-  const pct = total > 0 ? Math.round((occupied / total) * 10000) / 100 : null;
-
+  const total = units.length;
+  const occupied = units.filter((u) => u.leaseStatus === "Occupied").length;
+  const notice = units.filter((u) => u.leaseStatus === "Notice").length;
+  const pct = Math.round((occupied / total) * 10000) / 100;
   return { pct, occupied, notice, total, source: "rent-roll" };
+}
+
+// ─── Multifamily Physical Occupancy ───────────────────────────────────────────
+//
+// Applies only to Multifamily unit types (Studio, 1BR/1BA, etc.)
+// Physical Occupancy = Occupied MF units ÷ Total MF units × 100
+
+export function computeMFPhysicalOccupancy(
+  rentRoll: RentRollUnit[],
+): PhysicalOccupancyResult {
+  return calcPhysical(rentRoll.filter((u) => isMFUnitType(u.unitType)));
+}
+
+// ─── Commercial Physical Occupancy ────────────────────────────────────────────
+//
+// Applies to all non-MF unit types (Office, Retail, Industrial, Other)
+// Physical Occupancy = Occupied commercial units ÷ Total commercial units × 100
+
+export function computeCommPhysicalOccupancy(
+  rentRoll: RentRollUnit[],
+): PhysicalOccupancyResult {
+  return calcPhysical(rentRoll.filter((u) => isCommUnitType(u.unitType)));
 }
 
 // ─── Economic Occupancy ───────────────────────────────────────────────────────
@@ -63,6 +87,14 @@ export function computePhysicalOccupancy(
 // Source of truth: Most recent Operating Statement (preferring T12)
 // EGI = Effective Gross Income (GPR minus vacancy/credit loss, plus other income)
 
+const PERIOD_PRIORITY: Record<string, number> = {
+  "T12 (Trailing 12)": 0,
+  "Lender Underwriting": 1,
+  "Current Year Budget": 2,
+  "Actual Year 2": 3,
+  "Actual Year 1": 4,
+};
+
 export function computeEconomicOccupancy(
   opHistory: OperatingYear[],
 ): EconomicOccupancyResult {
@@ -70,12 +102,10 @@ export function computeEconomicOccupancy(
     return { pct: null, egi: null, gpr: null, periodLabel: "", source: "none" };
   }
 
-  // Pick the most representative period using priority order, then recency
   const sorted = [...opHistory].sort((a, b) => {
     const pa = PERIOD_PRIORITY[a.periodType] ?? 99;
     const pb = PERIOD_PRIORITY[b.periodType] ?? 99;
     if (pa !== pb) return pa - pb;
-    // Same priority → prefer newer year
     return (b.periodYear ?? "").localeCompare(a.periodYear ?? "");
   });
 

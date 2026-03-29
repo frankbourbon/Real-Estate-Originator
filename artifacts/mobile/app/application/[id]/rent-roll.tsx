@@ -28,9 +28,20 @@ import { useCoreService } from "@/services/core";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const LEASE_STATUSES: LeaseStatusType[] = ["Occupied", "Vacant", "Notice", "Model", "Down"];
-const LEASE_TYPES: Array<LeaseType | ""> = ["", "NNN", "Gross", "Modified Gross", "NN"];
-const MF_UNIT_TYPES: UnitType[] = ["Studio", "1BR/1BA", "2BR/1BA", "2BR/2BA", "2BR/2BA+Den", "3BR/2BA"];
-const COMM_UNIT_TYPES: UnitType[] = ["Commercial", "Office", "Industrial", "Retail"];
+const LEASE_TYPES: Array<LeaseType | ""> = ["", "NNN", "NN", "Gross", "Modified Gross", "Absolute Net", "Full Service"];
+
+const MF_UNIT_TYPES: UnitType[] = [
+  "Studio", "1BR/1BA", "1BR/1BA+Den",
+  "2BR/1BA", "2BR/2BA", "2BR/2BA+Den",
+  "3BR/2BA", "3BR/3BA", "Penthouse",
+];
+const COMM_UNIT_TYPES: UnitType[] = ["Office", "Retail", "Industrial", "Other"];
+
+const MF_SET = new Set<UnitType>(MF_UNIT_TYPES);
+const COMM_SET = new Set<UnitType>(COMM_UNIT_TYPES);
+
+function isMFUnitType(t: UnitType): boolean { return MF_SET.has(t); }
+function isCommUnitType(t: UnitType): boolean { return COMM_SET.has(t); }
 
 // ─── Helper utils ─────────────────────────────────────────────────────────────
 
@@ -51,7 +62,9 @@ function isCommercial(propertyType?: string) {
     propertyType === "Office" ||
     propertyType === "Industrial" ||
     propertyType === "Mixed Use" ||
-    propertyType === "Hotel"
+    propertyType === "Hotel" ||
+    propertyType === "Self Storage" ||
+    propertyType === "Healthcare"
   );
 }
 
@@ -159,45 +172,56 @@ function UnitForm({
   propertyType?: string;
 }) {
   const set = (k: keyof UnitDraft) => (v: string) => onChange({ ...draft, [k]: v });
-  const showMF = isMultifamily(propertyType);
-  const showComm = isCommercial(propertyType);
+
+  // Available unit types filtered by property type, then drive form fields
+  const showMFPicker = isMultifamily(propertyType);
+  const showCommPicker = isCommercial(propertyType);
   const unitTypes = [
-    ...(showMF ? MF_UNIT_TYPES : []),
-    ...(showComm ? COMM_UNIT_TYPES : []),
-    ...((!showMF && !showComm) ? [...MF_UNIT_TYPES, ...COMM_UNIT_TYPES] : []),
+    ...(showMFPicker ? MF_UNIT_TYPES : []),
+    ...(showCommPicker ? COMM_UNIT_TYPES : []),
+    ...(!showMFPicker && !showCommPicker ? [...MF_UNIT_TYPES, ...COMM_UNIT_TYPES] : []),
   ] as UnitType[];
+
+  // Fields rendered dynamically based on the selected unit type (not property type)
+  const isMF = isMFUnitType(draft.unitType);
+  const isComm = isCommUnitType(draft.unitType);
 
   return (
     <>
-      <Field label="Unit / Suite ID">
-        <FieldInput value={draft.unitIdentifier} onChangeText={set("unitIdentifier")} placeholder="e.g. 101 or Suite 200" />
-      </Field>
-
+      {/* Unit Type — always first; determines which fields follow */}
       <Field label="Unit Type">
         <ChipRow options={unitTypes} value={draft.unitType as UnitType} onChange={(v) => onChange({ ...draft, unitType: v })} />
       </Field>
 
+      {/* Universal fields */}
       <View style={{ flexDirection: "row", gap: 10 }}>
+        <View style={{ flex: 2 }}>
+          <Field label="Unit / Suite ID">
+            <FieldInput value={draft.unitIdentifier} onChangeText={set("unitIdentifier")} placeholder="e.g. 101 or Suite 200" />
+          </Field>
+        </View>
         <View style={{ flex: 1 }}>
           <Field label="Sq Ft">
             <FieldInput value={draft.squareFeet} onChangeText={set("squareFeet")} keyboardType="decimal-pad" />
           </Field>
         </View>
-        {showMF && (
-          <>
-            <View style={{ flex: 1 }}>
-              <Field label="Beds">
-                <FieldInput value={draft.bedroomCount} onChangeText={set("bedroomCount")} keyboardType="numeric" />
-              </Field>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Field label="Baths">
-                <FieldInput value={draft.bathroomCount} onChangeText={set("bathroomCount")} keyboardType="numeric" />
-              </Field>
-            </View>
-          </>
-        )}
       </View>
+
+      {/* Multifamily only — Beds & Baths */}
+      {isMF && (
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <View style={{ flex: 1 }}>
+            <Field label="Beds">
+              <FieldInput value={draft.bedroomCount} onChangeText={set("bedroomCount")} keyboardType="numeric" />
+            </Field>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Field label="Baths">
+              <FieldInput value={draft.bathroomCount} onChangeText={set("bathroomCount")} keyboardType="numeric" />
+            </Field>
+          </View>
+        </View>
+      )}
 
       <Field label="Lease Status">
         <ChipRow options={LEASE_STATUSES} value={draft.leaseStatus} onChange={(v) => onChange({ ...draft, leaseStatus: v })} colorFn={leaseStatusColor} />
@@ -207,20 +231,8 @@ function UnitForm({
         <FieldInput value={draft.tenantName} onChangeText={set("tenantName")} placeholder="Full name or entity" />
       </Field>
 
-      <View style={{ flexDirection: "row", gap: 10 }}>
-        <View style={{ flex: 1 }}>
-          <Field label="Lease Begin (MM/DD/YYYY)">
-            <FieldInput value={draft.leaseBeginDate} onChangeText={set("leaseBeginDate")} placeholder="MM/DD/YYYY" />
-          </Field>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Field label="Lease End">
-            <FieldInput value={draft.leaseEndDate} onChangeText={set("leaseEndDate")} placeholder="MM/DD/YYYY" />
-          </Field>
-        </View>
-      </View>
-
-      {showMF && (
+      {/* Multifamily only — monthly rent */}
+      {isMF && (
         <View style={{ flexDirection: "row", gap: 10 }}>
           <View style={{ flex: 1 }}>
             <Field label="Contract Rent / Mo">
@@ -235,8 +247,21 @@ function UnitForm({
         </View>
       )}
 
-      {showComm && (
+      {/* Commercial only — lease dates, rent, lease terms */}
+      {isComm && (
         <>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <View style={{ flex: 1 }}>
+              <Field label="Lease Begin (MM/DD/YYYY)">
+                <FieldInput value={draft.leaseBeginDate} onChangeText={set("leaseBeginDate")} placeholder="MM/DD/YYYY" />
+              </Field>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Field label="Lease End">
+                <FieldInput value={draft.leaseEndDate} onChangeText={set("leaseEndDate")} placeholder="MM/DD/YYYY" />
+              </Field>
+            </View>
+          </View>
           <View style={{ flexDirection: "row", gap: 10 }}>
             <View style={{ flex: 1 }}>
               <Field label="Annual Base Rent">
@@ -256,7 +281,7 @@ function UnitForm({
             <FieldInput value={draft.renewalOptions} onChangeText={set("renewalOptions")} placeholder="e.g. Two 5-year options" />
           </Field>
           <Field label="Tenant Industry">
-            <FieldInput value={draft.tenantIndustry} onChangeText={set("tenantIndustry")} placeholder="e.g. Retail" />
+            <FieldInput value={draft.tenantIndustry} onChangeText={set("tenantIndustry")} placeholder="e.g. Logistics" />
           </Field>
         </>
       )}
@@ -335,14 +360,14 @@ const mo = StyleSheet.create({
 // ─── Unit card ────────────────────────────────────────────────────────────────
 
 function UnitCard({
-  unit, onEdit, onDelete, propertyType,
+  unit, onEdit, onDelete,
 }: {
   unit: RentRollUnit;
   onEdit: () => void;
   onDelete: () => void;
-  propertyType?: string;
 }) {
-  const showComm = isCommercial(propertyType) && unit.unitType === "Commercial";
+  const isMF = isMFUnitType(unit.unitType);
+  const isComm = isCommUnitType(unit.unitType);
   const statusColor = leaseStatusColor(unit.leaseStatus);
 
   return (
@@ -376,7 +401,7 @@ function UnitCard({
       )}
 
       <View style={uc.rentRow}>
-        {!showComm && unit.monthlyRentAmount ? (
+        {isMF && unit.monthlyRentAmount ? (
           <>
             <View style={uc.rentItem}>
               <Text style={uc.rentLabel}>Contract Rent</Text>
@@ -390,7 +415,7 @@ function UnitCard({
             ) : null}
           </>
         ) : null}
-        {showComm && unit.annualBaseRentAmount ? (
+        {isComm && unit.annualBaseRentAmount ? (
           <>
             <View style={uc.rentItem}>
               <Text style={uc.rentLabel}>Annual Base Rent</Text>
@@ -404,7 +429,7 @@ function UnitCard({
             ) : null}
           </>
         ) : null}
-        {unit.leaseType ? (
+        {isComm && unit.leaseType ? (
           <View style={uc.rentItem}>
             <Text style={uc.rentLabel}>Lease Type</Text>
             <Text style={uc.rentValue}>{unit.leaseType}</Text>
@@ -435,11 +460,22 @@ const uc = StyleSheet.create({
 
 // ─── Summary stats bar ────────────────────────────────────────────────────────
 
+function occColor(pct: number) {
+  return pct >= 90 ? "#00875D" : pct >= 80 ? "#C75300" : "#B91C1C";
+}
+
 function SummaryBar({ units }: { units: RentRollUnit[] }) {
+  const mfUnits = units.filter((u) => isMFUnitType(u.unitType));
+  const commUnits = units.filter((u) => isCommUnitType(u.unitType));
+  const hasMF = mfUnits.length > 0;
+  const hasComm = commUnits.length > 0;
+
+  const mfOcc = hasMF ? Math.round((mfUnits.filter((u) => u.leaseStatus === "Occupied").length / mfUnits.length) * 100) : 0;
+  const commOcc = hasComm ? Math.round((commUnits.filter((u) => u.leaseStatus === "Occupied").length / commUnits.length) * 100) : 0;
+
   const occupied = units.filter((u) => u.leaseStatus === "Occupied").length;
   const vacant = units.filter((u) => u.leaseStatus === "Vacant").length;
   const notice = units.filter((u) => u.leaseStatus === "Notice").length;
-  const occ = units.length > 0 ? Math.round((occupied / units.length) * 100) : 0;
 
   return (
     <View style={sb.row}>
@@ -462,13 +498,24 @@ function SummaryBar({ units }: { units: RentRollUnit[] }) {
         <Text style={[sb.val, { color: "#C75300" }]}>{notice}</Text>
         <Text style={sb.lbl}>Notice</Text>
       </View>
-      <View style={sb.divider} />
-      <View style={sb.item}>
-        <Text style={[sb.val, { color: occ >= 90 ? "#00875D" : occ >= 80 ? "#C75300" : "#B91C1C" }]}>
-          {occ}%
-        </Text>
-        <Text style={sb.lbl}>Occ. Rate</Text>
-      </View>
+      {hasMF && (
+        <>
+          <View style={sb.divider} />
+          <View style={sb.item}>
+            <Text style={[sb.val, { color: occColor(mfOcc) }]}>{mfOcc}%</Text>
+            <Text style={sb.lbl}>MF Occ.</Text>
+          </View>
+        </>
+      )}
+      {hasComm && (
+        <>
+          <View style={sb.divider} />
+          <View style={sb.item}>
+            <Text style={[sb.val, { color: occColor(commOcc) }]}>{commOcc}%</Text>
+            <Text style={sb.lbl}>Comm. Occ.</Text>
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -584,7 +631,6 @@ export default function RentRollScreen() {
               unit={unit}
               onEdit={() => handleEditOpen(unit)}
               onDelete={() => handleDelete(unit)}
-              propertyType={property?.propertyType}
             />
           ))
         )}

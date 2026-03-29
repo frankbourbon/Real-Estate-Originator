@@ -906,7 +906,7 @@ export const SEED_RENT_ROLL: RentRollUnit[] = [
   },
   {
     id: uid("rr_p05_03"), propertyId: uid("p05"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
-    unitIdentifier: "Suite 101", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    unitIdentifier: "Suite 101", unitType: "Retail", bedroomCount: "0", bathroomCount: "0",
     squareFeet: "4,200", tenantName: "Lakeside Coffee Co.", leaseStatus: "Occupied",
     leaseBeginDate: dateStr(2023, 1, 1), leaseEndDate: dateStr(2028, 12, 31),
     monthlyRentAmount: "", marketRentAmount: "",
@@ -916,7 +916,7 @@ export const SEED_RENT_ROLL: RentRollUnit[] = [
   },
   {
     id: uid("rr_p05_04"), propertyId: uid("p05"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
-    unitIdentifier: "Suite 102", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    unitIdentifier: "Suite 102", unitType: "Office", bedroomCount: "0", bathroomCount: "0",
     squareFeet: "2,800", tenantName: "Midwest Financial Group", leaseStatus: "Occupied",
     leaseBeginDate: dateStr(2022, 6, 1), leaseEndDate: dateStr(2027, 5, 31),
     monthlyRentAmount: "", marketRentAmount: "",
@@ -928,7 +928,7 @@ export const SEED_RENT_ROLL: RentRollUnit[] = [
   // ── p02 Retail — 850 Fifth Ave, New York (12 units) ──────────────────────
   {
     id: uid("rr_p02_01"), propertyId: uid("p02"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
-    unitIdentifier: "G-01", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    unitIdentifier: "G-01", unitType: "Retail", bedroomCount: "0", bathroomCount: "0",
     squareFeet: "8,500", tenantName: "National Pharmacy Partners", leaseStatus: "Occupied",
     leaseBeginDate: dateStr(2017, 3, 1), leaseEndDate: dateStr(2035, 2, 28),
     monthlyRentAmount: "", marketRentAmount: "",
@@ -938,7 +938,7 @@ export const SEED_RENT_ROLL: RentRollUnit[] = [
   },
   {
     id: uid("rr_p02_02"), propertyId: uid("p02"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
-    unitIdentifier: "G-02", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    unitIdentifier: "G-02", unitType: "Retail", bedroomCount: "0", bathroomCount: "0",
     squareFeet: "4,200", tenantName: "Luxe Apparel NYC", leaseStatus: "Occupied",
     leaseBeginDate: dateStr(2021, 9, 1), leaseEndDate: dateStr(2028, 8, 31),
     monthlyRentAmount: "", marketRentAmount: "",
@@ -948,7 +948,7 @@ export const SEED_RENT_ROLL: RentRollUnit[] = [
   },
   {
     id: uid("rr_p02_03"), propertyId: uid("p02"), createdAt: dt(2026, 1, 1), updatedAt: dt(2026, 1, 1),
-    unitIdentifier: "G-03", unitType: "Commercial", bedroomCount: "0", bathroomCount: "0",
+    unitIdentifier: "G-03", unitType: "Retail", bedroomCount: "0", bathroomCount: "0",
     squareFeet: "3,100", tenantName: "", leaseStatus: "Vacant",
     leaseBeginDate: "", leaseEndDate: "",
     monthlyRentAmount: "", marketRentAmount: "",
