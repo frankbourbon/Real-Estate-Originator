@@ -220,20 +220,28 @@ export default function DashboardScreen() {
             </Text>
           </View>
           <View style={styles.pipelineRight}>
-            <View style={styles.pipelineStat}>
+            <TouchableOpacity
+              style={styles.pipelineStat}
+              onPress={() => router.push({ pathname: "/(tabs)/applications", params: { group: "Sales" } })}
+              activeOpacity={0.6}
+            >
               <Text style={styles.pipelineStatNum}>
                 {(stats.byPhase["Inquiry"] ?? 0) + (stats.byPhase["Application Start"] ?? 0)}
               </Text>
               <Text style={styles.pipelineStatLabel}>Sales</Text>
-            </View>
+            </TouchableOpacity>
             <View style={styles.pipelineStatDivider} />
-            <View style={styles.pipelineStat}>
+            <TouchableOpacity
+              style={styles.pipelineStat}
+              onPress={() => router.push({ pathname: "/(tabs)/applications", params: { group: "Closing" } })}
+              activeOpacity={0.6}
+            >
               <Text style={styles.pipelineStatNum}>
                 {(stats.byPhase["Ready for Docs"] ?? 0) + (stats.byPhase["Docs Drawn"] ?? 0) +
                  (stats.byPhase["Docs Back"] ?? 0) + (stats.byPhase["Closing"] ?? 0)}
               </Text>
               <Text style={styles.pipelineStatLabel}>Closing</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 

@@ -19,7 +19,9 @@ import type { ApplicationStatus } from "@/services/core";
 import { useCoreService } from "@/services/core";
 import { getBorrowerDisplayName, getPropertyShortAddress } from "@/utils/formatting";
 
-const STATUS_FILTERS: (ApplicationStatus | "All")[] = [
+// ─── Filter definitions ────────────────────────────────────────────────────────
+
+const PHASE_FILTERS: (ApplicationStatus | "All")[] = [
   "All",
   "Inquiry",
   "Letter of Interest",
@@ -33,34 +35,78 @@ const STATUS_FILTERS: (ApplicationStatus | "All")[] = [
   "Closing",
 ];
 
-const CHIP_LABEL: Partial<Record<ApplicationStatus | "All", string>> = {
-  "All":                   "All",
-  "Letter of Interest":    "LOI",
-  "Application Start":     "App Start",
-  "Application Processing":"Processing",
-  "Final Credit Review":   "Credit Review",
-  "Ready for Docs":        "Ready for Docs",
+type GroupKey = "Sales" | "Closing";
+
+const GROUP_PHASES: Record<GroupKey, ApplicationStatus[]> = {
+  Sales:   ["Inquiry", "Application Start"],
+  Closing: ["Ready for Docs", "Docs Drawn", "Docs Back", "Closing"],
 };
 
+const GROUP_COLOR: Record<GroupKey, string> = {
+  Sales:   "#1B7F9E",
+  Closing: "#005C3C",
+};
+
+const CHIP_LABEL: Partial<Record<ApplicationStatus | "All", string>> = {
+  "All":                    "All",
+  "Letter of Interest":     "LOI",
+  "Application Start":      "App Start",
+  "Application Processing": "Processing",
+  "Final Credit Review":    "Credit Review",
+  "Ready for Docs":         "Ready for Docs",
+};
+
+// ─── Filter state ──────────────────────────────────────────────────────────────
+
+type FilterState =
+  | { kind: "all" }
+  | { kind: "phase"; phase: ApplicationStatus }
+  | { kind: "group"; group: GroupKey };
+
+const FILTER_ALL: FilterState = { kind: "all" };
+
+function resolveParams(
+  phase: string | undefined,
+  group: string | undefined
+): FilterState {
+  if (group && (group === "Sales" || group === "Closing")) {
+    return { kind: "group", group };
+  }
+  if (phase && PHASE_FILTERS.includes(phase as ApplicationStatus)) {
+    return { kind: "phase", phase: phase as ApplicationStatus };
+  }
+  return FILTER_ALL;
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function ApplicationsScreen() {
-  const { applications, loading, createBorrower, createProperty, createApplication, getBorrower, getProperty } = useCoreService();
+  const {
+    applications, loading,
+    createBorrower, createProperty, createApplication,
+    getBorrower, getProperty,
+  } = useCoreService();
   const insets = useSafeAreaInsets();
-  const { phase } = useLocalSearchParams<{ phase?: string }>();
+  const { phase, group } = useLocalSearchParams<{ phase?: string; group?: string }>();
+
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "All">(
-    (phase as ApplicationStatus) && STATUS_FILTERS.includes(phase as ApplicationStatus) ? (phase as ApplicationStatus) : "All"
-  );
+  const [filter, setFilter] = useState<FilterState>(() => resolveParams(phase, group));
 
   useEffect(() => {
-    if (phase && STATUS_FILTERS.includes(phase as ApplicationStatus)) {
-      setStatusFilter(phase as ApplicationStatus);
-    }
-  }, [phase]);
+    setFilter(resolveParams(phase, group));
+  }, [phase, group]);
 
   const filtered = applications.filter((app) => {
-    const matchStatus = statusFilter === "All" || app.status === statusFilter;
+    let matchFilter: boolean;
+    if (filter.kind === "all") {
+      matchFilter = true;
+    } else if (filter.kind === "phase") {
+      matchFilter = app.status === filter.phase;
+    } else {
+      matchFilter = GROUP_PHASES[filter.group].includes(app.status as ApplicationStatus);
+    }
     const q = search.toLowerCase();
-    if (!q) return matchStatus;
+    if (!q) return matchFilter;
     const borrower = getBorrower(app.borrowerId);
     const property = getProperty(app.propertyId);
     const matchSearch =
@@ -69,7 +115,7 @@ export default function ApplicationsScreen() {
       getPropertyShortAddress(property).toLowerCase().includes(q) ||
       (property?.city ?? "").toLowerCase().includes(q) ||
       (property?.propertyType ?? "").toLowerCase().includes(q);
-    return matchStatus && matchSearch;
+    return matchFilter && matchSearch;
   });
 
   const handleCreate = async () => {
@@ -80,6 +126,18 @@ export default function ApplicationsScreen() {
   };
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
+
+  // ── chip helpers ──
+  const groupCount = (g: GroupKey) =>
+    applications.filter((a) => GROUP_PHASES[g].includes(a.status as ApplicationStatus)).length;
+  const phaseCount = (p: ApplicationStatus | "All") =>
+    p === "All" ? applications.length : applications.filter((a) => a.status === p).length;
+
+  const isGroupActive = (g: GroupKey) => filter.kind === "group" && filter.group === g;
+  const isPhaseActive = (p: ApplicationStatus | "All") => {
+    if (p === "All") return filter.kind === "all";
+    return filter.kind === "phase" && filter.phase === p;
+  };
 
   return (
     <View style={styles.container}>
@@ -116,24 +174,60 @@ export default function ApplicationsScreen() {
       {/* ── Filter chips ── */}
       <FlatList
         horizontal
-        data={STATUS_FILTERS}
-        keyExtractor={(item) => item}
         style={styles.filterBar}
         contentContainerStyle={styles.filterBarContent}
         showsHorizontalScrollIndicator={false}
+        keyExtractor={(item) => item.id}
+        data={[
+          // Group chips first
+          ...Object.keys(GROUP_PHASES).map((g) => ({ id: `group:${g}`, kind: "group" as const, value: g as GroupKey })),
+          // Divider sentinel
+          { id: "divider", kind: "divider" as const, value: "" as any },
+          // Phase chips
+          ...PHASE_FILTERS.map((p) => ({ id: `phase:${p}`, kind: "phase" as const, value: p })),
+        ]}
         renderItem={({ item }) => {
-          const active = item === statusFilter;
-          const count = item === "All"
-            ? applications.length
-            : applications.filter((a) => a.status === item).length;
+          if (item.kind === "divider") {
+            return <View style={styles.chipDivider} />;
+          }
+          if (item.kind === "group") {
+            const g = item.value as GroupKey;
+            const active = isGroupActive(g);
+            const count = groupCount(g);
+            const color = GROUP_COLOR[g];
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.chip,
+                  styles.chipGroup,
+                  active && { backgroundColor: color, borderColor: color },
+                ]}
+                onPress={() => setFilter({ kind: "group", group: g })}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                  {g}
+                </Text>
+                <Text style={[styles.chipCount, active && styles.chipCountActive]}>
+                  {count}
+                </Text>
+              </TouchableOpacity>
+            );
+          }
+          // phase chip
+          const p = item.value as ApplicationStatus | "All";
+          const active = isPhaseActive(p);
+          const count = phaseCount(p);
           return (
             <TouchableOpacity
               style={[styles.chip, active && styles.chipActive]}
-              onPress={() => setStatusFilter(item)}
+              onPress={() =>
+                setFilter(p === "All" ? FILTER_ALL : { kind: "phase", phase: p as ApplicationStatus })
+              }
               activeOpacity={0.7}
             >
               <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                {CHIP_LABEL[item] ?? item}
+                {CHIP_LABEL[p] ?? p}
               </Text>
               <Text style={[styles.chipCount, active && styles.chipCountActive]}>
                 {count}
@@ -142,6 +236,20 @@ export default function ApplicationsScreen() {
           );
         }}
       />
+
+      {/* ── Active group banner ── */}
+      {filter.kind === "group" && (
+        <View style={[styles.groupBanner, { borderLeftColor: GROUP_COLOR[filter.group] }]}>
+          <Text style={styles.groupBannerText}>
+            Showing{" "}
+            <Text style={styles.groupBannerBold}>{filter.group}</Text>
+            {" "}phases: {GROUP_PHASES[filter.group].join(", ")}
+          </Text>
+          <TouchableOpacity onPress={() => setFilter(FILTER_ALL)} hitSlop={8}>
+            <Feather name="x" size={13} color={Colors.light.textTertiary} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* ── Results ── */}
       <FlatList
@@ -165,14 +273,14 @@ export default function ApplicationsScreen() {
             <View style={styles.emptyBox}>
               <Feather name="inbox" size={32} color={Colors.light.textTertiary} />
               <Text style={styles.emptyTitle}>
-                {search || statusFilter !== "All" ? "No matching applications" : "No applications yet"}
+                {search || filter.kind !== "all" ? "No matching applications" : "No applications yet"}
               </Text>
               <Text style={styles.emptyText}>
-                {search || statusFilter !== "All"
+                {search || filter.kind !== "all"
                   ? "Try adjusting your search or filter."
                   : "Tap New Loan to create your first application."}
               </Text>
-              {!search && statusFilter === "All" && (
+              {!search && filter.kind === "all" && (
                 <TouchableOpacity style={styles.createBtn} onPress={handleCreate}>
                   <Feather name="plus" size={15} color="#fff" />
                   <Text style={styles.createBtnText}>Create Application</Text>
@@ -186,6 +294,8 @@ export default function ApplicationsScreen() {
     </View>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
@@ -269,6 +379,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.light.border,
   },
+  chipGroup: {
+    borderStyle: "dashed",
+  },
   chipActive: {
     backgroundColor: Colors.light.tint,
     borderColor: Colors.light.tint,
@@ -290,6 +403,34 @@ const styles = StyleSheet.create({
   },
   chipCountActive: {
     color: "rgba(255,255,255,0.75)",
+  },
+  chipDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: Colors.light.border,
+    marginHorizontal: 2,
+  },
+
+  groupBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: Colors.light.backgroundCard,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.borderLight,
+    borderLeftWidth: 3,
+  },
+  groupBannerText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textSecondary,
+  },
+  groupBannerBold: {
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.text,
   },
 
   list: {
