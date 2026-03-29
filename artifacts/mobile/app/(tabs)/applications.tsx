@@ -33,15 +33,23 @@ const PHASE_FILTERS: (ApplicationStatus | "All")[] = [
   "Docs Drawn",
   "Docs Back",
   "Closing",
+  "Inquiry Canceled",
+  "Inquiry Withdrawn",
+  "Inquiry Denied",
+  "Application Withdrawn",
+  "Application Canceled",
+  "Application Denied",
 ];
 
-type GroupKey = "Sales" | "Processing" | "Credit" | "Closing";
+type GroupKey = "Sales" | "Processing" | "Credit" | "Closing" | "Disposed";
 
 const GROUP_PHASES: Record<GroupKey, ApplicationStatus[]> = {
   Sales:      ["Inquiry", "Letter of Interest", "Application Start"],
   Processing: ["Application Processing", "Pre-close"],
   Credit:     ["Final Credit Review"],
   Closing:    ["Ready for Docs", "Docs Drawn", "Docs Back", "Closing"],
+  Disposed:   ["Inquiry Canceled", "Inquiry Withdrawn", "Inquiry Denied",
+               "Application Withdrawn", "Application Canceled", "Application Denied"],
 };
 
 const GROUP_COLOR: Record<GroupKey, string> = {
@@ -49,6 +57,7 @@ const GROUP_COLOR: Record<GroupKey, string> = {
   Processing: "#C75300",
   Credit:     "#6B4FBB",
   Closing:    "#005C3C",
+  Disposed:   "#B91C1C",
 };
 
 const CHIP_LABEL: Partial<Record<ApplicationStatus | "All", string>> = {
@@ -58,6 +67,12 @@ const CHIP_LABEL: Partial<Record<ApplicationStatus | "All", string>> = {
   "Application Processing": "Processing",
   "Final Credit Review":    "Credit Review",
   "Ready for Docs":         "Ready for Docs",
+  "Inquiry Canceled":       "Inq. Canceled",
+  "Inquiry Withdrawn":      "Inq. Withdrawn",
+  "Inquiry Denied":         "Inq. Denied",
+  "Application Withdrawn":  "App. Withdrawn",
+  "Application Canceled":   "App. Canceled",
+  "Application Denied":     "App. Denied",
 };
 
 // ─── Filter state ──────────────────────────────────────────────────────────────
@@ -69,7 +84,7 @@ type FilterState =
 
 const FILTER_ALL: FilterState = { kind: "all" };
 
-const GROUP_KEYS = new Set<string>(["Sales", "Processing", "Credit", "Closing"]);
+const GROUP_KEYS = new Set<string>(["Sales", "Processing", "Credit", "Closing", "Disposed"]);
 
 function resolveParams(
   phase: string | undefined,
