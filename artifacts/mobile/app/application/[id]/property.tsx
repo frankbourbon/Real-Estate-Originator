@@ -24,7 +24,13 @@ import Colors from "@/constants/colors";
 import type { PropertyLocation, PropertyType } from "@/services/core";
 import { useCoreService } from "@/services/core";
 import { useInquiryService } from "@/services/inquiry";
-import { formatPct, formatSqFt, getPropertyCityState } from "@/utils/formatting";
+import { formatSqFt, getPropertyCityState } from "@/utils/formatting";
+import {
+  computePhysicalOccupancy,
+  computeEconomicOccupancy,
+  fmtPct,
+  fmtCur,
+} from "@/utils/occupancy";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -122,8 +128,6 @@ type FormState = {
   grossSqFt: string;
   numberOfUnits: string;
   yearBuilt: string;
-  physicalOccupancyPct: string;
-  economicOccupancyPct: string;
 };
 
 export default function PropertySection() {
@@ -142,7 +146,6 @@ export default function PropertySection() {
     locations: [],
     propertyType: "Office",
     grossSqFt: "", numberOfUnits: "", yearBuilt: "",
-    physicalOccupancyPct: "", economicOccupancyPct: "",
   });
 
   const set = useCallback((key: keyof FormState) => (val: string) =>
@@ -193,8 +196,6 @@ export default function PropertySection() {
       grossSqFt: property?.grossSqFt ?? "",
       numberOfUnits: property?.numberOfUnits ?? "",
       yearBuilt: property?.yearBuilt ?? "",
-      physicalOccupancyPct: property?.physicalOccupancyPct ?? "",
-      economicOccupancyPct: property?.economicOccupancyPct ?? "",
     };
   }, [property]);
 
@@ -221,13 +222,134 @@ export default function PropertySection() {
       grossSqFt: form.grossSqFt || undefined,
       numberOfUnits: form.numberOfUnits || undefined,
       yearBuilt: form.yearBuilt || undefined,
-      physicalOccupancyPct: form.physicalOccupancyPct || undefined,
-      economicOccupancyPct: form.economicOccupancyPct || undefined,
     });
     setEditing(false);
   };
 
   const handleCancel = () => setEditing(false);
+
+  // ─── Occupancy (always computed — never directly editable) ──────────────────
+
+  function renderOccupancyTab() {
+    const phys = computePhysicalOccupancy(rentRoll);
+    const econ = computeEconomicOccupancy(opHistory);
+
+    return (
+      <View>
+        {/* Derived-value notice */}
+        <View style={s.derivedBanner}>
+          <Feather name="info" size={13} color={Colors.light.tint} />
+          <Text style={s.derivedBannerText}>
+            Occupancy figures are computed automatically from Rent Roll and Operating History — they are not directly editable.
+          </Text>
+        </View>
+
+        {/* Physical Occupancy */}
+        <View style={s.card}>
+          <View style={s.occHeader}>
+            <View>
+              <Text style={s.occMetricLabel}>PHYSICAL OCCUPANCY</Text>
+              <Text style={s.occMetricSubtitle}>Occupied units ÷ Total rentable units</Text>
+            </View>
+            <Text style={[s.occBigPct, phys.pct === null && s.occBigPctNone]}>
+              {fmtPct(phys.pct)}
+            </Text>
+          </View>
+
+          {phys.source === "rent-roll" ? (
+            <View style={s.occSourceBox}>
+              <View style={s.occSourceRow}>
+                <View style={s.occSourceIcon}>
+                  <Feather name="list" size={11} color={Colors.light.tint} />
+                </View>
+                <Text style={s.occSourceLabel}>Source: Rent Roll</Text>
+              </View>
+              <View style={s.occBreakdownRow}>
+                <View style={s.occBreakdownItem}>
+                  <Text style={s.occBreakdownValue}>{phys.occupied}</Text>
+                  <Text style={s.occBreakdownKey}>Occupied</Text>
+                </View>
+                {phys.notice > 0 && (
+                  <View style={s.occBreakdownItem}>
+                    <Text style={[s.occBreakdownValue, { color: "#C75300" }]}>{phys.notice}</Text>
+                    <Text style={s.occBreakdownKey}>Notice</Text>
+                  </View>
+                )}
+                <View style={s.occBreakdownItem}>
+                  <Text style={s.occBreakdownValue}>{phys.total - phys.occupied - phys.notice}</Text>
+                  <Text style={s.occBreakdownKey}>Vacant/Other</Text>
+                </View>
+                <View style={s.occBreakdownItem}>
+                  <Text style={[s.occBreakdownValue, { color: Colors.light.text }]}>{phys.total}</Text>
+                  <Text style={s.occBreakdownKey}>Total Units</Text>
+                </View>
+              </View>
+            </View>
+          ) : (
+            <View style={s.occNoData}>
+              <Feather name="list" size={16} color={Colors.light.textTertiary} />
+              <Text style={s.occNoDataText}>No rent roll data. Add units to compute physical occupancy.</Text>
+              <TouchableOpacity onPress={() => router.push(`/application/${id}/rent-roll` as any)} style={s.occLink} activeOpacity={0.75}>
+                <Feather name="external-link" size={12} color={Colors.light.tint} />
+                <Text style={s.occLinkText}>Open Rent Roll Editor</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* Economic Occupancy */}
+        <View style={s.card}>
+          <View style={s.occHeader}>
+            <View>
+              <Text style={s.occMetricLabel}>ECONOMIC OCCUPANCY</Text>
+              <Text style={s.occMetricSubtitle}>Effective Gross Income ÷ Gross Potential Rent</Text>
+            </View>
+            <Text style={[s.occBigPct, econ.pct === null && s.occBigPctNone]}>
+              {fmtPct(econ.pct)}
+            </Text>
+          </View>
+
+          {econ.source === "operating-history" ? (
+            <View style={s.occSourceBox}>
+              <View style={s.occSourceRow}>
+                <View style={s.occSourceIcon}>
+                  <Feather name="trending-up" size={11} color={Colors.light.tint} />
+                </View>
+                <Text style={s.occSourceLabel}>Source: {econ.periodLabel}</Text>
+              </View>
+              <View style={s.occBreakdownRow}>
+                <View style={s.occBreakdownItem}>
+                  <Text style={s.occBreakdownValue}>{fmtCur(econ.egi)}</Text>
+                  <Text style={s.occBreakdownKey}>EGI</Text>
+                </View>
+                <View style={s.occBreakdownItem}>
+                  <Text style={s.occBreakdownValue}>{fmtCur(econ.gpr)}</Text>
+                  <Text style={s.occBreakdownKey}>Gross Potential Rent</Text>
+                </View>
+                {econ.gpr && econ.egi !== null && (
+                  <View style={s.occBreakdownItem}>
+                    <Text style={[s.occBreakdownValue, { color: "#B91C1C" }]}>
+                      {fmtCur(econ.gpr - econ.egi)}
+                    </Text>
+                    <Text style={s.occBreakdownKey}>Vacancy Loss</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          ) : (
+            <View style={s.occNoData}>
+              <Feather name="trending-up" size={16} color={Colors.light.textTertiary} />
+              <Text style={s.occNoDataText}>No operating history. Add a period to compute economic occupancy.</Text>
+              <TouchableOpacity onPress={() => router.push(`/application/${id}/operating-history` as any)} style={s.occLink} activeOpacity={0.75}>
+                <Feather name="external-link" size={12} color={Colors.light.tint} />
+                <Text style={s.occLinkText}>Open Operating History Editor</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  }
 
   // ─── Tab content ────────────────────────────────────────────────────────────
 
@@ -373,13 +495,7 @@ export default function PropertySection() {
           );
 
         case "occupancy":
-          return (
-            <View style={s.card}>
-              <SectionHeader title="Occupancy" subtitle="Unit-based vs rent-based — two distinct measures" />
-              <FormField label="Physical Occupancy (%)" value={form.physicalOccupancyPct} onChangeText={set("physicalOccupancyPct")} placeholder="95.0" keyboardType="decimal-pad" suffix="%" hint="= Occupied units ÷ Total rentable units × 100" />
-              <FormField label="Economic Occupancy (%)" value={form.economicOccupancyPct} onChangeText={set("economicOccupancyPct")} placeholder="91.0" keyboardType="decimal-pad" suffix="%" hint="= Collected rent ÷ Gross potential rent × 100" />
-            </View>
-          );
+          return renderOccupancyTab();
       }
     } else {
       switch (activeTab) {
@@ -472,13 +588,7 @@ export default function PropertySection() {
           );
 
         case "occupancy":
-          return (
-            <View style={s.card}>
-              <SectionHeader title="Occupancy" subtitle="Unit-based vs rent-based — two distinct measures" />
-              <DetailRow label="Physical Occupancy" value={property?.physicalOccupancyPct ? `${formatPct(property.physicalOccupancyPct)} (unit-based)` : undefined} />
-              <DetailRow label="Economic Occupancy" value={property?.economicOccupancyPct ? `${formatPct(property.economicOccupancyPct)} (rent-based)` : undefined} last />
-            </View>
-          );
+          return renderOccupancyTab();
 
         case "rent-roll": {
           const occupied = rentRoll.filter((u) => u.leaseStatus === "Occupied").length;
@@ -642,6 +752,123 @@ const s = StyleSheet.create({
   flex1: { flex: 1 },
   flex2: { flex: 2 },
   gap: { width: 8 },
+
+  // ── Occupancy (derived / read-only) ───────────────────────────────────────
+  derivedBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: Colors.light.tintLight,
+    borderWidth: 1,
+    borderColor: Colors.light.tint + "40",
+    borderRadius: 4,
+    padding: 10,
+    marginBottom: 12,
+  },
+  derivedBannerText: {
+    flex: 1,
+    fontSize: 11,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.tint,
+    lineHeight: 16,
+  },
+  occHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  occMetricLabel: {
+    fontSize: 10,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.textSecondary,
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
+  },
+  occMetricSubtitle: {
+    fontSize: 11,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textTertiary,
+    marginTop: 2,
+  },
+  occBigPct: {
+    fontSize: 28,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.tint,
+  },
+  occBigPctNone: {
+    fontSize: 22,
+    color: Colors.light.textTertiary,
+  },
+  occSourceBox: {
+    backgroundColor: Colors.light.background,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    padding: 10,
+  },
+  occSourceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10,
+  },
+  occSourceIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 3,
+    backgroundColor: Colors.light.tintLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  occSourceLabel: {
+    fontSize: 11,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.textSecondary,
+  },
+  occBreakdownRow: {
+    flexDirection: "row",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  occBreakdownItem: {
+    alignItems: "center",
+    minWidth: 60,
+  },
+  occBreakdownValue: {
+    fontSize: 16,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.tint,
+  },
+  occBreakdownKey: {
+    fontSize: 10,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textTertiary,
+    textAlign: "center",
+    marginTop: 2,
+  },
+  occNoData: {
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 16,
+  },
+  occNoDataText: {
+    fontSize: 12,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textTertiary,
+    textAlign: "center",
+  },
+  occLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 4,
+  },
+  occLinkText: {
+    fontSize: 12,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.tint,
+  },
 
   // ── Legal address ──────────────────────────────────────────────────────────
   legalInput: {

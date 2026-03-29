@@ -24,7 +24,7 @@ import type {
 } from "@/services/core";
 import { useCoreService } from "@/services/core";
 
-const STEPS = ["Property", "Occupancy", "Loan Terms", "Borrower", "Review"];
+const STEPS = ["Property", "Loan Terms", "Borrower", "Review"];
 
 const PROPERTY_TYPES: PropertyType[] = [
   "Office", "Retail", "Industrial", "Multifamily", "Mixed Use",
@@ -56,11 +56,6 @@ export default function NewApplicationScreen() {
     yearBuilt: property?.yearBuilt ?? "",
   });
 
-  const [occForm, setOccForm] = useState({
-    physicalOccupancyPct: property?.physicalOccupancyPct ?? "",
-    economicOccupancyPct: property?.economicOccupancyPct ?? "",
-  });
-
   const [loanForm, setLoanForm] = useState({
     loanType: app?.loanType ?? ("Acquisition" as LoanType),
     loanAmountUsd: app?.loanAmountUsd ?? "",
@@ -90,7 +85,6 @@ export default function NewApplicationScreen() {
   }
 
   const updateProp = (key: string) => (val: string) => setPropForm((f) => ({ ...f, [key]: val }));
-  const updateOcc = (key: string) => (val: string) => setOccForm((f) => ({ ...f, [key]: val }));
   const updateLoan = (key: string) => (val: string) => setLoanForm((f) => ({ ...f, [key]: val }));
   const updateBor = (key: string) => (val: string) => setBorForm((f) => ({ ...f, [key]: val }));
 
@@ -99,7 +93,6 @@ export default function NewApplicationScreen() {
     await Promise.all([
       updateProperty(property.id, {
         ...propForm,
-        ...occForm,
         legalAddress: "",
         locations: hasAddress ? [{
           id: `loc_${property.id}_0`,
@@ -215,49 +208,8 @@ export default function NewApplicationScreen() {
           </>
         )}
 
-        {/* Step 1: Occupancy */}
+        {/* Step 1: Loan Terms */}
         {step === 1 && (
-          <>
-            <SectionHeader title="Occupancy Metrics" subtitle="Two distinct measures — do not conflate" />
-
-            <View style={[styles.callout, { borderLeftColor: Colors.light.statusSubmitted }]}>
-              <Text style={styles.calloutLabel}>Physical Occupancy</Text>
-              <Text style={styles.calloutText}>
-                Unit-based measure: percentage of rentable units currently occupied by a tenant, regardless of rent collection status.
-              </Text>
-            </View>
-            <FormField
-              label="Physical Occupancy (%)"
-              value={occForm.physicalOccupancyPct}
-              onChangeText={updateOcc("physicalOccupancyPct")}
-              placeholder="95.0"
-              keyboardType="decimal-pad"
-              suffix="%"
-              hint="= Occupied units ÷ Total rentable units × 100"
-              required
-            />
-
-            <View style={[styles.callout, { borderLeftColor: Colors.light.accent, marginTop: 8 }]}>
-              <Text style={styles.calloutLabel}>Economic Occupancy</Text>
-              <Text style={styles.calloutText}>
-                Revenue-based measure: percentage of scheduled gross potential rent actually collected — accounts for concessions, vacancy loss, and non-payment.
-              </Text>
-            </View>
-            <FormField
-              label="Economic Occupancy (%)"
-              value={occForm.economicOccupancyPct}
-              onChangeText={updateOcc("economicOccupancyPct")}
-              placeholder="91.0"
-              keyboardType="decimal-pad"
-              suffix="%"
-              hint="= Collected rent ÷ Gross potential rent × 100"
-              required
-            />
-          </>
-        )}
-
-        {/* Step 2: Loan Terms */}
-        {step === 2 && (
           <>
             <SectionHeader title="Loan Structure" subtitle="Terms and parameters of the requested financing" />
             <SelectField label="Loan Type" value={loanForm.loanType} options={LOAN_TYPES} onChange={(v) => updateLoan("loanType")(v)} required />
@@ -278,8 +230,8 @@ export default function NewApplicationScreen() {
           </>
         )}
 
-        {/* Step 3: Borrower */}
-        {step === 3 && (
+        {/* Step 2: Borrower */}
+        {step === 2 && (
           <>
             <SectionHeader title="Borrower Identity" subtitle="Individual and entity information" />
             <View style={styles.row}>
@@ -302,8 +254,8 @@ export default function NewApplicationScreen() {
           </>
         )}
 
-        {/* Step 4: Review */}
-        {step === 4 && (
+        {/* Step 3: Review */}
+        {step === 3 && (
           <>
             <SectionHeader title="Review & Submit" subtitle="Confirm all details before submitting the LOA" />
 
@@ -313,9 +265,7 @@ export default function NewApplicationScreen() {
               <ReviewRow label="Type" value={propForm.propertyType} />
               <ReviewRow label="Gross Sq Ft" value={propForm.grossSqFt ? `${propForm.grossSqFt} SF` : undefined} />
               <ReviewRow label="Units" value={propForm.numberOfUnits || undefined} />
-              <ReviewRow label="Year Built" value={propForm.yearBuilt} />
-              <ReviewRow label="Physical Occupancy" value={occForm.physicalOccupancyPct ? `${occForm.physicalOccupancyPct}% (unit-based)` : undefined} />
-              <ReviewRow label="Economic Occupancy" value={occForm.economicOccupancyPct ? `${occForm.economicOccupancyPct}% (rent-based)` : undefined} last />
+              <ReviewRow label="Year Built" value={propForm.yearBuilt} last />
             </ReviewCard>
 
             <ReviewCard title="Loan Terms">
