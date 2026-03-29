@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   filterBarContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     gap: 8,
     alignItems: "center",
   },
