@@ -69,12 +69,14 @@ type FilterState =
 
 const FILTER_ALL: FilterState = { kind: "all" };
 
+const GROUP_KEYS = new Set<string>(["Sales", "Processing", "Credit", "Closing"]);
+
 function resolveParams(
   phase: string | undefined,
   group: string | undefined
 ): FilterState {
-  if (group && (group === "Sales" || group === "Closing")) {
-    return { kind: "group", group };
+  if (group && GROUP_KEYS.has(group)) {
+    return { kind: "group", group: group as GroupKey };
   }
   if (phase && PHASE_FILTERS.includes(phase as ApplicationStatus)) {
     return { kind: "phase", phase: phase as ApplicationStatus };
@@ -361,10 +363,11 @@ const styles = StyleSheet.create({
   },
 
   filterBar: {
-    maxHeight: 44,
+    height: 46,
     backgroundColor: Colors.light.backgroundCard,
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
+    overflow: "hidden",
   },
   filterBarContent: {
     paddingHorizontal: 12,
