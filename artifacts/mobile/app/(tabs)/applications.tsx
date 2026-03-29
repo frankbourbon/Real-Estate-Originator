@@ -366,6 +366,7 @@ const styles = StyleSheet.create({
 
   filterBar: {
     paddingVertical: 18,
+    paddingHorizontal: 18,
     backgroundColor: Colors.light.backgroundCard,
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
@@ -373,7 +374,6 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   filterBarContent: {
-    paddingHorizontal: 18,
     gap: 8,
     alignItems: "center",
   },
