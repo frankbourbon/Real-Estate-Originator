@@ -620,7 +620,7 @@ export default function ApplicationOverviewScreen() {
           {([
             {
               key: "tasks", route: `/application/${id}/tasks`,
-              label: "Task Checklist", icon: "check-square" as const,
+              label: "Tasks", icon: "check-square" as const,
               iconColor: "#C75300", iconBg: "#FFECDC",
               badge: taskCount,
               desc: "Phase-by-phase task tracking",
