@@ -210,38 +210,50 @@ export default function DashboardScreen() {
 
         {/* ── Pipeline Volume Card ── */}
         <View style={styles.pipelineCard}>
-          <View style={styles.pipelineLeft}>
+          {/* Volume header */}
+          <View style={styles.pipelineTop}>
             <Text style={styles.pipelineLabel}>Total Pipeline Volume</Text>
-            <Text style={styles.pipelineValue}>
-              {stats.totalVolumeUsd > 0 ? formatCurrency(stats.totalVolumeUsd) : "$0"}
-            </Text>
-            <Text style={styles.pipelineSub}>
-              {stats.total} application{stats.total !== 1 ? "s" : ""} in pipeline
-            </Text>
+            <View style={styles.pipelineTopRow}>
+              <Text style={styles.pipelineValue}>
+                {stats.totalVolumeUsd > 0 ? formatCurrency(stats.totalVolumeUsd) : "$0"}
+              </Text>
+              <Text style={styles.pipelineSub}>
+                {stats.total} application{stats.total !== 1 ? "s" : ""} in pipeline
+              </Text>
+            </View>
           </View>
-          <View style={styles.pipelineRight}>
-            <TouchableOpacity
-              style={styles.pipelineStat}
-              onPress={() => router.push({ pathname: "/(tabs)/applications", params: { group: "Sales" } })}
-              activeOpacity={0.6}
-            >
-              <Text style={styles.pipelineStatNum}>
-                {(stats.byPhase["Inquiry"] ?? 0) + (stats.byPhase["Application Start"] ?? 0)}
-              </Text>
-              <Text style={styles.pipelineStatLabel}>Sales</Text>
-            </TouchableOpacity>
-            <View style={styles.pipelineStatDivider} />
-            <TouchableOpacity
-              style={styles.pipelineStat}
-              onPress={() => router.push({ pathname: "/(tabs)/applications", params: { group: "Closing" } })}
-              activeOpacity={0.6}
-            >
-              <Text style={styles.pipelineStatNum}>
-                {(stats.byPhase["Ready for Docs"] ?? 0) + (stats.byPhase["Docs Drawn"] ?? 0) +
-                 (stats.byPhase["Docs Back"] ?? 0) + (stats.byPhase["Closing"] ?? 0)}
-              </Text>
-              <Text style={styles.pipelineStatLabel}>Closing</Text>
-            </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.pipelineDivider} />
+
+          {/* 2×2 group grid */}
+          <View style={styles.groupGrid}>
+            {([
+              { key: "Sales",      color: "#1B7F9E",
+                count: (stats.byPhase["Inquiry"] ?? 0) + (stats.byPhase["Application Start"] ?? 0) },
+              { key: "Processing", color: "#C75300",
+                count: (stats.byPhase["Letter of Interest"] ?? 0) + (stats.byPhase["Application Processing"] ?? 0) },
+              { key: "Credit",     color: "#6B4FBB",
+                count: (stats.byPhase["Final Credit Review"] ?? 0) + (stats.byPhase["Pre-close"] ?? 0) },
+              { key: "Closing",    color: "#005C3C",
+                count: (stats.byPhase["Ready for Docs"] ?? 0) + (stats.byPhase["Docs Drawn"] ?? 0) +
+                       (stats.byPhase["Docs Back"] ?? 0) + (stats.byPhase["Closing"] ?? 0) },
+            ] as { key: string; color: string; count: number }[]).map((g, i) => (
+              <TouchableOpacity
+                key={g.key}
+                style={[
+                  styles.groupChip,
+                  i % 2 === 0 && styles.groupChipLeft,
+                  i < 2      && styles.groupChipTop,
+                ]}
+                onPress={() => router.push({ pathname: "/(tabs)/applications", params: { group: g.key } })}
+                activeOpacity={0.6}
+              >
+                <View style={[styles.groupChipAccent, { backgroundColor: g.color }]} />
+                <Text style={[styles.groupChipNum, { color: g.color }]}>{g.count}</Text>
+                <Text style={styles.groupChipLabel}>{g.key.toUpperCase()}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
@@ -370,13 +382,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.light.border,
     borderRadius: 4,
-    padding: 16,
     marginBottom: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    overflow: "hidden",
   },
-  pipelineLeft: { flex: 1 },
+  pipelineTop: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 14,
+  },
+  pipelineTopRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 10,
+    flexWrap: "wrap",
+  },
   pipelineLabel: {
     fontSize: 10,
     fontFamily: "OpenSans_600SemiBold",
@@ -390,46 +409,55 @@ const styles = StyleSheet.create({
     fontFamily: "OpenSans_700Bold",
     color: Colors.light.text,
     letterSpacing: -1,
-    marginBottom: 4,
   },
   pipelineSub: {
     fontSize: 12,
     fontFamily: "OpenSans_400Regular",
     color: Colors.light.textSecondary,
   },
-  pipelineRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    borderLeftWidth: 1,
-    borderLeftColor: Colors.light.border,
-    paddingLeft: 20,
-    marginLeft: 16,
-  },
-  pipelineStat: { alignItems: "center" },
-  pipelineStatNum: {
-    fontSize: 22,
-    fontFamily: "OpenSans_700Bold",
-    color: Colors.light.tint,
-    lineHeight: 26,
-  },
-  pipelineStatLabel: {
-    fontSize: 10,
-    fontFamily: "OpenSans_600SemiBold",
-    color: Colors.light.textTertiary,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  pipelineStatDivider: {
-    width: 1,
-    height: 32,
+  pipelineDivider: {
+    height: 1,
     backgroundColor: Colors.light.border,
   },
 
-  // Stats grid
-  gridRow: {
+  // 2×2 group grid
+  groupGrid: {
     flexDirection: "row",
-    marginBottom: 0,
+    flexWrap: "wrap",
+  },
+  groupChip: {
+    width: "50%",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: "flex-start",
+    borderTopWidth: 0,
+    borderLeftWidth: 0,
+  },
+  groupChipLeft: {
+    borderRightWidth: 1,
+    borderRightColor: Colors.light.border,
+  },
+  groupChipTop: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  groupChipAccent: {
+    width: 18,
+    height: 3,
+    borderRadius: 2,
+    marginBottom: 6,
+  },
+  groupChipNum: {
+    fontSize: 24,
+    fontFamily: "OpenSans_700Bold",
+    lineHeight: 28,
+    marginBottom: 2,
+  },
+  groupChipLabel: {
+    fontSize: 10,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.textTertiary,
+    letterSpacing: 0.6,
   },
 
   // Section header
