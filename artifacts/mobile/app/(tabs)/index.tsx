@@ -246,7 +246,6 @@ export default function DashboardScreen() {
                 activeOpacity={0.6}
               >
                 <View style={styles.groupChipRow}>
-                  <View style={[styles.groupChipAccent, { backgroundColor: g.color }]} />
                   <Text style={[styles.groupChipNum, { color: g.color }]}>{g.count}</Text>
                   <Text style={styles.groupChipLabel}>{g.label}</Text>
                 </View>
@@ -436,11 +435,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-  },
-  groupChipAccent: {
-    width: 3,
-    height: 22,
-    borderRadius: 2,
   },
   groupChipNum: {
     fontSize: 18,
