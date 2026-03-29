@@ -449,7 +449,7 @@ const pt = StyleSheet.create({
 
 export default function ApplicationOverviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getApplication, getBorrower, getProperty, updateApplication, deleteApplication } = useCoreService();
+  const { getApplication, getBorrower, getProperty, updateApplication, deleteApplication, getCollaborators } = useCoreService();
   const { getComments } = useCommentsService();
   const { getDocuments } = useDocumentsService();
   const { getConditions } = useConditionsService();
@@ -503,6 +503,7 @@ export default function ApplicationOverviewScreen() {
   const conditionCount = getConditions(id).length;
   const taskCount = getTasksForApplication(id).length;
   const teamCount = getTeamMembers(id).length;
+  const collabCount = getCollaborators(id).length;
   const phaseSections = buildPhaseSections(id);
 
   return (
@@ -645,6 +646,13 @@ export default function ApplicationOverviewScreen() {
               iconColor: "#005C3C", iconBg: "#D0F0E5",
               badge: teamCount,
               desc: "Team members assigned to this loan",
+            },
+            {
+              key: "collaboration", route: `/application/${id}/collaboration`,
+              label: "Collaboration", icon: "user-check" as const,
+              iconColor: "#1B7F9E", iconBg: "#DBF5F7",
+              badge: collabCount,
+              desc: "Users with read-only access to this loan",
             },
             {
               key: "documents", route: `/application/${id}/documents`,

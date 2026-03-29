@@ -78,6 +78,16 @@ export type Property = {
   physicalOccupancyPct: string; economicOccupancyPct: string;
 };
 
+/** A collaborator granted read access to a specific loan. */
+export type CollaborationMember = {
+  id: string;
+  createdAt: string;
+  applicationId: string;
+  sid: string;
+  firstName: string;
+  lastName: string;
+};
+
 /** Slim application record — only core loan terms. Phase-specific data lives in each phase service. */
 export type LoanApplication = {
   id: string; createdAt: string; updatedAt: string;
@@ -101,6 +111,7 @@ const KEYS = {
   apps: "svc_core_apps_v2",
   borrowers: "svc_core_borrowers_v2",
   properties: "svc_core_properties_v3",
+  collaborators: "svc_core_collab_v1",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -466,6 +477,7 @@ const [CoreServiceProvider, useCoreService] = createContextHook(() => {
   const [applications, setApplications] = useState<LoanApplication[]>([]);
   const [borrowers, setBorrowers] = useState<Borrower[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
+  const [collaborators, setCollaborators] = useState<CollaborationMember[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -473,7 +485,8 @@ const [CoreServiceProvider, useCoreService] = createContextHook(() => {
       AsyncStorage.getItem(KEYS.apps),
       AsyncStorage.getItem(KEYS.borrowers),
       AsyncStorage.getItem(KEYS.properties),
-    ]).then(async ([apps, bors, props]) => {
+      AsyncStorage.getItem(KEYS.collaborators),
+    ]).then(async ([apps, bors, props, collabs]) => {
       if (apps) {
         const parsed: LoanApplication[] = JSON.parse(apps);
         setApplications(parsed.map((a) => ({
@@ -497,6 +510,9 @@ const [CoreServiceProvider, useCoreService] = createContextHook(() => {
         await AsyncStorage.setItem(KEYS.properties, JSON.stringify(SEED_PROPERTIES));
         setProperties(SEED_PROPERTIES);
       }
+      if (collabs) {
+        setCollaborators(JSON.parse(collabs) as CollaborationMember[]);
+      }
       setLoading(false);
     });
   }, []);
@@ -514,6 +530,11 @@ const [CoreServiceProvider, useCoreService] = createContextHook(() => {
   const persistProperties = useCallback(async (props: Property[]) => {
     setProperties(props);
     await AsyncStorage.setItem(KEYS.properties, JSON.stringify(props));
+  }, []);
+
+  const persistCollaborators = useCallback(async (list: CollaborationMember[]) => {
+    setCollaborators(list);
+    await AsyncStorage.setItem(KEYS.collaborators, JSON.stringify(list));
   }, []);
 
   // ── Borrower CRUD ──────────────────────────────────────────────────────────
@@ -567,6 +588,34 @@ const [CoreServiceProvider, useCoreService] = createContextHook(() => {
 
   const getApplication = useCallback((id: string) => applications.find((a) => a.id === id), [applications]);
 
+  // ── Collaboration CRUD ─────────────────────────────────────────────────────
+
+  const getCollaborators = useCallback(
+    (applicationId: string) => collaborators.filter((c) => c.applicationId === applicationId),
+    [collaborators],
+  );
+
+  const addCollaborator = useCallback(
+    async (applicationId: string, data: { sid: string; firstName: string; lastName: string }) => {
+      const entry: CollaborationMember = {
+        id: uid(), createdAt: now(), applicationId,
+        sid: data.sid.trim().toUpperCase(),
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+      };
+      await persistCollaborators([...collaborators, entry]);
+      return entry;
+    },
+    [collaborators, persistCollaborators],
+  );
+
+  const removeCollaborator = useCallback(
+    async (id: string) => {
+      await persistCollaborators(collaborators.filter((c) => c.id !== id));
+    },
+    [collaborators, persistCollaborators],
+  );
+
   // ── Pipeline stats ─────────────────────────────────────────────────────────
 
   const getPipelineStats = useCallback(() => {
@@ -608,6 +657,7 @@ const [CoreServiceProvider, useCoreService] = createContextHook(() => {
     createBorrower, updateBorrower,
     createProperty, updateProperty,
     getPipelineStats,
+    getCollaborators, addCollaborator, removeCollaborator,
     loadSeedData, clearData,
   };
 });
