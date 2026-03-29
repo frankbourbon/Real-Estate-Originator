@@ -712,6 +712,27 @@ export default function ApplicationOverviewScreen() {
                 {s === app.status && <Feather name="check" size={16} color={Colors.light.tint} />}
               </TouchableOpacity>
             ))}
+
+            {/* ── Adverse Disposition section ── */}
+            <View style={styles.sheetSectionHeader}>
+              <Feather name="alert-circle" size={13} color="#B91C1C" />
+              <Text style={styles.sheetSectionLabel}>Adverse Disposition</Text>
+            </View>
+            <View style={styles.sheetDivider} />
+            {(["Inquiry Canceled","Inquiry Withdrawn","Inquiry Denied",
+               "Application Withdrawn","Application Canceled","Application Denied"] as const).map((s) => (
+              <TouchableOpacity
+                key={s}
+                style={[styles.statusOpt, s === app.status && styles.statusOptActiveRed]}
+                onPress={async () => { await updateApplication(id, { status: s }); setStatusModal(false); }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.statusOptLeft}>
+                  <StatusBadge status={s} />
+                </View>
+                {s === app.status && <Feather name="check" size={16} color="#B91C1C" />}
+              </TouchableOpacity>
+            ))}
           </ScrollView>
         </View>
       </Modal>
@@ -852,6 +873,18 @@ const styles = StyleSheet.create({
   statusOptActive: {
     backgroundColor: Colors.light.tintLight + "40",
     borderRadius: 4, paddingHorizontal: 8,
+  },
+  statusOptActiveRed: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: 4, paddingHorizontal: 8,
+  },
+  sheetSectionHeader: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    paddingTop: 20, paddingBottom: 10, paddingHorizontal: 4,
+  },
+  sheetSectionLabel: {
+    fontSize: 11, fontFamily: "OpenSans_700Bold",
+    color: "#B91C1C", letterSpacing: 0.6, textTransform: "uppercase",
   },
 
   dispositionCard: {
