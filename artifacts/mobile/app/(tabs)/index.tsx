@@ -51,13 +51,19 @@ function PipelineByStage({ stats }: { stats: PhaseStats }) {
             const info = PHASE_INFO[phase as any];
             const count = stats[phase] ?? 0;
             return (
-              <View key={phase} style={[pb.phaseRow, pi < group.phases.length - 1 && pb.phaseRowBorder]}>
+              <TouchableOpacity
+                key={phase}
+                style={[pb.phaseRow, pi < group.phases.length - 1 && pb.phaseRowBorder]}
+                onPress={() => router.push({ pathname: "/(tabs)/applications", params: { phase } })}
+                activeOpacity={0.6}
+              >
                 <Text style={pb.phaseNum}>{info.phase}</Text>
                 <Text style={pb.phaseName}>{phase}</Text>
                 <View style={[pb.phaseBadge, count > 0 && { backgroundColor: info.bg }]}>
                   <Text style={[pb.phaseBadgeText, count > 0 && { color: info.color }]}>{count}</Text>
                 </View>
-              </View>
+                <Feather name="chevron-right" size={14} color={Colors.light.textTertiary} style={{ marginLeft: 4 }} />
+              </TouchableOpacity>
             );
           })}
         </View>

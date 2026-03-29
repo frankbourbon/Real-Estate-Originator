@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
-import { router } from "expo-router";
-import React, { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -45,8 +45,17 @@ const CHIP_LABEL: Partial<Record<ApplicationStatus | "All", string>> = {
 export default function ApplicationsScreen() {
   const { applications, loading, createBorrower, createProperty, createApplication, getBorrower, getProperty } = useCoreService();
   const insets = useSafeAreaInsets();
+  const { phase } = useLocalSearchParams<{ phase?: string }>();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "All">("All");
+  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "All">(
+    (phase as ApplicationStatus) && STATUS_FILTERS.includes(phase as ApplicationStatus) ? (phase as ApplicationStatus) : "All"
+  );
+
+  useEffect(() => {
+    if (phase && STATUS_FILTERS.includes(phase as ApplicationStatus)) {
+      setStatusFilter(phase as ApplicationStatus);
+    }
+  }, [phase]);
 
   const filtered = applications.filter((app) => {
     const matchStatus = statusFilter === "All" || app.status === statusFilter;
