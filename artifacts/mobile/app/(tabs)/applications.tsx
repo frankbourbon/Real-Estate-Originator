@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   },
 
   filterBar: {
-    height: 46,
+    height: 56,
     backgroundColor: Colors.light.backgroundCard,
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
@@ -373,10 +373,10 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   filterBarContent: {
-    paddingHorizontal: 12,
-    gap: 6,
+    paddingHorizontal: 16,
+    gap: 8,
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   chip: {
     flexDirection: "row",
@@ -384,8 +384,8 @@ const styles = StyleSheet.create({
     gap: 5,
     backgroundColor: Colors.light.background,
     borderRadius: 2,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderWidth: 1,
     borderColor: Colors.light.border,
   },
