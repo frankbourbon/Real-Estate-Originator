@@ -39,8 +39,8 @@ type GroupKey = "Sales" | "Processing" | "Credit" | "Closing";
 
 const GROUP_PHASES: Record<GroupKey, ApplicationStatus[]> = {
   Sales:      ["Inquiry", "Letter of Interest", "Application Start"],
-  Processing: ["Application Processing"],
-  Credit:     ["Final Credit Review", "Pre-close"],
+  Processing: ["Application Processing", "Pre-close"],
+  Credit:     ["Final Credit Review"],
   Closing:    ["Ready for Docs", "Docs Drawn", "Docs Back", "Closing"],
 };
 
