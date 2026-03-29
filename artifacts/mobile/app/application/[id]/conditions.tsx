@@ -360,7 +360,7 @@ export default function ConditionsScreen() {
           <Feather name="arrow-left" size={20} color="#fff" />
         </TouchableOpacity>
         <View style={s.headerText}>
-          <Text style={s.headerTitle}>Loan Conditions</Text>
+          <Text style={s.headerTitle}>Conditions</Text>
           <Text style={s.headerSub}>
             {conditions.length} condition{conditions.length !== 1 ? "s" : ""}
             {pendingConditions > 0 ? ` · ${pendingConditions} pending` : ""}

@@ -569,7 +569,7 @@ export default function ApplicationOverviewScreen() {
             },
             {
               key: "conditions", route: `/application/${id}/conditions`,
-              label: "Loan Conditions", icon: "shield" as const,
+              label: "Conditions", icon: "shield" as const,
               iconColor: "#1B7F9E", iconBg: "#DBF5F7",
               badge: conditionCount,
               desc: "Conditions that must be satisfied before closing",
