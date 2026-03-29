@@ -38,8 +38,8 @@ const PHASE_FILTERS: (ApplicationStatus | "All")[] = [
 type GroupKey = "Sales" | "Processing" | "Credit" | "Closing";
 
 const GROUP_PHASES: Record<GroupKey, ApplicationStatus[]> = {
-  Sales:      ["Inquiry", "Application Start"],
-  Processing: ["Letter of Interest", "Application Processing"],
+  Sales:      ["Inquiry", "Letter of Interest", "Application Start"],
+  Processing: ["Application Processing"],
   Credit:     ["Final Credit Review", "Pre-close"],
   Closing:    ["Ready for Docs", "Docs Drawn", "Docs Back", "Closing"],
 };

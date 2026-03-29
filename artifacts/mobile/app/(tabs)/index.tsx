@@ -230,9 +230,9 @@ export default function DashboardScreen() {
           <View style={styles.groupGrid}>
             {([
               { group: "Sales",      label: "SALES",   color: "#1B7F9E",
-                count: (stats.byPhase["Inquiry"] ?? 0) + (stats.byPhase["Application Start"] ?? 0) },
+                count: (stats.byPhase["Inquiry"] ?? 0) + (stats.byPhase["Letter of Interest"] ?? 0) + (stats.byPhase["Application Start"] ?? 0) },
               { group: "Processing", label: "PROCESS", color: "#C75300",
-                count: (stats.byPhase["Letter of Interest"] ?? 0) + (stats.byPhase["Application Processing"] ?? 0) },
+                count: (stats.byPhase["Application Processing"] ?? 0) },
               { group: "Credit",     label: "CREDIT",  color: "#6B4FBB",
                 count: (stats.byPhase["Final Credit Review"] ?? 0) + (stats.byPhase["Pre-close"] ?? 0) },
               { group: "Closing",    label: "CLOSE",   color: "#005C3C",
