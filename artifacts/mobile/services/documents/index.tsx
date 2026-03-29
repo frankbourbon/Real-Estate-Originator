@@ -4,22 +4,52 @@ import React, { useCallback, useEffect, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+/** FK reference to either a Borrower or a Property record. */
+export type AppliesToRef = {
+  kind: "borrower" | "property";
+  id: string;
+};
+
+export const FILE_TYPES = [
+  "Appraisal Report",
+  "Environmental Report",
+  "Financial Statement",
+  "Tax Return",
+  "Rent Roll",
+  "Operating Statement",
+  "Lease Agreement",
+  "Title Report",
+  "Insurance Certificate",
+  "Legal Document",
+  "Survey",
+  "Inspection Report",
+  "Loan Agreement",
+  "Guaranty",
+  "Other",
+] as const;
+
+export type FileType = (typeof FILE_TYPES)[number] | string;
+
 /** serviceTag identifies which phase/screen this attachment belongs to (optional). */
 export type Attachment = {
   id: string;
   applicationId: string;
-  serviceTag: string;         // e.g. "final-credit-review", "closing", "" for general
+  serviceTag: string;           // e.g. "final-credit-review", "closing", "" for general
   name: string;
   uri: string;
   mimeType: string;
   sizeBytes: number;
   uploadedAt: string;
   uploadedBy: string;
+  // ── Additional metadata ──
+  fileType: string;             // document category / classification
+  formNumber: string;           // e.g. "IRS 4506-C", "Fannie 1003"
+  appliesTo: AppliesToRef[];    // FK refs to borrower(s) and/or property(ies)
 };
 
 // ─── Storage Key ──────────────────────────────────────────────────────────────
 
-const KEY = "svc_documents_v2";
+const KEY = "svc_documents_v3";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -27,6 +57,15 @@ function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 }
 function now(): string { return new Date().toISOString(); }
+
+function migrate(raw: unknown[]): Attachment[] {
+  return raw.map((d: any) => ({
+    fileType: "",
+    formNumber: "",
+    appliesTo: [],
+    ...d,
+  }));
+}
 
 // ─── Seed Data ────────────────────────────────────────────────────────────────
 // No attachments in seed data — users add these manually.
@@ -40,7 +79,7 @@ const [DocumentsServiceProvider, useDocumentsService] = createContextHook(() => 
 
   useEffect(() => {
     AsyncStorage.getItem(KEY).then((raw) => {
-      if (raw) setDocuments(JSON.parse(raw));
+      if (raw) setDocuments(migrate(JSON.parse(raw)));
       setLoading(false);
     });
   }, []);
