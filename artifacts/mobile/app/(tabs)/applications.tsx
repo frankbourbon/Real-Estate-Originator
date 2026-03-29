@@ -193,9 +193,9 @@ export default function ApplicationsScreen() {
       </View>
 
       {/* ── Filter chips ── */}
+      <View style={styles.filterBarWrapper}>
       <FlatList
         horizontal
-        style={styles.filterBar}
         contentContainerStyle={styles.filterBarContent}
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id}
@@ -257,6 +257,7 @@ export default function ApplicationsScreen() {
           );
         }}
       />
+      </View>
 
       {/* ── Active group banner ── */}
       {filter.kind === "group" && (
@@ -379,9 +380,8 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
   },
 
-  filterBar: {
-    paddingVertical: 18,
-    paddingHorizontal: 18,
+  filterBarWrapper: {
+    paddingVertical: 10,
     backgroundColor: Colors.light.backgroundCard,
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
@@ -389,6 +389,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   filterBarContent: {
+    paddingHorizontal: 16,
     gap: 8,
     alignItems: "center",
   },
