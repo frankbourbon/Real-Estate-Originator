@@ -249,9 +249,11 @@ export default function DashboardScreen() {
                 onPress={() => router.push({ pathname: "/(tabs)/applications", params: { group: g.key } })}
                 activeOpacity={0.6}
               >
-                <View style={[styles.groupChipAccent, { backgroundColor: g.color }]} />
-                <Text style={[styles.groupChipNum, { color: g.color }]}>{g.count}</Text>
-                <Text style={styles.groupChipLabel}>{g.key.toUpperCase()}</Text>
+                <View style={styles.groupChipRow}>
+                  <View style={[styles.groupChipAccent, { backgroundColor: g.color }]} />
+                  <Text style={[styles.groupChipNum, { color: g.color }]}>{g.count}</Text>
+                  <Text style={styles.groupChipLabel}>{g.key.toUpperCase()}</Text>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
@@ -427,9 +429,9 @@ const styles = StyleSheet.create({
   },
   groupChip: {
     width: "50%",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    alignItems: "flex-start",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    justifyContent: "center",
     borderTopWidth: 0,
     borderLeftWidth: 0,
   },
@@ -441,17 +443,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
   },
+  groupChipRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   groupChipAccent: {
-    width: 18,
-    height: 3,
+    width: 3,
+    height: 22,
     borderRadius: 2,
-    marginBottom: 6,
   },
   groupChipNum: {
-    fontSize: 24,
+    fontSize: 18,
     fontFamily: "OpenSans_700Bold",
-    lineHeight: 28,
-    marginBottom: 2,
+    lineHeight: 22,
   },
   groupChipLabel: {
     fontSize: 10,
