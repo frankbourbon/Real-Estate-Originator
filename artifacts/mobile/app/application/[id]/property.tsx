@@ -14,6 +14,7 @@ import {
 
 import { AddressLookup } from "@/components/AddressLookup";
 import { CensusCard } from "@/components/CensusCard";
+import { FloodZoneCard } from "@/components/FloodZoneCard";
 import { PropertyMapView } from "@/components/PropertyMapView";
 import { DetailRow } from "@/components/DetailRow";
 import { FormField } from "@/components/FormField";
@@ -453,6 +454,7 @@ export default function PropertySection() {
 
                         <PropertyMapView loc={loc} height={180} />
                         <CensusCard loc={loc} />
+                        <FloodZoneCard loc={loc} />
                       </View>
                     );
                   })
