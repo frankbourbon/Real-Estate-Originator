@@ -13,6 +13,7 @@ import {
 } from "react-native";
 
 import { AddressLookup } from "@/components/AddressLookup";
+import { CensusCard } from "@/components/CensusCard";
 import { PropertyMapView } from "@/components/PropertyMapView";
 import { DetailRow } from "@/components/DetailRow";
 import { FormField } from "@/components/FormField";
@@ -368,7 +369,23 @@ export default function PropertySection() {
     } else {
       switch (activeTab) {
         case "location": {
-          const locs = property?.locations ?? [];
+          // Prefer the structured locations array; fall back to legacy single-address fields.
+          const locs: PropertyLocation[] =
+            property?.locations?.length
+              ? property.locations
+              : property?.streetAddress || property?.city
+              ? [{
+                  id: `loc_${property!.id}_0`,
+                  label: "Main",
+                  streetAddress: property!.streetAddress ?? "",
+                  city: property!.city ?? "",
+                  state: property!.state ?? "",
+                  zipCode: property!.zipCode ?? "",
+                  latitude: property!.latitude ?? "",
+                  longitude: property!.longitude ?? "",
+                  googlePlaceId: property!.googlePlaceId ?? "",
+                }]
+              : [];
           return (
             <View>
               {/* Legal Address */}
@@ -435,6 +452,7 @@ export default function PropertySection() {
                         ) : null}
 
                         <PropertyMapView loc={loc} height={180} />
+                        <CensusCard loc={loc} />
                       </View>
                     );
                   })

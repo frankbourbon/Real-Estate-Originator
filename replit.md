@@ -99,6 +99,8 @@ Expo React Native app — LOA Origination System for commercial real estate lend
 
 **Architecture**: Full microservices — 12 independent service contexts, zero cross-service imports. Services communicate only through `applicationId` strings.
 
+**Census Integration**: `services/census/index.tsx` — lightweight hook (`useCensusData`) wrapping the **U.S. Census Bureau Geocoding API** (free, no API key). Accepts a `PropertyLocation`, calls `geographies/address` endpoint with `Public_AR_Current` benchmark + `Current_Current` vintage, returns state/county FIPS, census tract, block group, congressional district, and standardized address. Results cached in AsyncStorage under `svc_census_v1_{locationId}`. Surfaced via `CensusCard` component in the Property → Location tab (below the map per location). No Context provider needed — purely a per-component hook.
+
 **Services** (`services/`):
 | Service | Storage Key | Responsibility |
 |---|---|---|
