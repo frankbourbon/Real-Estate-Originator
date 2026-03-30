@@ -73,7 +73,12 @@ async function deleteCache(locationId: string): Promise<void> {
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
-const CENSUS_BASE = "https://geocoding.geo.census.gov/geocoder/geographies/address";
+/** Proxy base — routes through our API server to avoid CORS restrictions. */
+function censusProxyBase(): string {
+  const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+  if (!domain) throw new Error("EXPO_PUBLIC_DOMAIN not set — cannot reach API server.");
+  return `https://${domain}/api/census/geocode`;
+}
 
 function extractFirst(geographies: Record<string, any[]>, key: string): Record<string, any> | null {
   return geographies?.[key]?.[0] ?? null;
@@ -95,14 +100,11 @@ export async function fetchCensusForLocation(loc: PropertyLocation): Promise<Cen
     ...(loc.city ? { city: loc.city } : {}),
     ...(loc.state ? { state: loc.state } : {}),
     ...(loc.zipCode ? { zip: loc.zipCode } : {}),
-    benchmark: "Public_AR_Current",
-    vintage: "Current_Current",
-    format: "json",
   });
 
-  const url = `${CENSUS_BASE}?${params.toString()}`;
+  const url = `${censusProxyBase()}?${params.toString()}`;
   const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`Census API error: ${resp.status}`);
+  if (!resp.ok) throw new Error(`Census lookup failed: ${resp.status}`);
 
   const json = await resp.json();
   const matches: any[] = json?.result?.addressMatches ?? [];
