@@ -13,13 +13,14 @@ import { useInquiryDispositionService } from "@/services/inquiry-disposition";
 import { useInquiryService } from "@/services/inquiry";
 import { useLetterOfInterestService } from "@/services/letter-of-interest";
 import { useLoanTeamService } from "@/services/loan-team";
+import { usePhaseDataService } from "@/services/phase-data";
 import { usePreCloseService } from "@/services/pre-close";
 import { useProcessingService } from "@/services/processing";
 import { useReadyForDocsService } from "@/services/ready-for-docs";
 import { useTasksService } from "@/services/tasks";
 
 /**
- * Coordinates seed data loading and clearing across all 15 services.
+ * Coordinates seed data loading and clearing across all services.
  * Must be used inside <ServiceProviders>.
  *
  * Note: Admin seed data is always loaded with the sample data set.
@@ -31,6 +32,7 @@ import { useTasksService } from "@/services/tasks";
 export function useSeedCoordinator() {
   const admin = useAdminService();
   const core = useCoreService();
+  const phaseData = usePhaseDataService();
   const inquiry = useInquiryService();
   const inquiryDisposition = useInquiryDispositionService();
   const loi = useLetterOfInterestService();
@@ -67,12 +69,15 @@ export function useSeedCoordinator() {
       comments.loadSeedData(),
       loanTeam.loadSeedData(),
     ]);
-  }, [admin, core, inquiry, inquiryDisposition, loi, appStart, appDisposition, processing, fcr, conditions, preClose, rfd, closing, documents, tasks, comments, loanTeam]);
+  }, [admin, core, inquiry, inquiryDisposition, loi, appStart, appDisposition,
+      processing, fcr, conditions, preClose, rfd, closing, documents, tasks,
+      comments, loanTeam]);
 
   const clearAllData = useCallback(async () => {
     await Promise.all([
       admin.clearData(),
       core.clearData(),
+      phaseData.clearData(),
       inquiry.clearData(),
       inquiryDisposition.clearData(),
       loi.clearData(),
@@ -89,7 +94,9 @@ export function useSeedCoordinator() {
       comments.clearData(),
       loanTeam.clearData(),
     ]);
-  }, [admin, core, inquiry, inquiryDisposition, loi, appStart, appDisposition, processing, fcr, conditions, preClose, rfd, closing, documents, tasks, comments, loanTeam]);
+  }, [admin, core, phaseData, inquiry, inquiryDisposition, loi, appStart,
+      appDisposition, processing, fcr, conditions, preClose, rfd, closing,
+      documents, tasks, comments, loanTeam]);
 
   /**
    * Clears all phase-service data for a specific application (cascade delete).
@@ -98,6 +105,7 @@ export function useSeedCoordinator() {
    */
   const clearForApplication = useCallback(async (applicationId: string) => {
     await Promise.all([
+      phaseData.clearForApplication(applicationId),
       inquiry.clearForApplication(applicationId),
       inquiryDisposition.clearForApplication(applicationId),
       loi.clearForApplication(applicationId),
@@ -115,7 +123,9 @@ export function useSeedCoordinator() {
       loanTeam.clearForApplication(applicationId),
     ]);
     await core.deleteApplication(applicationId);
-  }, [core, inquiry, inquiryDisposition, loi, appStart, appDisposition, processing, fcr, conditions, preClose, rfd, closing, documents, tasks, comments, loanTeam]);
+  }, [core, phaseData, inquiry, inquiryDisposition, loi, appStart, appDisposition,
+      processing, fcr, conditions, preClose, rfd, closing, documents, tasks,
+      comments, loanTeam]);
 
   return { loadAllSeedData, clearAllData, clearForApplication };
 }

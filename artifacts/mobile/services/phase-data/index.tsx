@@ -274,6 +274,23 @@ const [PhaseDataServiceProvider, usePhaseDataService] = createContextHook(() => 
      persistBorrowers, persistProperties, persistLoanTerms],
   );
 
+  const clearData = useCallback(async () => {
+    await Promise.all([
+      persistBorrowers([]),
+      persistProperties([]),
+      persistLoanTerms([]),
+    ]);
+  }, [persistBorrowers, persistProperties, persistLoanTerms]);
+
+  const clearForApplication = useCallback(async (applicationId: string) => {
+    await Promise.all([
+      persistBorrowers(borrowerSnaps.filter(s => s.applicationId !== applicationId)),
+      persistProperties(propertySnaps.filter(s => s.applicationId !== applicationId)),
+      persistLoanTerms(loanTermsSnaps.filter(s => s.applicationId !== applicationId)),
+    ]);
+  }, [borrowerSnaps, propertySnaps, loanTermsSnaps,
+      persistBorrowers, persistProperties, persistLoanTerms]);
+
   return {
     getBorrowerSnapshot,
     saveBorrowerSnapshot,
@@ -282,6 +299,8 @@ const [PhaseDataServiceProvider, usePhaseDataService] = createContextHook(() => 
     getLoanTermsSnapshot,
     saveLoanTermsSnapshot,
     promoteSnapshots,
+    clearData,
+    clearForApplication,
   };
 });
 
