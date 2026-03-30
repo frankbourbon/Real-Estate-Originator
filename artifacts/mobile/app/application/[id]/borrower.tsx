@@ -381,7 +381,7 @@ function AddressesEdit({ form, setForm }: { form: any; setForm: React.Dispatch<R
 }
 
 function FinancialsView({ borrower, phase }: { borrower: any; phase: PhaseKey }) {
-  const showFico = phase !== "inquiry";
+  const showFico = phase === "application" || phase === "final-review";
   return (
     <View style={s.card}>
       <SectionHeader title="Financial Profile" />
@@ -394,7 +394,7 @@ function FinancialsView({ borrower, phase }: { borrower: any; phase: PhaseKey })
 }
 
 function FinancialsEdit({ form, set, phase }: { form: any; set: (k: string) => (v: string) => void; phase: PhaseKey }) {
-  const showFico = phase !== "inquiry";
+  const showFico = phase === "application" || phase === "final-review";
   return (
     <View style={s.card}>
       <SectionHeader title="Financial Profile" subtitle="Used for underwriting and credit assessment" />
