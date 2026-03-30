@@ -31,7 +31,7 @@ const AMORT_TYPES: AmortizationType[] = ["Full Amortizing", "Interest Only", "Pa
 
 const TABS = [
   { key: "fundamentals", label: "Fundamentals", icon: "dollar-sign" as const },
-  { key: "rate",         label: "Rate & Term",  icon: "trending-up" as const },
+  { key: "rate",         label: "Terms",  icon: "trending-up" as const },
 ];
 
 function EditBtn({ onPress }: { onPress: () => void }) {
@@ -152,7 +152,7 @@ export default function LoanSection() {
         case "rate":
           return (
             <View style={styles.card}>
-              <SectionHeader title="Rate & Term" />
+              <SectionHeader title="Terms" />
               <SelectField label="Interest Type" value={form.interestType} options={INTEREST_TYPES} onChange={set("interestType")} />
               <View style={styles.row}>
                 <View style={styles.flex1}>
@@ -183,7 +183,7 @@ export default function LoanSection() {
         case "rate":
           return (
             <View style={styles.card}>
-              <SectionHeader title="Rate & Term" />
+              <SectionHeader title="Terms" />
               <DetailRow label="Interest Type" value={app?.interestType} />
               <DetailRow label="Interest Rate (% p.a.)" value={app?.interestRatePct ? `${app.interestRatePct}%` : undefined} />
               <DetailRow label="Loan Term" value={app?.loanTermYears ? `${app.loanTermYears} years` : undefined} />
