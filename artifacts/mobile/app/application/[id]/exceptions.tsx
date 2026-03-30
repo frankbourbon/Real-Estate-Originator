@@ -22,6 +22,8 @@ import type {
 } from "@/services/final-credit-review";
 import { APPROVAL_LEVELS, useFinalCreditReviewService } from "@/services/final-credit-review";
 import { useCoreService } from "@/services/core";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 // ─── Status chips ─────────────────────────────────────────────────────────────
 
@@ -258,6 +260,7 @@ export default function ExceptionsScreen() {
   const { getApplication } = useCoreService();
   const { getExceptions, addException, updateException, deleteException } = useFinalCreditReviewService();
   const insets = useSafeAreaInsets();
+  const { canView, canEdit } = usePermission("exceptions.main");
 
   const app = getApplication(id);
   const exceptions = getExceptions(id);
@@ -302,6 +305,8 @@ export default function ExceptionsScreen() {
     ]);
   }
 
+  if (!canView) return <AccessDenied screenLabel="Policy Exceptions" />;
+
   const pendingCount = exceptions.filter((e) => e.status === "Pending Approval").length;
   const isEditing = modal.mode === "edit";
 
@@ -340,10 +345,12 @@ export default function ExceptionsScreen() {
               </View>
             )}
           </View>
-          <TouchableOpacity style={s.addBtn} onPress={openAdd}>
-            <Feather name="plus" size={14} color="#C75300" />
-            <Text style={s.addBtnText}>Add</Text>
-          </TouchableOpacity>
+          {canEdit && (
+            <TouchableOpacity style={s.addBtn} onPress={openAdd}>
+              <Feather name="plus" size={14} color="#C75300" />
+              <Text style={s.addBtnText}>Add</Text>
+            </TouchableOpacity>
+          )}
         </View>
         <Text style={s.sectionDesc}>
           Policy deviations requiring approval authority sign-off. W1 = lowest authority (Loan Officer) · W30 = highest (Board).

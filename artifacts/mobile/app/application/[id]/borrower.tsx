@@ -22,6 +22,8 @@ import { useCoreService } from "@/services/core";
 import type { PhaseKey } from "@/services/phase-data";
 import { usePhaseDataService } from "@/services/phase-data";
 import { formatCurrencyFull, getBorrowerDisplayName } from "@/utils/formatting";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
@@ -423,6 +425,7 @@ export default function BorrowerSection() {
 
   const { getApplication, getBorrower } = useCoreService();
   const { getBorrowerSnapshot, saveBorrowerSnapshot } = usePhaseDataService();
+  const { canView, canEdit } = usePermission("borrower.profile");
 
   const app = getApplication(id);
   const coreBorrower = getBorrower(app?.borrowerId ?? "");
@@ -502,6 +505,8 @@ export default function BorrowerSection() {
     return null;
   }
 
+  if (!canView) return <AccessDenied screenLabel="Borrower Profile" />;
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -513,7 +518,7 @@ export default function BorrowerSection() {
         rightAction={
           editing
             ? <SaveCancelBtns onSave={handleSave} onCancel={handleCancel} />
-            : <EditBtn onPress={handleEdit} />
+            : canEdit ? <EditBtn onPress={handleEdit} /> : undefined
         }
         headerSlot={
           <TabBar tabs={TABS} activeTab={activeTab} onSelect={setActiveTab} />

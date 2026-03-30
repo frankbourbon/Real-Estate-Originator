@@ -23,6 +23,8 @@ import type { FunctionalGroup, TeamMember, TeamRole } from "@/services/loan-team
 import { ALL_ROLES, ROLE_GROUPS, getRoleGroup, useLoanTeamService } from "@/services/loan-team";
 import { useCoreService } from "@/services/core";
 import { getPropertyShortAddress, getPropertyCityState } from "@/utils/formatting";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -314,12 +316,15 @@ export default function LoanTeamScreen() {
   const { getApplication, getProperty } = useCoreService();
   const { getTeamMembers, addTeamMember, removeTeamMember } = useLoanTeamService();
   const insets = useSafeAreaInsets();
+  const { canView, canEdit } = usePermission("loan-team.main");
 
   const [addModal, setAddModal] = useState(false);
 
   const app = getApplication(id);
   const property = app ? getProperty(app.propertyId) : null;
   const members = getTeamMembers(id);
+
+  if (!canView) return <AccessDenied screenLabel="Loan Team" />;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -363,10 +368,12 @@ export default function LoanTeamScreen() {
             </Text>
           )}
         </View>
-        <TouchableOpacity style={sc.addBtn} onPress={() => setAddModal(true)} activeOpacity={0.8}>
-          <Feather name="plus" size={16} color="#fff" />
-          <Text style={sc.addBtnText}>Add</Text>
-        </TouchableOpacity>
+        {canEdit && (
+          <TouchableOpacity style={sc.addBtn} onPress={() => setAddModal(true)} activeOpacity={0.8}>
+            <Feather name="plus" size={16} color="#fff" />
+            <Text style={sc.addBtnText}>Add</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView

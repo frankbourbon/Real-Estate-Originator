@@ -16,12 +16,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { useFinalCreditReviewService } from "@/services/final-credit-review";
 import { useCoreService } from "@/services/core";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 export default function CommitmentLetterScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication } = useCoreService();
   const { getOrCreateFCR, updateFCR } = useFinalCreditReviewService();
   const insets = useSafeAreaInsets();
+  const { canView, canEdit } = usePermission("commitment.letter");
   const app = getApplication(id);
   const fcr = getOrCreateFCR(id);
 
@@ -50,6 +53,7 @@ export default function CommitmentLetterScreen() {
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   if (!app) return null;
+  if (!canView) return <AccessDenied screenLabel="Commitment Letter" />;
 
   return (
     <>
@@ -66,7 +70,7 @@ export default function CommitmentLetterScreen() {
             <Text style={styles.headerLabel}>Final Credit Review</Text>
           </View>
         </View>
-        {dirty && mounted ? (
+        {dirty && mounted && canEdit ? (
           <TouchableOpacity
             style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
             onPress={handleSave}

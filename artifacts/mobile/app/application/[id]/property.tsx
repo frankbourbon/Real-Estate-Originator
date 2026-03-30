@@ -28,6 +28,8 @@ import { useCoreService } from "@/services/core";
 import type { PhaseKey } from "@/services/phase-data";
 import { usePhaseDataService } from "@/services/phase-data";
 import { useInquiryService } from "@/services/inquiry";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 import { formatSqFt, getPropertyCityState } from "@/utils/formatting";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -134,6 +136,7 @@ export default function PropertySection() {
   const { getApplication, getProperty } = useCoreService();
   const { getPropertySnapshot, savePropertySnapshot } = usePhaseDataService();
   const { getRentRoll, getOpHistory } = useInquiryService();
+  const { canView, canEdit } = usePermission("property.profile");
 
   const app = getApplication(id);
   const coreProperty = getProperty(app?.propertyId ?? "");
@@ -613,6 +616,8 @@ export default function PropertySection() {
     return null;
   }
 
+  if (!canView) return <AccessDenied screenLabel="Property Details" />;
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -624,7 +629,7 @@ export default function PropertySection() {
         rightAction={
           editing
             ? <SaveCancelBtns onSave={handleSave} onCancel={handleCancel} />
-            : <EditBtn onPress={handleEdit} />
+            : canEdit ? <EditBtn onPress={handleEdit} /> : undefined
         }
         headerSlot={
           <TabBar tabs={TABS} activeTab={activeTab} onSelect={setActiveTab} />

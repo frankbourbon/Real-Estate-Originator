@@ -6,20 +6,24 @@ import { AttachmentList } from "@/components/AttachmentList";
 import type { AppliesToOption } from "@/components/AttachmentList";
 import { SectionHeader } from "@/components/SectionHeader";
 import { SectionScreenLayout } from "@/components/SectionScreenLayout";
+import { AccessDenied } from "@/components/AccessDenied";
 import Colors from "@/constants/colors";
 import { useDocumentsService } from "@/services/documents";
 import { useCoreService } from "@/services/core";
+import { usePermission } from "@/hooks/usePermission";
 
 export default function DocumentsSection() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication, getBorrower, getProperty } = useCoreService();
   const { getDocuments, addDocument, deleteDocument } = useDocumentsService();
+  const { canView, canEdit } = usePermission("documents.main");
+
   const app = getApplication(id);
   const docs = getDocuments(id);
 
   if (!app) return null;
+  if (!canView) return <AccessDenied screenLabel="Documents" />;
 
-  // Build Applies To options from the application's linked borrower and property
   const appliesToOptions: AppliesToOption[] = [];
 
   const borrower = getBorrower(app.borrowerId);
@@ -56,6 +60,7 @@ export default function DocumentsSection() {
           appliesToOptions={appliesToOptions}
           onAdd={(att) => addDocument(id, { ...att, serviceTag: "", uploadedBy: "You" })}
           onDelete={(attId) => deleteDocument(attId)}
+          readOnly={!canEdit}
         />
       </View>
     </SectionScreenLayout>

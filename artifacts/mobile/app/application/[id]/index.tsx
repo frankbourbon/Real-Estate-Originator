@@ -32,6 +32,8 @@ import {
   getPropertyShortAddress,
 } from "@/utils/formatting";
 import { DISPOSITION_STATUSES, PHASE_INFO, PHASE_ORDER } from "@/utils/phases";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 // ─── Section menu definition ──────────────────────────────────────────────────
 
@@ -472,6 +474,7 @@ export default function ApplicationOverviewScreen() {
   const { getTasksForApplication } = useTasksService();
   const { getTeamMembers } = useLoanTeamService();
   const insets = useSafeAreaInsets();
+  const { canView, canEdit } = usePermission("core.applications");
   const [statusModal, setStatusModal] = useState(false);
 
   const app = getApplication(id);
@@ -488,6 +491,8 @@ export default function ApplicationOverviewScreen() {
       </View>
     );
   }
+
+  if (!canView) return <AccessDenied screenLabel="Application Overview" />;
 
   const handleDelete = () => {
     Alert.alert("Delete Application", "This action cannot be undone.", [
@@ -586,9 +591,11 @@ export default function ApplicationOverviewScreen() {
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.iconBtn} onPress={handleDelete} activeOpacity={0.7}>
-          <Feather name="trash-2" size={16} color="#FF6B6B" />
-        </TouchableOpacity>
+        {canEdit && (
+          <TouchableOpacity style={styles.iconBtn} onPress={handleDelete} activeOpacity={0.7}>
+            <Feather name="trash-2" size={16} color="#FF6B6B" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* ── Metrics strip ── */}
@@ -612,9 +619,11 @@ export default function ApplicationOverviewScreen() {
         <View style={styles.metricDivider} />
         <View style={styles.metric}>
           <StatusBadge status={app.status} size="sm" />
-          <TouchableOpacity onPress={() => setStatusModal(true)} activeOpacity={0.7}>
-            <Text style={styles.changeStatus}>Change ↓</Text>
-          </TouchableOpacity>
+          {canEdit && (
+            <TouchableOpacity onPress={() => setStatusModal(true)} activeOpacity={0.7}>
+              <Text style={styles.changeStatus}>Change ↓</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -672,8 +681,8 @@ export default function ApplicationOverviewScreen() {
           <PhaseTimeline
             status={app.status}
             phaseSections={phaseSections}
-            onAdvance={handleAdvance}
-            onRetreat={handleRetreat}
+            onAdvance={canEdit ? handleAdvance : undefined}
+            onRetreat={canEdit ? handleRetreat : undefined}
             onNavigate={(route) => router.push(route as any)}
           />
         )}

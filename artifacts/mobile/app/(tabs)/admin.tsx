@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   FlatList,
@@ -17,6 +18,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import type { AdminUser } from "@/services/admin";
 import { useAdminService } from "@/services/admin";
+import { useRbacService } from "@/services/rbac";
+import { useSessionService } from "@/services/session";
 
 // ─── Add/Edit Modal ───────────────────────────────────────────────────────────
 
@@ -207,6 +210,73 @@ function UserRow({
   );
 }
 
+// ─── Access Control Banner ────────────────────────────────────────────────────
+
+function AccessControlBanner() {
+  const { currentSid } = useSessionService();
+  const { getUser } = useAdminService();
+  const { profiles, userProfiles } = useRbacService();
+
+  const currentUser = currentSid ? getUser(currentSid) : null;
+  const profileNames = currentSid
+    ? userProfiles
+        .filter((up) => up.userSid === currentSid)
+        .map((up) => profiles.find((p) => p.id === up.profileId)?.name)
+        .filter(Boolean)
+        .join(", ")
+    : null;
+
+  return (
+    <View style={ac.wrapper}>
+      <View style={ac.sectionHeader}>
+        <Text style={ac.sectionLabel}>Access Control</Text>
+      </View>
+
+      {/* Session pill */}
+      <View style={ac.sessionCard}>
+        <View style={ac.sessionLeft}>
+          <View style={[ac.sessionDot, { backgroundColor: currentUser ? Colors.light.tint : Colors.light.textTertiary }]} />
+          <View>
+            <Text style={ac.sessionLabel}>
+              {currentUser
+                ? `${currentUser.firstName} ${currentUser.lastName} (${currentSid})`
+                : "No session — bypass mode"}
+            </Text>
+            <Text style={ac.sessionSub}>
+              {currentUser && profileNames
+                ? profileNames
+                : currentUser
+                ? "No profiles assigned"
+                : "All screens fully accessible"}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Link card */}
+      <TouchableOpacity
+        style={ac.linkRow}
+        onPress={() => router.push("/admin/rbac" as any)}
+        activeOpacity={0.7}
+      >
+        <View style={ac.linkIcon}>
+          <Feather name="shield" size={17} color={Colors.light.tint} />
+        </View>
+        <View style={ac.linkBody}>
+          <Text style={ac.linkLabel}>Manage Access Control</Text>
+          <Text style={ac.linkSub}>Profiles, entitlements &amp; user assignments</Text>
+        </View>
+        <Feather name="chevron-right" size={16} color={Colors.light.textTertiary} />
+      </TouchableOpacity>
+
+      {/* Divider between RBAC section and user list */}
+      <View style={ac.sectionHeader}>
+        <Text style={ac.sectionLabel}>Employee Registry</Text>
+      </View>
+    </View>
+  );
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function AdminScreen() {
@@ -295,33 +365,27 @@ export default function AdminScreen() {
         ) : null}
       </View>
 
-      {/* ── Count ── */}
-      <View style={s.countRow}>
-        <Text style={s.countText}>
-          {query
-            ? `${results.length} result${results.length !== 1 ? "s" : ""}`
-            : `${users.length} employee${users.length !== 1 ? "s" : ""} in registry`}
-        </Text>
-      </View>
-
-      {/* ── List ── */}
+      {/* ── List (with RBAC header when no search active) ── */}
       {loading ? (
         <Text style={s.loadingText}>Loading...</Text>
-      ) : results.length === 0 ? (
+      ) : results.length === 0 && query ? (
         <View style={s.empty}>
           <Feather name="users" size={28} color={Colors.light.textTertiary} style={{ marginBottom: 8 }} />
-          <Text style={s.emptyTitle}>{query ? "No matches" : "No users yet"}</Text>
-          <Text style={s.emptyBody}>
-            {query
-              ? "Try a different name or SID."
-              : "Add employees to the registry so they can be assigned to loan teams."}
-          </Text>
+          <Text style={s.emptyTitle}>No matches</Text>
+          <Text style={s.emptyBody}>Try a different name or SID.</Text>
         </View>
       ) : (
         <FlatList
           data={results}
           keyExtractor={(u) => u.sid}
           contentContainerStyle={{ paddingBottom: (Platform.OS === "web" ? 34 : insets.bottom) + 80 }}
+          ListHeaderComponent={!query ? <AccessControlBanner /> : (
+            <View style={s.countRow}>
+              <Text style={s.countText}>
+                {results.length} result{results.length !== 1 ? "s" : ""}
+              </Text>
+            </View>
+          )}
           renderItem={({ item, index }) => (
             <View style={[s.rowWrapper, index < results.length - 1 && s.rowBorder]}>
               <UserRow
@@ -331,6 +395,15 @@ export default function AdminScreen() {
               />
             </View>
           )}
+          ListEmptyComponent={
+            <View style={s.empty}>
+              <Feather name="users" size={28} color={Colors.light.textTertiary} style={{ marginBottom: 8 }} />
+              <Text style={s.emptyTitle}>No users yet</Text>
+              <Text style={s.emptyBody}>
+                Add employees to the registry so they can be assigned to loan teams.
+              </Text>
+            </View>
+          }
         />
       )}
 
@@ -723,5 +796,77 @@ const d = StyleSheet.create({
     fontSize: 14,
     fontFamily: "OpenSans_700Bold",
     color: "#fff",
+  },
+});
+
+// ─── Access Control Banner Styles ─────────────────────────────────────────────
+
+const ac = StyleSheet.create({
+  wrapper: { backgroundColor: Colors.light.background },
+  sectionHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 6,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.textTertiary,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  sessionCard: {
+    backgroundColor: Colors.light.backgroundCard,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: Colors.light.borderLight,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  sessionLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  sessionDot: { width: 8, height: 8, borderRadius: 4 },
+  sessionLabel: {
+    fontSize: 13,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.text,
+    marginBottom: 1,
+  },
+  sessionSub: {
+    fontSize: 11,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textTertiary,
+  },
+  linkRow: {
+    backgroundColor: Colors.light.backgroundCard,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+    marginTop: 8,
+  },
+  linkIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    backgroundColor: Colors.light.tintLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  linkBody: { flex: 1 },
+  linkLabel: {
+    fontSize: 14,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.text,
+    marginBottom: 2,
+  },
+  linkSub: {
+    fontSize: 12,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textSecondary,
   },
 });

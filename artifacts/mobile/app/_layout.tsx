@@ -32,6 +32,22 @@ function RootLayoutNav() {
         name="new-application"
         options={{ headerShown: false, presentation: "modal" }}
       />
+      <Stack.Screen
+        name="admin/rbac"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen
+        name="admin/profiles"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen
+        name="admin/profile/[id]"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen
+        name="admin/user-assignments"
+        options={{ headerShown: false, presentation: "card" }}
+      />
     </Stack>
   );
 }

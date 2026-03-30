@@ -26,6 +26,8 @@ import {
   useConditionsService,
 } from "@/services/conditions";
 import { useCoreService } from "@/services/core";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -380,6 +382,7 @@ export default function ConditionsScreen() {
     addCondition, updateCondition, deleteCondition,
   } = useConditionsService();
   const insets = useSafeAreaInsets();
+  const { canView, canEdit } = usePermission("conditions.main");
 
   const app = getApplication(id);
   const conditions = getConditions(id);
@@ -463,6 +466,8 @@ export default function ConditionsScreen() {
     ]);
   }
 
+  if (!canView) return <AccessDenied screenLabel="Conditions" />;
+
   const isEditing = modal.mode === "edit-condition";
   const openCount = conditions.filter((c) => c.status === "Open").length;
 
@@ -505,10 +510,12 @@ export default function ConditionsScreen() {
               </View>
             )}
           </View>
-          <TouchableOpacity style={s.addBtn} onPress={openAdd}>
-            <Feather name="plus" size={14} color="#0078CF" />
-            <Text style={s.addBtnText}>Add</Text>
-          </TouchableOpacity>
+          {canEdit && (
+            <TouchableOpacity style={s.addBtn} onPress={openAdd}>
+              <Feather name="plus" size={14} color="#0078CF" />
+              <Text style={s.addBtnText}>Add</Text>
+            </TouchableOpacity>
+          )}
         </View>
         <Text style={s.sectionDesc}>
           Requirements that must be satisfied before the loan can advance. Any persona can add conditions at any phase.

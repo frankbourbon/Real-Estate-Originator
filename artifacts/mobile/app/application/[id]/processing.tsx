@@ -18,6 +18,8 @@ import Colors from "@/constants/colors";
 import { useProcessingService } from "@/services/processing";
 import { usePreCloseService } from "@/services/pre-close";
 import { useCoreService } from "@/services/core";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 type EnvStatus = "" | "Ordered" | "In Progress" | "Clear" | "Issues Found";
 type FormsStatus = "" | "Not Started" | "Packaged" | "Sent for Signature" | "Received";
@@ -75,6 +77,7 @@ export default function ProcessingScreen() {
   const { getOrCreateProcessing, updateProcessing } = useProcessingService();
   const { getOrCreatePreClose, updatePreClose } = usePreCloseService();
   const insets = useSafeAreaInsets();
+  const { canView, canEdit } = usePermission("processing.main");
   const app = getApplication(id);
   const proc = getOrCreateProcessing(id);
   const preClose = getOrCreatePreClose(id);
@@ -111,6 +114,7 @@ export default function ProcessingScreen() {
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   if (!app) return null;
+  if (!canView) return <AccessDenied screenLabel="Processing" />;
 
   function renderTabContent() {
     switch (activeTab) {
@@ -235,7 +239,7 @@ export default function ProcessingScreen() {
             <Text style={styles.headerLabel}>Processing & Compliance</Text>
           </View>
         </View>
-        {dirty ? (
+        {dirty && canEdit ? (
           <TouchableOpacity
             style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
             onPress={handleSave}

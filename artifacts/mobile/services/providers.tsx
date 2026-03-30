@@ -16,56 +16,65 @@ import { LoanTeamServiceProvider } from "@/services/loan-team";
 import { PhaseDataServiceProvider } from "@/services/phase-data";
 import { PreCloseServiceProvider } from "@/services/pre-close";
 import { ProcessingServiceProvider } from "@/services/processing";
+import { RbacServiceProvider } from "@/services/rbac";
 import { ReadyForDocsServiceProvider } from "@/services/ready-for-docs";
+import { SessionServiceProvider } from "@/services/session";
 import { TasksServiceProvider } from "@/services/tasks";
 
 /**
- * Composes all 17 microservice providers.
+ * Composes all 19 microservice providers.
  * Services are completely independent — no service imports from another.
  * They are linked only by applicationId strings at the UI layer.
  *
  * Admin and LoanTeam are intentionally decoupled:
  * adminSid in LoanTeam is a soft reference (not a FK) — deletes/updates
  * in Admin do not cascade to loan-level team records.
+ *
+ * Session and Rbac are paired: Session stores the active SID; Rbac owns
+ * profiles, entitlements, and user-profile mappings.
  */
 export function ServiceProviders({ children }: { children: React.ReactNode }) {
   return (
-    <AdminServiceProvider>
-      <CoreServiceProvider>
-        <PhaseDataServiceProvider>
-        <InquiryServiceProvider>
-          <InquiryDispositionServiceProvider>
-            <LetterOfInterestServiceProvider>
-              <ApplicationStartServiceProvider>
-                <ApplicationDispositionServiceProvider>
-                  <ProcessingServiceProvider>
-                    <FinalCreditReviewServiceProvider>
-                      <ConditionsServiceProvider>
-                        <PreCloseServiceProvider>
-                          <ReadyForDocsServiceProvider>
-                            <ClosingServiceProvider>
-                              <DocumentsServiceProvider>
-                                <TasksServiceProvider>
-                                  <CommentsServiceProvider>
-                                    <LoanTeamServiceProvider>
-                                      {children}
-                                    </LoanTeamServiceProvider>
-                                  </CommentsServiceProvider>
-                                </TasksServiceProvider>
-                              </DocumentsServiceProvider>
-                            </ClosingServiceProvider>
-                          </ReadyForDocsServiceProvider>
-                        </PreCloseServiceProvider>
-                      </ConditionsServiceProvider>
-                    </FinalCreditReviewServiceProvider>
-                  </ProcessingServiceProvider>
-                </ApplicationDispositionServiceProvider>
-              </ApplicationStartServiceProvider>
-            </LetterOfInterestServiceProvider>
-          </InquiryDispositionServiceProvider>
-        </InquiryServiceProvider>
-        </PhaseDataServiceProvider>
-      </CoreServiceProvider>
-    </AdminServiceProvider>
+    <SessionServiceProvider>
+      <RbacServiceProvider>
+        <AdminServiceProvider>
+          <CoreServiceProvider>
+            <PhaseDataServiceProvider>
+            <InquiryServiceProvider>
+              <InquiryDispositionServiceProvider>
+                <LetterOfInterestServiceProvider>
+                  <ApplicationStartServiceProvider>
+                    <ApplicationDispositionServiceProvider>
+                      <ProcessingServiceProvider>
+                        <FinalCreditReviewServiceProvider>
+                          <ConditionsServiceProvider>
+                            <PreCloseServiceProvider>
+                              <ReadyForDocsServiceProvider>
+                                <ClosingServiceProvider>
+                                  <DocumentsServiceProvider>
+                                    <TasksServiceProvider>
+                                      <CommentsServiceProvider>
+                                        <LoanTeamServiceProvider>
+                                          {children}
+                                        </LoanTeamServiceProvider>
+                                      </CommentsServiceProvider>
+                                    </TasksServiceProvider>
+                                  </DocumentsServiceProvider>
+                                </ClosingServiceProvider>
+                              </ReadyForDocsServiceProvider>
+                            </PreCloseServiceProvider>
+                          </ConditionsServiceProvider>
+                        </FinalCreditReviewServiceProvider>
+                      </ProcessingServiceProvider>
+                    </ApplicationDispositionServiceProvider>
+                  </ApplicationStartServiceProvider>
+                </LetterOfInterestServiceProvider>
+              </InquiryDispositionServiceProvider>
+            </InquiryServiceProvider>
+            </PhaseDataServiceProvider>
+          </CoreServiceProvider>
+        </AdminServiceProvider>
+      </RbacServiceProvider>
+    </SessionServiceProvider>
   );
 }

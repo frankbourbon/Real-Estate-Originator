@@ -21,6 +21,8 @@ import type { LoanTask } from "@/services/tasks";
 import { useTasksService } from "@/services/tasks";
 import { useCoreService } from "@/services/core";
 import { PHASE_INFO, PHASE_ORDER } from "@/utils/phases";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -275,6 +277,7 @@ export default function TasksScreen() {
   const { getApplication } = useCoreService();
   const { getTasksForApplication, seedTasksForPhase, toggleTask, addTask, deleteTask } = useTasksService();
   const insets = useSafeAreaInsets();
+  const { canView, canEdit } = usePermission("collaboration.tasks");
 
   const [seeded, setSeeded] = useState(false);
   const [modalPhase, setModalPhase] = useState<ApplicationStatus | null>(null);
@@ -311,6 +314,8 @@ export default function TasksScreen() {
       </View>
     );
   }
+
+  if (!canView) return <AccessDenied screenLabel="Phase Checklist" />;
 
   const groups: GroupedTasks[] = PHASE_ORDER.map((phase) => {
     const phaseTasks = allTasks
@@ -368,7 +373,7 @@ export default function TasksScreen() {
             currentPhase={app.status}
             onToggle={toggleTask}
             onDelete={handleDelete}
-            onAddCustom={(phase) => setModalPhase(phase)}
+            onAddCustom={canEdit ? (phase) => setModalPhase(phase) : () => {}}
           />
         ))}
       </ScrollView>

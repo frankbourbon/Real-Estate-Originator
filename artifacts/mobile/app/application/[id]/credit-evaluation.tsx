@@ -16,12 +16,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { useLetterOfInterestService } from "@/services/letter-of-interest";
 import { useCoreService } from "@/services/core";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 export default function CreditEvaluationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication } = useCoreService();
   const { getOrCreateLOI, updateLOI } = useLetterOfInterestService();
   const insets = useSafeAreaInsets();
+  const { canView, canEdit } = usePermission("credit.evaluation");
   const app = getApplication(id);
   const loi = getOrCreateLOI(id);
 
@@ -48,6 +51,7 @@ export default function CreditEvaluationScreen() {
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   if (!app) return null;
+  if (!canView) return <AccessDenied screenLabel="Credit Evaluation" />;
 
   return (
     <>
@@ -64,7 +68,7 @@ export default function CreditEvaluationScreen() {
             <Text style={styles.headerLabel}>Initial Credit Review</Text>
           </View>
         </View>
-        {dirty && mounted ? (
+        {dirty && mounted && canEdit ? (
           <TouchableOpacity
             style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
             onPress={handleSave}

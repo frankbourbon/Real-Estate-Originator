@@ -19,6 +19,8 @@ import Colors from "@/constants/colors";
 import type { OperatingPeriodType, OperatingYear } from "@/services/inquiry";
 import { useInquiryService } from "@/services/inquiry";
 import { useCoreService } from "@/services/core";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 import {
   computeEconomicOccupancy,
   fmtPct,
@@ -465,6 +467,7 @@ export default function OperatingHistoryScreen() {
   const { getApplication, getProperty } = useCoreService();
   const { getOpHistory, addYear, updateYear, deleteYear } = useInquiryService();
   const insets = useSafeAreaInsets();
+  const { canView, canEdit } = usePermission("inquiry.op-history");
 
   const [addModal, setAddModal] = useState(false);
   const [addDraft, setAddDraft] = useState<YearDraft>(emptyDraft());
@@ -486,6 +489,8 @@ export default function OperatingHistoryScreen() {
       </View>
     );
   }
+
+  if (!canView) return <AccessDenied screenLabel="Operating History" />;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -535,7 +540,7 @@ export default function OperatingHistoryScreen() {
           <Text style={s.headerSub}>
             {property?.streetAddress ?? ""} · {history.length}/{MAX_PERIODS} periods</Text>
         </View>
-        {canAdd && (
+        {canAdd && canEdit && (
           <TouchableOpacity
             style={s.addBtn}
             onPress={() => { setAddDraft(emptyDraft()); setAddModal(true); }}

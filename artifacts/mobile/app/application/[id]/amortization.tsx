@@ -6,6 +6,8 @@ import { SectionScreenLayout } from "@/components/SectionScreenLayout";
 import { useCoreService } from "@/services/core";
 import type { PhaseKey } from "@/services/phase-data";
 import { usePhaseDataService } from "@/services/phase-data";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 export default function AmortizationSection() {
   const { id, phase: phaseParam } = useLocalSearchParams<{ id: string; phase: string }>();
@@ -13,11 +15,13 @@ export default function AmortizationSection() {
 
   const { getApplication } = useCoreService();
   const { getLoanTermsSnapshot } = usePhaseDataService();
+  const { canView } = usePermission("amortization.calc");
 
   const app = getApplication(id);
   const snap = getLoanTermsSnapshot(id, phase);
 
   if (!app) return null;
+  if (!canView) return <AccessDenied screenLabel="Amortization Calculator" />;
 
   // Merge phase snapshot over app record so calculator uses this phase's terms
   const merged = {

@@ -16,21 +16,24 @@ import { useLoanTeamService } from "@/services/loan-team";
 import { usePhaseDataService } from "@/services/phase-data";
 import { usePreCloseService } from "@/services/pre-close";
 import { useProcessingService } from "@/services/processing";
+import { useRbacService } from "@/services/rbac";
 import { useReadyForDocsService } from "@/services/ready-for-docs";
 import { useTasksService } from "@/services/tasks";
 
 /**
- * Coordinates seed data loading and clearing across all services.
+ * Coordinates seed data loading and clearing across all 19 services.
  * Must be used inside <ServiceProviders>.
  *
- * Note: Admin seed data is always loaded with the sample data set.
- * Admin users are NOT cleared when clearing loan data — they represent
- * the global employee registry, which is independent of loan records.
- * LoanTeam.clearForApplication removes loan-level members only; admin
- * records are unaffected.
+ * Admin records represent the global employee registry and are independent of
+ * loan records. RBAC profiles and assignments are loaded alongside admin users
+ * so the seed dataset is immediately usable with permission checking.
+ *
+ * LoanTeam.clearForApplication removes loan-level members only; admin and RBAC
+ * records are never affected by per-application operations.
  */
 export function useSeedCoordinator() {
   const admin = useAdminService();
+  const rbac = useRbacService();
   const core = useCoreService();
   const phaseData = usePhaseDataService();
   const inquiry = useInquiryService();
@@ -52,6 +55,7 @@ export function useSeedCoordinator() {
   const loadAllSeedData = useCallback(async () => {
     await Promise.all([
       admin.loadSeedData(),
+      rbac.loadSeedData(),
       core.loadSeedData(),
       inquiry.loadSeedData(),
       inquiryDisposition.loadSeedData(),
@@ -69,13 +73,14 @@ export function useSeedCoordinator() {
       comments.loadSeedData(),
       loanTeam.loadSeedData(),
     ]);
-  }, [admin, core, inquiry, inquiryDisposition, loi, appStart, appDisposition,
+  }, [admin, rbac, core, inquiry, inquiryDisposition, loi, appStart, appDisposition,
       processing, fcr, conditions, preClose, rfd, closing, documents, tasks,
       comments, loanTeam]);
 
   const clearAllData = useCallback(async () => {
     await Promise.all([
       admin.clearData(),
+      rbac.clearData(),
       core.clearData(),
       phaseData.clearData(),
       inquiry.clearData(),
@@ -94,14 +99,14 @@ export function useSeedCoordinator() {
       comments.clearData(),
       loanTeam.clearData(),
     ]);
-  }, [admin, core, phaseData, inquiry, inquiryDisposition, loi, appStart,
+  }, [admin, rbac, core, phaseData, inquiry, inquiryDisposition, loi, appStart,
       appDisposition, processing, fcr, conditions, preClose, rfd, closing,
       documents, tasks, comments, loanTeam]);
 
   /**
    * Clears all phase-service data for a specific application (cascade delete).
    * Call this before deleting an application from CoreService.
-   * Admin records are never touched — only loan-level team members are removed.
+   * Admin and RBAC records are never touched — only loan-level data is removed.
    */
   const clearForApplication = useCallback(async (applicationId: string) => {
     await Promise.all([

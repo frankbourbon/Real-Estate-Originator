@@ -5,18 +5,23 @@ import { StyleSheet, View } from "react-native";
 import { CommentThread } from "@/components/CommentThread";
 import { SectionHeader } from "@/components/SectionHeader";
 import { SectionScreenLayout } from "@/components/SectionScreenLayout";
+import { AccessDenied } from "@/components/AccessDenied";
 import Colors from "@/constants/colors";
 import { useCommentsService } from "@/services/comments";
 import { useCoreService } from "@/services/core";
+import { usePermission } from "@/hooks/usePermission";
 
 export default function CommentsSection() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication } = useCoreService();
   const { getComments, addComment } = useCommentsService();
+  const { canView, canEdit } = usePermission("collaboration.comments");
+
   const app = getApplication(id);
   const comments = getComments(id);
 
   if (!app) return null;
+  if (!canView) return <AccessDenied screenLabel="Comments" />;
 
   return (
     <SectionScreenLayout
@@ -32,6 +37,7 @@ export default function CommentsSection() {
         <CommentThread
           comments={comments}
           onAddComment={(text, parentId) => addComment(id, text, "You", parentId)}
+          readOnly={!canEdit}
         />
       </View>
     </SectionScreenLayout>

@@ -18,6 +18,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import type { CollaborationMember } from "@/services/core";
 import { useCoreService } from "@/services/core";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 
@@ -232,6 +234,7 @@ export default function CollaborationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication, getProperty, getCollaborators, addCollaborator, removeCollaborator } = useCoreService();
   const insets = useSafeAreaInsets();
+  const { canView, canEdit } = usePermission("loan-team.main");
 
   const [addModal, setAddModal] = useState(false);
 
@@ -252,6 +255,8 @@ export default function CollaborationScreen() {
       </View>
     );
   }
+
+  if (!canView) return <AccessDenied screenLabel="Collaboration" />;
 
   const handleAdd = async (draft: Draft) => {
     setAddModal(false);
@@ -284,10 +289,12 @@ export default function CollaborationScreen() {
             {streetAddr ? `${streetAddr}  ·  ` : ""}{members.length} collaborator{members.length !== 1 ? "s" : ""}
           </Text>
         </View>
-        <TouchableOpacity style={s.addBtn} onPress={() => setAddModal(true)} activeOpacity={0.8}>
-          <Feather name="plus" size={16} color="#fff" />
-          <Text style={s.addBtnText}>Add</Text>
-        </TouchableOpacity>
+        {canEdit && (
+          <TouchableOpacity style={s.addBtn} onPress={() => setAddModal(true)} activeOpacity={0.8}>
+            <Feather name="plus" size={16} color="#fff" />
+            <Text style={s.addBtnText}>Add</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* ── Info banner ── */}

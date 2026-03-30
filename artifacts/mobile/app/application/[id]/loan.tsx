@@ -25,6 +25,8 @@ import { useCoreService } from "@/services/core";
 import type { PhaseKey } from "@/services/phase-data";
 import { usePhaseDataService } from "@/services/phase-data";
 import { formatCurrencyFull } from "@/utils/formatting";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 const LOAN_TYPES: LoanType[] = ["Acquisition", "Refinance", "Construction", "Bridge", "Permanent"];
 const INTEREST_TYPES: InterestType[] = ["Fixed", "Floating", "Hybrid"];
@@ -79,6 +81,7 @@ export default function LoanSection() {
 
   const { getApplication } = useCoreService();
   const { getLoanTermsSnapshot, saveLoanTermsSnapshot } = usePhaseDataService();
+  const { canView, canEdit } = usePermission("loan.terms");
 
   const app = getApplication(id);
   const snap = getLoanTermsSnapshot(id, phase);
@@ -189,6 +192,8 @@ export default function LoanSection() {
     );
   }
 
+  if (!canView) return <AccessDenied screenLabel="Loan Terms" />;
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -200,7 +205,7 @@ export default function LoanSection() {
         rightAction={
           editing
             ? <SaveCancelBtns onSave={handleSave} onCancel={handleCancel} />
-            : <EditBtn onPress={handleEdit} />
+            : canEdit ? <EditBtn onPress={handleEdit} /> : undefined
         }
       >
         {renderContent()}

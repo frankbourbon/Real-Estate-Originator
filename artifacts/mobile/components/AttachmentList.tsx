@@ -56,6 +56,8 @@ type Props = {
   onDelete: (id: string) => void;
   /** Borrower + property options for the Applies To multi-select. */
   appliesToOptions?: AppliesToOption[];
+  /** When true, hides upload button and delete actions. */
+  readOnly?: boolean;
 };
 
 // ─── Metadata Modal ───────────────────────────────────────────────────────────
@@ -201,7 +203,7 @@ function MetadataModal({ file, appliesToOptions, onConfirm, onCancel }: Metadata
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function AttachmentList({ attachments, onAdd, onDelete, appliesToOptions = [] }: Props) {
+export function AttachmentList({ attachments, onAdd, onDelete, appliesToOptions = [], readOnly = false }: Props) {
   const [pendingFile, setPendingFile] = useState<PendingFile | null>(null);
 
   const handlePick = async () => {
@@ -258,10 +260,12 @@ export function AttachmentList({ attachments, onAdd, onDelete, appliesToOptions 
         />
       )}
 
-      <TouchableOpacity style={styles.uploadBtn} onPress={handlePick} activeOpacity={0.7}>
-        <Feather name="upload" size={15} color={Colors.light.tint} />
-        <Text style={styles.uploadText}>Attach Document</Text>
-      </TouchableOpacity>
+      {!readOnly && (
+        <TouchableOpacity style={styles.uploadBtn} onPress={handlePick} activeOpacity={0.7}>
+          <Feather name="upload" size={15} color={Colors.light.tint} />
+          <Text style={styles.uploadText}>Attach Document</Text>
+        </TouchableOpacity>
+      )}
 
       {attachments.length === 0 ? (
         <View style={styles.empty}>
@@ -309,13 +313,15 @@ export function AttachmentList({ attachments, onAdd, onDelete, appliesToOptions 
                 </View>
               )}
             </View>
-            <TouchableOpacity
-              onPress={() => handleDelete(att.id, att.name)}
-              style={styles.deleteBtn}
-              activeOpacity={0.6}
-            >
-              <Feather name="x" size={15} color={Colors.light.textTertiary} />
-            </TouchableOpacity>
+            {!readOnly && (
+              <TouchableOpacity
+                onPress={() => handleDelete(att.id, att.name)}
+                style={styles.deleteBtn}
+                activeOpacity={0.6}
+              >
+                <Feather name="x" size={15} color={Colors.light.textTertiary} />
+              </TouchableOpacity>
+            )}
           </View>
         ))
       )}

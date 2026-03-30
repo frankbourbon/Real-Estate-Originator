@@ -23,6 +23,8 @@ import type {
   UnitType,
 } from "@/services/inquiry";
 import { useInquiryService } from "@/services/inquiry";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 import { useCoreService } from "@/services/core";
 import {
   computeMFPhysicalOccupancy,
@@ -569,6 +571,7 @@ export default function RentRollScreen() {
   const { getApplication, getProperty } = useCoreService();
   const { getRentRoll, addUnit, updateUnit, deleteUnit } = useInquiryService();
   const insets = useSafeAreaInsets();
+  const { canView, canEdit } = usePermission("inquiry.rent-roll");
 
   const [addModal, setAddModal] = useState(false);
   const [addDraft, setAddDraft] = useState<UnitDraft>(emptyDraft());
@@ -590,6 +593,8 @@ export default function RentRollScreen() {
       </View>
     );
   }
+
+  if (!canView) return <AccessDenied screenLabel="Rent Roll" />;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -630,14 +635,16 @@ export default function RentRollScreen() {
           <Text style={s.headerTitle}>Rent Roll</Text>
           <Text style={s.headerSub}>{property?.streetAddress ?? ""}</Text>
         </View>
-        <TouchableOpacity
-          style={s.addBtn}
-          onPress={() => { setAddDraft(emptyDraft()); setAddModal(true); }}
-          activeOpacity={0.8}
-        >
-          <Feather name="plus" size={16} color="#fff" />
-          <Text style={s.addBtnText}>Add</Text>
-        </TouchableOpacity>
+        {canEdit && (
+          <TouchableOpacity
+            style={s.addBtn}
+            onPress={() => { setAddDraft(emptyDraft()); setAddModal(true); }}
+            activeOpacity={0.8}
+          >
+            <Feather name="plus" size={16} color="#fff" />
+            <Text style={s.addBtnText}>Add</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView

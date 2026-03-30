@@ -127,15 +127,16 @@ function CommentItem({ comment, allComments, depth = 0, onReply }: CommentItemPr
 type Props = {
   comments: Comment[];
   onAddComment: (text: string, parentId: string | null) => void;
+  readOnly?: boolean;
 };
 
-export function CommentThread({ comments, onAddComment }: Props) {
+export function CommentThread({ comments, onAddComment, readOnly = false }: Props) {
   const [newText, setNewText] = useState("");
   const topLevel = comments.filter((c) => c.parentCommentId === null);
 
   return (
     <View style={styles.container}>
-      <View style={styles.newCommentBox}>
+      {!readOnly && <View style={styles.newCommentBox}>
         <View style={styles.newCommentAvatar}>
           <Text style={styles.avatarText}>Y</Text>
         </View>
@@ -158,7 +159,7 @@ export function CommentThread({ comments, onAddComment }: Props) {
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </View>}
 
       {topLevel.length === 0 ? (
         <View style={styles.empty}>

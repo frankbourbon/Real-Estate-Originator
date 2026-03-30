@@ -17,6 +17,8 @@ import Colors from "@/constants/colors";
 import { useCoreService } from "@/services/core";
 import { useReadyForDocsService } from "@/services/ready-for-docs";
 import { useClosingService } from "@/services/closing";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 const TABS = [
   { key: "third-party", label: "Third-Party", icon: "users"        as const },
@@ -31,6 +33,7 @@ export default function ClosingDetailsScreen() {
   const { getOrCreateRFD, updateRFD } = useReadyForDocsService();
   const { getOrCreateClosing, updateClosing } = useClosingService();
   const insets = useSafeAreaInsets();
+  const { canView, canEdit } = usePermission("closing.main");
   const app = getApplication(id);
 
   const rfd = getOrCreateRFD(id);
@@ -94,6 +97,7 @@ export default function ClosingDetailsScreen() {
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   if (!app) return null;
+  if (!canView) return <AccessDenied screenLabel="Closing Details" />;
 
   function renderTabContent() {
     switch (activeTab) {
@@ -253,7 +257,7 @@ export default function ClosingDetailsScreen() {
             <Text style={styles.headerLabel}>Closing Details</Text>
           </View>
         </View>
-        {dirty ? (
+        {dirty && canEdit ? (
           <TouchableOpacity
             style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
             onPress={handleSave}

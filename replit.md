@@ -138,11 +138,18 @@ Expo React Native app — LOA Origination System for commercial real estate lend
 **phases.ts**: PHASE_ORDER (10 phases), PHASE_INFO (phase metadata + checklists per phase). Used in task seeding and UI.
 
 **Key components**:
-- `CommentThread.tsx` — accepts `comments: Comment[]` prop, threaded with collapse
-- `AttachmentList.tsx` — `Attachment` type from `@/services/documents`
+- `CommentThread.tsx` — accepts `comments: Comment[]` prop, threaded with collapse; `readOnly` prop hides add/delete when user lacks `canEdit`
+- `AttachmentList.tsx` — `Attachment` type from `@/services/documents`; `readOnly` prop hides add/delete when user lacks `canEdit`
 - `AmortizationCalculator.tsx` — accepts `LoanApplication` from `@/services/core`
 - `ApplicationCard.tsx` — reads borrower/property from core service
 - `StatusBadge.tsx` — `ApplicationStatus` from `@/services/core`
+- `AccessDenied.tsx` — full-screen gate rendered when `canView` is false; shows lock icon + "Access Denied" + `screenLabel`
+
+**RBAC / Permissions** (all 20 screens fully guarded):
+- `hooks/usePermission.ts` — calls `rbacService.hasPermission(key, "view"|"edit")`, returns `{ canView, canEdit }`. Bypasses if `currentSid === null`.
+- `services/rbac/` — role-based access control; `services/session/` — current user identity
+- Every screen (all 20 under `app/application/[id]/` plus tab screens) has: `usePermission` hook call, `if (!canView) return <AccessDenied/>` guard, and `canEdit &&` / ternary gates on all add/save/delete/advance buttons
+- Permission keys: `borrower.profile`, `property.profile`, `loan.terms`, `amortization.calc`, `credit.evaluation`, `inquiry.op-history`, `inquiry.rent-roll`, `inquiry.disposition`, `commitment.letter`, `collaboration.comments`, `collaboration.tasks`, `documents.main`, `loan-team.main`, `conditions.main`, `exceptions.main`, `processing.main`, `closing.main`, `app-start.disposition`, `core.dashboard`, `core.applications`
 
 ### `scripts` (`@workspace/scripts`)
 

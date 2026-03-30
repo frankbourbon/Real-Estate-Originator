@@ -12,11 +12,17 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 
 export default function InquiryDispositionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  const { canView } = usePermission("inquiry.disposition");
+
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+
+  if (!canView) return <AccessDenied screenLabel="Inquiry Disposition" />;
 
   return (
     <View style={styles.container}>
