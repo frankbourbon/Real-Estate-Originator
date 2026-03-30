@@ -455,8 +455,7 @@ export default function OperatingHistoryScreen() {
         <View style={{ flex: 1 }}>
           <Text style={s.headerTitle}>Operating History</Text>
           <Text style={s.headerSub}>
-            {property?.streetAddress ?? ""} · {history.length}/{MAX_PERIODS} periods · MISMO IncomeExpense
-          </Text>
+            {property?.streetAddress ?? ""} · {history.length}/{MAX_PERIODS} periods</Text>
         </View>
         {canAdd && (
           <TouchableOpacity

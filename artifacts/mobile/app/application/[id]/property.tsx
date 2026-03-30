@@ -548,7 +548,7 @@ export default function PropertySection() {
               <View style={s.card}>
                 <SectionHeader
                   title="Operating History"
-                  subtitle={`${opHistory.length} period${opHistory.length !== 1 ? "s" : ""} — MISMO DSCR underwriting`}
+                  subtitle={`${opHistory.length} period${opHistory.length !== 1 ? "s" : ""} — DSCR underwriting`}
                 />
                 <TouchableOpacity
                   style={s.openEditorBtn}

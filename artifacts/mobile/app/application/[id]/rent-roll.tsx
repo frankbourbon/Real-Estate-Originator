@@ -628,7 +628,7 @@ export default function RentRollScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={s.headerTitle}>Rent Roll</Text>
-          <Text style={s.headerSub}>{property?.streetAddress ?? ""} · MISMO RentRollItemType</Text>
+          <Text style={s.headerSub}>{property?.streetAddress ?? ""}</Text>
         </View>
         <TouchableOpacity
           style={s.addBtn}
