@@ -169,7 +169,11 @@ export function buildAmortSchedule(params: BuildScheduleParams): {
   const totalInterest = rows.reduce((s, r) => s + r.interest, 0);
   const totalPrincipal = rows.reduce((s, r) => s + r.principal, 0);
   const lastRow = rows[rows.length - 1];
-  const balloon = lastRow ? lastRow.endBalance : 0;
+  // Balloon = the outstanding principal just before maturity (beginBalance of
+  // the last period). For self-amortizing loans (term == amortization) this is
+  // effectively 0 (the tiny rounding residual). For balloon loans (term <
+  // amortization) it is the lump-sum owed at maturity.
+  const balloon = amortMonths > termMonths ? (lastRow?.beginBalance ?? 0) : 0;
 
   const summary: AmortSummary = {
     noteRatePct,
