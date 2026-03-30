@@ -93,7 +93,7 @@ export default function CreditEvaluationScreen() {
 
         <View style={styles.card}>
           <View style={styles.field}>
-            <Text style={styles.label}>Credit Box Assessment Notes</Text>
+            <Text style={styles.label}>Credit Narrative</Text>
             <TextInput
               style={[styles.input, styles.textarea]}
               value={creditBoxNotes}
@@ -110,7 +110,6 @@ export default function CreditEvaluationScreen() {
           <View style={styles.switchRow}>
             <View style={styles.switchLabel}>
               <Text style={styles.label}>LOI Recommended</Text>
-              <Text style={styles.sublabel}>Credit Risk approves issuing Letter of Interest to borrower</Text>
             </View>
             <Switch
               value={loiRecommended}
