@@ -108,23 +108,37 @@ function buildPhaseSections(
     icon: "shield", iconColor: "#B91C1C", iconBg: "#FEE2E2",
   };
 
+  // ── Core data pages shared across all active-phase MSs ──────────────────────
+  const coreData = [borrower, property, loanTerms, amortization];
+
   return {
-    "Inquiry":               [borrower, property],
-    "Initial Credit Review": [creditEval, borrower, property, loanTerms],
-    "Application Start":     [borrower, property, loanTerms, amortization],
-    "Application Processing":[processing],
-    "Final Credit Review":   [commitmentLetter],
-    "Pre-close":             [],
-    "Ready for Docs":        [closingDetails],
-    "Docs Drawn":            [closingDetails],
-    "Docs Back":             [closingDetails],
-    "Closing":               [closingDetails],
-    "Inquiry Canceled":      [inquiryDisposition, borrower, property],
-    "Inquiry Withdrawn":     [inquiryDisposition, borrower, property],
-    "Inquiry Denied":        [inquiryDisposition, creditEval, borrower, property],
-    "Application Withdrawn": [applicationDisposition, borrower, property, loanTerms],
-    "Application Canceled":  [applicationDisposition, borrower, property, loanTerms],
-    "Application Denied":    [finalCreditDenial, borrower, property, loanTerms],
+    // ── Inquiry MS ────────────────────────────────────────────────────────────
+    "Inquiry":               [...coreData],
+
+    // ── Initial Review MS ─────────────────────────────────────────────────────
+    "Initial Credit Review": [creditEval, ...coreData],
+
+    // ── Application MS (Start + Processing unified) ───────────────────────────
+    "Application Start":     [processing, ...coreData],
+    "Application Processing":[processing, ...coreData],
+
+    // ── Final Review MS ───────────────────────────────────────────────────────
+    "Final Credit Review":   [commitmentLetter, ...coreData],
+
+    // ── Closing MS (Pre-close → Closing unified) ──────────────────────────────
+    "Pre-close":             [closingDetails, ...coreData],
+    "Ready for Docs":        [closingDetails, ...coreData],
+    "Docs Drawn":            [closingDetails, ...coreData],
+    "Docs Back":             [closingDetails, ...coreData],
+    "Closing":               [closingDetails, ...coreData],
+
+    // ── Disposition statuses ──────────────────────────────────────────────────
+    "Inquiry Canceled":      [inquiryDisposition, ...coreData],
+    "Inquiry Withdrawn":     [inquiryDisposition, ...coreData],
+    "Inquiry Denied":        [inquiryDisposition, creditEval, ...coreData],
+    "Application Withdrawn": [applicationDisposition, ...coreData],
+    "Application Canceled":  [applicationDisposition, ...coreData],
+    "Application Denied":    [finalCreditDenial, ...coreData],
   };
 }
 
