@@ -15,7 +15,7 @@ export type LeaseType = "NNN" | "NN" | "Gross" | "Modified Gross" | "Absolute Ne
 
 export type OperatingPeriodType =
   | "Actual Year 1" | "Actual Year 2" | "T12 (Trailing 12)"
-  | "Current Year Budget" | "Lender Underwriting";
+  | "YTD" | "Proforma";
 
 /** Inquiry notes record — one per applicationId. Created lazily on first open. */
 export type InquiryRecord = {
@@ -56,6 +56,7 @@ export type OperatingYear = {
   updatedAt: string;
   periodType: OperatingPeriodType;
   periodYear: string;
+  ytdMonths: string;
   grossPotentialRent: string;
   vacancyAndCreditLoss: string;
   otherIncome: string;
@@ -249,21 +250,21 @@ const SEED_RENT_ROLL: RentRollUnit[] = [
 const SEED_OP_HISTORY: OperatingYear[] = [
   // a04 — Multifamily LA (p04→a04)
   { id: "seed_oh_a04_1", applicationId: "seed_a04", createdAt: d(2026,1,1), updatedAt: d(2026,1,1),
-    periodType: "Actual Year 1", periodYear: "2023",
+    periodType: "Actual Year 1", periodYear: "2023", ytdMonths: "",
     grossPotentialRent: "3,888,000", vacancyAndCreditLoss: "311,040", otherIncome: "72,000",
     effectiveGrossIncome: "3,648,960", realEstateTaxes: "268,000", insurance: "88,000",
     utilities: "172,000", repairsAndMaintenance: "228,000", managementFee: "182,448",
     administrative: "80,000", replacementReserves: "36,000", otherExpenses: "38,000",
     totalOperatingExpenses: "1,092,448", netOperatingIncome: "2,556,512" },
   { id: "seed_oh_a04_2", applicationId: "seed_a04", createdAt: d(2026,1,1), updatedAt: d(2026,1,1),
-    periodType: "Actual Year 2", periodYear: "2024",
+    periodType: "Actual Year 2", periodYear: "2024", ytdMonths: "",
     grossPotentialRent: "4,032,000", vacancyAndCreditLoss: "282,240", otherIncome: "80,000",
     effectiveGrossIncome: "3,829,760", realEstateTaxes: "278,000", insurance: "92,000",
     utilities: "176,000", repairsAndMaintenance: "236,000", managementFee: "191,488",
     administrative: "83,000", replacementReserves: "36,000", otherExpenses: "40,000",
     totalOperatingExpenses: "1,132,488", netOperatingIncome: "2,697,272" },
   { id: "seed_oh_a04_3", applicationId: "seed_a04", createdAt: d(2026,1,1), updatedAt: d(2026,1,1),
-    periodType: "T12 (Trailing 12)", periodYear: "2025",
+    periodType: "T12 (Trailing 12)", periodYear: "2025", ytdMonths: "",
     grossPotentialRent: "4,176,000", vacancyAndCreditLoss: "292,320", otherIncome: "85,000",
     effectiveGrossIncome: "3,968,680", realEstateTaxes: "285,000", insurance: "95,000",
     utilities: "180,000", repairsAndMaintenance: "242,000", managementFee: "198,434",
@@ -271,14 +272,14 @@ const SEED_OP_HISTORY: OperatingYear[] = [
     totalOperatingExpenses: "1,164,434", netOperatingIncome: "2,804,246" },
   // a08 — Multifamily Atlanta (p08→a08)
   { id: "seed_oh_a08_1", applicationId: "seed_a08", createdAt: d(2026,1,1), updatedAt: d(2026,1,1),
-    periodType: "Actual Year 1", periodYear: "2024",
+    periodType: "Actual Year 1", periodYear: "2024", ytdMonths: "",
     grossPotentialRent: "7,526,400", vacancyAndCreditLoss: "376,320", otherIncome: "145,000",
     effectiveGrossIncome: "7,295,080", realEstateTaxes: "510,000", insurance: "196,000",
     utilities: "324,000", repairsAndMaintenance: "448,000", managementFee: "364,754",
     administrative: "158,000", replacementReserves: "67,200", otherExpenses: "72,000",
     totalOperatingExpenses: "2,139,954", netOperatingIncome: "5,155,126" },
   { id: "seed_oh_a08_2", applicationId: "seed_a08", createdAt: d(2026,1,1), updatedAt: d(2026,1,1),
-    periodType: "T12 (Trailing 12)", periodYear: "2025",
+    periodType: "T12 (Trailing 12)", periodYear: "2025", ytdMonths: "",
     grossPotentialRent: "7,795,200", vacancyAndCreditLoss: "233,856", otherIncome: "158,000",
     effectiveGrossIncome: "7,719,344", realEstateTaxes: "525,000", insurance: "204,000",
     utilities: "332,000", repairsAndMaintenance: "462,000", managementFee: "385,967",
@@ -286,7 +287,7 @@ const SEED_OP_HISTORY: OperatingYear[] = [
     totalOperatingExpenses: "2,216,167", netOperatingIncome: "5,503,177" },
   // a03 — Industrial Atlanta (p03→a03)
   { id: "seed_oh_a03_1", applicationId: "seed_a03", createdAt: d(2026,1,1), updatedAt: d(2026,1,1),
-    periodType: "T12 (Trailing 12)", periodYear: "2025",
+    periodType: "T12 (Trailing 12)", periodYear: "2025", ytdMonths: "",
     grossPotentialRent: "4,368,000", vacancyAndCreditLoss: "218,400", otherIncome: "24,000",
     effectiveGrossIncome: "4,173,600", realEstateTaxes: "312,000", insurance: "145,000",
     utilities: "48,000", repairsAndMaintenance: "186,000", managementFee: "208,680",
@@ -294,7 +295,7 @@ const SEED_OP_HISTORY: OperatingYear[] = [
     totalOperatingExpenses: "1,062,080", netOperatingIncome: "3,111,520" },
   // a02 — Retail NY (p02→a02)
   { id: "seed_oh_a02_1", applicationId: "seed_a02", createdAt: d(2026,1,1), updatedAt: d(2026,1,1),
-    periodType: "T12 (Trailing 12)", periodYear: "2025",
+    periodType: "T12 (Trailing 12)", periodYear: "2025", ytdMonths: "",
     grossPotentialRent: "2,356,200", vacancyAndCreditLoss: "235,620", otherIncome: "18,000",
     effectiveGrossIncome: "2,138,580", realEstateTaxes: "188,000", insurance: "72,000",
     utilities: "0", repairsAndMaintenance: "62,000", managementFee: "106,929",

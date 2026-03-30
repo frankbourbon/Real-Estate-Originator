@@ -89,8 +89,8 @@ export function computeCommPhysicalOccupancy(
 
 const PERIOD_PRIORITY: Record<string, number> = {
   "T12 (Trailing 12)": 0,
-  "Lender Underwriting": 1,
-  "Current Year Budget": 2,
+  "Proforma": 1,
+  "YTD": 2,
   "Actual Year 2": 3,
   "Actual Year 1": 4,
 };

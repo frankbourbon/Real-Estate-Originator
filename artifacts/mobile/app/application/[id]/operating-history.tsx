@@ -31,8 +31,8 @@ const PERIOD_TYPES: OperatingPeriodType[] = [
   "Actual Year 1",
   "Actual Year 2",
   "T12 (Trailing 12)",
-  "Current Year Budget",
-  "Lender Underwriting",
+  "YTD",
+  "Proforma",
 ];
 
 const MAX_PERIODS = 5;
@@ -62,11 +62,40 @@ type YearDraft = Omit<OperatingYear, "id" | "applicationId" | "createdAt" | "upd
 
 function emptyDraft(): YearDraft {
   return {
-    periodType: "T12 (Trailing 12)", periodYear: "",
+    periodType: "T12 (Trailing 12)", periodYear: "", ytdMonths: "",
     grossPotentialRent: "", vacancyAndCreditLoss: "", otherIncome: "", effectiveGrossIncome: "",
     realEstateTaxes: "", insurance: "", utilities: "", repairsAndMaintenance: "",
     managementFee: "", administrative: "", replacementReserves: "", otherExpenses: "",
     totalOperatingExpenses: "", netOperatingIncome: "",
+  };
+}
+
+// Annualise a YTD record: (value / months) * 12
+function annualizeYtd(year: OperatingYear): OperatingYear {
+  const months = parseFloat(year.ytdMonths) || 0;
+  if (months <= 0) return { ...year, periodType: "YTD" };
+  const ann = (raw: string): string => {
+    const n = parseFmt(raw);
+    if (!n) return "";
+    return Math.round((n / months) * 12).toLocaleString("en-US", { maximumFractionDigits: 0 });
+  };
+  return {
+    ...year,
+    periodType: "YTD",
+    grossPotentialRent: ann(year.grossPotentialRent),
+    vacancyAndCreditLoss: ann(year.vacancyAndCreditLoss),
+    otherIncome: ann(year.otherIncome),
+    effectiveGrossIncome: ann(year.effectiveGrossIncome),
+    realEstateTaxes: ann(year.realEstateTaxes),
+    insurance: ann(year.insurance),
+    utilities: ann(year.utilities),
+    repairsAndMaintenance: ann(year.repairsAndMaintenance),
+    managementFee: ann(year.managementFee),
+    administrative: ann(year.administrative),
+    replacementReserves: ann(year.replacementReserves),
+    otherExpenses: ann(year.otherExpenses),
+    totalOperatingExpenses: ann(year.totalOperatingExpenses),
+    netOperatingIncome: ann(year.netOperatingIncome),
   };
 }
 
@@ -168,6 +197,26 @@ function YearForm({ draft, onChange }: { draft: YearDraft; onChange: (d: YearDra
           maxLength={4}
         />
       </View>
+
+      {draft.periodType === "YTD" && (
+        <View style={{ marginBottom: 12 }}>
+          <Text style={ff.sectionLabel}>Months of YTD Data</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <TextInput
+              style={[li.input, { width: 80 }]}
+              value={draft.ytdMonths}
+              onChangeText={set("ytdMonths")}
+              placeholder="e.g. 9"
+              placeholderTextColor={Colors.light.textTertiary}
+              keyboardType="number-pad"
+              maxLength={2}
+            />
+            <Text style={{ fontSize: 12, fontFamily: "OpenSans_400Regular", color: Colors.light.textTertiary }}>
+              months (used to annualize — YTD Annualized = (value ÷ months) × 12)
+            </Text>
+          </View>
+        </View>
+      )}
 
       <Text style={ff.sectionHeader}>Income</Text>
       <View style={ff.row}>
@@ -284,11 +333,14 @@ const mo = StyleSheet.create({
 // ─── Period card ──────────────────────────────────────────────────────────────
 
 function PeriodCard({
-  year, onEdit, onDelete,
+  year, onEdit, onDelete, headerLabel, badge, readOnly,
 }: {
   year: OperatingYear;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  headerLabel?: string;
+  badge?: string;
+  readOnly?: boolean;
 }) {
   function row(label: string, val: string, bold?: boolean) {
     return (
@@ -305,20 +357,35 @@ function PeriodCard({
   const noiPositive = noi >= 0;
 
   return (
-    <View style={pc.card}>
+    <View style={[pc.card, readOnly && pc.cardReadOnly]}>
       <View style={pc.header}>
-        <View>
-          <Text style={pc.periodType}>{year.periodType}</Text>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text style={pc.periodType}>{headerLabel ?? year.periodType}</Text>
+            {badge && (
+              <View style={pc.badge}>
+                <Text style={pc.badgeText}>{badge}</Text>
+              </View>
+            )}
+          </View>
           <Text style={pc.periodYear}>{year.periodYear}</Text>
         </View>
-        <View style={pc.actions}>
-          <TouchableOpacity onPress={onEdit} hitSlop={8}>
-            <Feather name="edit-2" size={14} color={Colors.light.tint} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onDelete} hitSlop={8}>
-            <Feather name="trash-2" size={14} color="#B91C1C" />
-          </TouchableOpacity>
-        </View>
+        {!readOnly && (
+          <View style={pc.actions}>
+            <TouchableOpacity onPress={onEdit} hitSlop={8}>
+              <Feather name="edit-2" size={14} color={Colors.light.tint} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onDelete} hitSlop={8}>
+              <Feather name="trash-2" size={14} color="#B91C1C" />
+            </TouchableOpacity>
+          </View>
+        )}
+        {readOnly && (
+          <View style={pc.readOnlyBadge}>
+            <Feather name="lock" size={11} color={Colors.light.textTertiary} />
+            <Text style={pc.readOnlyText}>Calculated</Text>
+          </View>
+        )}
       </View>
 
       <View style={pc.section}>
@@ -356,9 +423,13 @@ function PeriodCard({
 
 const pc = StyleSheet.create({
   card: {
-    backgroundColor: Colors.light.card, borderRadius: 10, marginBottom: 12,
+    backgroundColor: Colors.light.backgroundCard, borderRadius: 10, marginBottom: 12,
     shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2, elevation: 1,
     overflow: "hidden",
+  },
+  cardReadOnly: {
+    borderWidth: 1, borderColor: Colors.light.border, borderStyle: "dashed",
+    backgroundColor: "#FAFBFC",
   },
   header: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start",
@@ -367,6 +438,13 @@ const pc = StyleSheet.create({
   periodType: { fontSize: 13, fontFamily: "OpenSans_700Bold", color: Colors.light.text },
   periodYear: { fontSize: 12, fontFamily: "OpenSans_400Regular", color: Colors.light.textTertiary, marginTop: 2 },
   actions: { flexDirection: "row", gap: 12 },
+  badge: {
+    backgroundColor: Colors.light.tintLight, borderRadius: 4,
+    paddingHorizontal: 6, paddingVertical: 2,
+  },
+  badgeText: { fontSize: 10, fontFamily: "OpenSans_700Bold", color: Colors.light.tint, textTransform: "uppercase", letterSpacing: 0.4 },
+  readOnlyBadge: { flexDirection: "row", alignItems: "center", gap: 4, opacity: 0.6 },
+  readOnlyText: { fontSize: 10, fontFamily: "OpenSans_600SemiBold", color: Colors.light.textTertiary },
   section: { padding: 12, borderBottomWidth: 1, borderBottomColor: Colors.light.border },
   sectionTitle: {
     fontSize: 11, fontFamily: "OpenSans_700Bold", color: Colors.light.textTertiary,
@@ -528,12 +606,25 @@ export default function OperatingHistoryScreen() {
           </View>
         ) : (
           history.map((year) => (
-            <PeriodCard
-              key={year.id}
-              year={year}
-              onEdit={() => handleEditOpen(year)}
-              onDelete={() => handleDelete(year)}
-            />
+            <React.Fragment key={year.id}>
+              <PeriodCard
+                year={year}
+                onEdit={() => handleEditOpen(year)}
+                onDelete={() => handleDelete(year)}
+              />
+              {year.periodType === "YTD" && (
+                <>
+                  <View style={{ height: 4 }} />
+                  <PeriodCard
+                    year={annualizeYtd(year)}
+                    headerLabel="YTD Annualized"
+                    badge={year.ytdMonths ? `${year.ytdMonths}mo → 12mo` : undefined}
+                    readOnly
+                  />
+                  <View style={{ height: 8 }} />
+                </>
+              )}
+            </React.Fragment>
           ))
         )}
       </ScrollView>
@@ -592,7 +683,7 @@ const s = StyleSheet.create({
 
 const ec = StyleSheet.create({
   card: {
-    backgroundColor: Colors.light.card,
+    backgroundColor: Colors.light.backgroundCard,
     borderRadius: 10, padding: 14, marginBottom: 14,
     borderWidth: 1, borderColor: Colors.light.border,
     shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2, elevation: 1,
