@@ -176,15 +176,15 @@ export default function LoanSection() {
     return (
       <View style={styles.card}>
         <SectionHeader title="Terms" />
-        <DetailRow label="Loan Type" value={app?.loanType} />
-        <DetailRow label="Loan Amount (USD)" value={app?.loanAmountUsd ? formatCurrencyFull(app.loanAmountUsd) : undefined} />
-        <DetailRow label="LTV (%)" value={app?.ltvPct ? `${app.ltvPct}%` : undefined} />
-        <DetailRow label="DSCR (×)" value={app?.dscrRatio ? `${app.dscrRatio}×` : undefined} />
-        <DetailRow label="Interest Type" value={app?.interestType} />
-        <DetailRow label="Interest Rate (% p.a.)" value={app?.interestRatePct ? `${app.interestRatePct}%` : undefined} />
-        <DetailRow label="Loan Term" value={app?.loanTermYears ? `${app.loanTermYears} years` : undefined} />
-        <DetailRow label="Amortization" value={app?.amortizationType} />
-        <DetailRow label="Target Closing Date" value={app?.targetClosingDate} last />
+        <DetailRow label="Loan Type" value={loanType} />
+        <DetailRow label="Loan Amount (USD)" value={loanAmountUsd ? formatCurrencyFull(loanAmountUsd) : undefined} />
+        <DetailRow label="LTV (%)" value={ltvPct ? `${ltvPct}%` : undefined} />
+        <DetailRow label="DSCR (×)" value={dscrRatio ? `${dscrRatio}×` : undefined} />
+        <DetailRow label="Interest Type" value={interestType} />
+        <DetailRow label="Interest Rate (% p.a.)" value={interestRatePct ? `${interestRatePct}%` : undefined} />
+        <DetailRow label="Loan Term" value={loanTermYears ? `${loanTermYears} years` : undefined} />
+        <DetailRow label="Amortization" value={amortizationType} />
+        <DetailRow label="Target Closing Date" value={targetClosingDate || undefined} last />
       </View>
     );
   }

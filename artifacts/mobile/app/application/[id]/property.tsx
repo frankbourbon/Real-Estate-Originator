@@ -128,11 +128,19 @@ type FormState = {
 };
 
 export default function PropertySection() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { getApplication, getProperty, updateProperty } = useCoreService();
+  const { id, phase: phaseParam } = useLocalSearchParams<{ id: string; phase: string }>();
+  const phase = (phaseParam as PhaseKey) ?? "inquiry";
+
+  const { getApplication, getProperty } = useCoreService();
+  const { getPropertySnapshot, savePropertySnapshot } = usePhaseDataService();
   const { getRentRoll, getOpHistory } = useInquiryService();
+
   const app = getApplication(id);
-  const property = getProperty(app?.propertyId ?? "");
+  const coreProperty = getProperty(app?.propertyId ?? "");
+
+  // Phase snapshot is authoritative; fall back to shared core record if no snapshot exists yet
+  const snapshot = getPropertySnapshot(id, phase);
+  const property = snapshot ?? coreProperty;
   const rentRoll = getRentRoll(id);
   const opHistory = getOpHistory(id);
 
@@ -202,23 +210,25 @@ export default function PropertySection() {
   };
 
   const handleSave = async () => {
-    if (!property) return;
     const primary = form.locations[0];
-    await updateProperty(property.id, {
+    // Writes to this phase's isolated snapshot — does not cascade to other phases
+    await savePropertySnapshot(id, phase, {
       legalAddress: form.legalAddress,
       locations: form.locations,
       // Sync primary location → legacy top-level fields for backward compat
-      streetAddress: primary?.streetAddress ?? property.streetAddress ?? "",
-      city: primary?.city ?? property.city ?? "",
-      state: primary?.state ?? property.state ?? "",
-      zipCode: primary?.zipCode ?? property.zipCode ?? "",
-      latitude: primary?.latitude ?? property.latitude ?? "",
-      longitude: primary?.longitude ?? property.longitude ?? "",
-      googlePlaceId: primary?.googlePlaceId ?? property.googlePlaceId ?? "",
+      streetAddress: primary?.streetAddress ?? property?.streetAddress ?? "",
+      city: primary?.city ?? property?.city ?? "",
+      state: primary?.state ?? property?.state ?? "",
+      zipCode: primary?.zipCode ?? property?.zipCode ?? "",
+      latitude: primary?.latitude ?? property?.latitude ?? "",
+      longitude: primary?.longitude ?? property?.longitude ?? "",
+      googlePlaceId: primary?.googlePlaceId ?? property?.googlePlaceId ?? "",
       propertyType: form.propertyType,
-      grossSqFt: form.grossSqFt || undefined,
-      numberOfUnits: form.numberOfUnits || undefined,
-      yearBuilt: form.yearBuilt || undefined,
+      grossSqFt: form.grossSqFt,
+      numberOfUnits: form.numberOfUnits,
+      yearBuilt: form.yearBuilt,
+      physicalOccupancyPct: snapshot?.physicalOccupancyPct ?? "",
+      economicOccupancyPct: snapshot?.economicOccupancyPct ?? "",
     });
     setEditing(false);
   };
