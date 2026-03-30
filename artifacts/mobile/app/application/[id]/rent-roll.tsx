@@ -48,6 +48,23 @@ const COMM_SET = new Set<UnitType>(COMM_UNIT_TYPES);
 function isMFUnitType(t: UnitType): boolean { return MF_SET.has(t); }
 function isCommUnitType(t: UnitType): boolean { return COMM_SET.has(t); }
 
+/** Default beds + baths injected when a unit-type chip is selected. */
+const UNIT_TYPE_DEFAULTS: Record<UnitType, { bedroomCount: string; bathroomCount: string }> = {
+  "Studio":        { bedroomCount: "0", bathroomCount: "1" },
+  "1BR/1BA":       { bedroomCount: "1", bathroomCount: "1" },
+  "1BR/1BA+Den":   { bedroomCount: "1", bathroomCount: "1" },
+  "2BR/1BA":       { bedroomCount: "2", bathroomCount: "1" },
+  "2BR/2BA":       { bedroomCount: "2", bathroomCount: "2" },
+  "2BR/2BA+Den":   { bedroomCount: "2", bathroomCount: "2" },
+  "3BR/2BA":       { bedroomCount: "3", bathroomCount: "2" },
+  "3BR/3BA":       { bedroomCount: "3", bathroomCount: "3" },
+  "Penthouse":     { bedroomCount: "4", bathroomCount: "3" },
+  "Office":        { bedroomCount: "0", bathroomCount: "0" },
+  "Retail":        { bedroomCount: "0", bathroomCount: "0" },
+  "Industrial":    { bedroomCount: "0", bathroomCount: "0" },
+  "Other":         { bedroomCount: "0", bathroomCount: "0" },
+};
+
 // ─── Helper utils ─────────────────────────────────────────────────────────────
 
 function leaseStatusColor(s: LeaseStatusType) {
@@ -195,7 +212,14 @@ function UnitForm({
     <>
       {/* Unit Type — always first; determines which fields follow */}
       <Field label="Unit Type">
-        <ChipRow options={unitTypes} value={draft.unitType as UnitType} onChange={(v) => onChange({ ...draft, unitType: v })} />
+        <ChipRow
+          options={unitTypes}
+          value={draft.unitType as UnitType}
+          onChange={(v) => {
+            const defaults = UNIT_TYPE_DEFAULTS[v as UnitType] ?? {};
+            onChange({ ...draft, unitType: v, ...defaults });
+          }}
+        />
       </Field>
 
       {/* Universal fields */}
