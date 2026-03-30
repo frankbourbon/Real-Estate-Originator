@@ -380,19 +380,21 @@ function AddressesEdit({ form, setForm }: { form: any; setForm: React.Dispatch<R
   );
 }
 
-function FinancialsView({ borrower }: { borrower: any }) {
+function FinancialsView({ borrower, phase }: { borrower: any; phase: PhaseKey }) {
+  const showFico = phase !== "inquiry";
   return (
     <View style={s.card}>
       <SectionHeader title="Financial Profile" />
-      <DetailRow label="CRE Experience"   value={borrower?.creExperienceYears ? `${borrower.creExperienceYears} years` : undefined} />
-      <DetailRow label="Net Worth (USD)"   value={borrower?.netWorthUsd ? formatCurrencyFull(borrower.netWorthUsd) : undefined} />
-      <DetailRow label="Liquid Assets"     value={borrower?.liquidityUsd ? formatCurrencyFull(borrower.liquidityUsd) : undefined} />
-      <DetailRow label="FICO Credit Score" value={borrower?.creditScore} last />
+      <DetailRow label="CRE Experience" value={borrower?.creExperienceYears ? `${borrower.creExperienceYears} years` : undefined} />
+      <DetailRow label="Net Worth (USD)" value={borrower?.netWorthUsd ? formatCurrencyFull(borrower.netWorthUsd) : undefined} />
+      <DetailRow label="Liquid Assets"   value={borrower?.liquidityUsd ? formatCurrencyFull(borrower.liquidityUsd) : undefined} last={!showFico} />
+      {showFico && <DetailRow label="FICO Credit Score" value={borrower?.creditScore} last />}
     </View>
   );
 }
 
-function FinancialsEdit({ form, set }: { form: any; set: (k: string) => (v: string) => void }) {
+function FinancialsEdit({ form, set, phase }: { form: any; set: (k: string) => (v: string) => void; phase: PhaseKey }) {
+  const showFico = phase !== "inquiry";
   return (
     <View style={s.card}>
       <SectionHeader title="Financial Profile" subtitle="Used for underwriting and credit assessment" />
@@ -406,7 +408,9 @@ function FinancialsEdit({ form, set }: { form: any; set: (k: string) => (v: stri
           <FormField label="Liquid Assets (USD)" value={form.liquidityUsd} onChangeText={set("liquidityUsd")} placeholder="500,000" keyboardType="number-pad" prefix="$" />
         </View>
       </View>
-      <FormField label="FICO Credit Score" value={form.creditScore} onChangeText={set("creditScore")} placeholder="740" keyboardType="number-pad" maxLength={3} hint="FICO score (300–850)" />
+      {showFico && (
+        <FormField label="FICO Credit Score" value={form.creditScore} onChangeText={set("creditScore")} placeholder="740" keyboardType="number-pad" maxLength={3} hint="FICO score (300–850)" />
+      )}
     </View>
   );
 }
@@ -485,14 +489,14 @@ export default function BorrowerSection() {
         case "identity":   return <IdentityEdit   form={form} set={set} />;
         case "contact":    return <ContactEdit    form={form} setForm={setForm} />;
         case "addresses":  return <AddressesEdit  form={form} setForm={setForm} />;
-        case "financials": return <FinancialsEdit form={form} set={set} />;
+        case "financials": return <FinancialsEdit form={form} set={set} phase={phase} />;
       }
     } else {
       switch (activeTab) {
         case "identity":   return <IdentityView   borrower={borrower} />;
         case "contact":    return <ContactView    borrower={borrower} />;
         case "addresses":  return <AddressesView  borrower={borrower} />;
-        case "financials": return <FinancialsView borrower={borrower} />;
+        case "financials": return <FinancialsView borrower={borrower} phase={phase} />;
       }
     }
     return null;
