@@ -200,12 +200,14 @@ export default function ApplicationsScreen() {
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id}
         data={[
-          // Group chips first
+          // "All" always leftmost
+          { id: "phase:All", kind: "phase" as const, value: "All" as ApplicationStatus | "All" },
+          // Group chips
           ...Object.keys(GROUP_PHASES).map((g) => ({ id: `group:${g}`, kind: "group" as const, value: g as GroupKey })),
           // Divider sentinel
           { id: "divider", kind: "divider" as const, value: "" as any },
-          // Phase chips
-          ...PHASE_FILTERS.map((p) => ({ id: `phase:${p}`, kind: "phase" as const, value: p })),
+          // Individual phase chips (All is already first)
+          ...PHASE_FILTERS.filter((p) => p !== "All").map((p) => ({ id: `phase:${p}`, kind: "phase" as const, value: p })),
         ]}
         renderItem={({ item }) => {
           if (item.kind === "divider") {
