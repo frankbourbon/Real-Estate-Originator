@@ -126,57 +126,47 @@ export default function LoanSection() {
   function renderContent() {
     if (editing) {
       return (
-        <>
-          <View style={styles.card}>
-            <SectionHeader title="Loan Fundamentals" />
-            <SelectField label="Loan Type" value={form.loanType} options={LOAN_TYPES} onChange={set("loanType")} required />
-            <FormField label="Loan Amount (USD)" value={form.loanAmountUsd} onChangeText={set("loanAmountUsd")} placeholder="5,000,000" keyboardType="number-pad" prefix="$" required />
-            <View style={styles.row}>
-              <View style={styles.flex1}>
-                <FormField label="LTV (%)" value={form.ltvPct} onChangeText={set("ltvPct")} placeholder="65.0" keyboardType="decimal-pad" suffix="%" hint="Loan-to-value" />
-              </View>
-              <View style={styles.gap} />
-              <View style={styles.flex1}>
-                <FormField label="DSCR (×)" value={form.dscrRatio} onChangeText={set("dscrRatio")} placeholder="1.25" keyboardType="decimal-pad" suffix="×" hint="Debt service coverage" />
-              </View>
+        <View style={styles.card}>
+          <SectionHeader title="Terms" />
+          <SelectField label="Loan Type" value={form.loanType} options={LOAN_TYPES} onChange={set("loanType")} required />
+          <FormField label="Loan Amount (USD)" value={form.loanAmountUsd} onChangeText={set("loanAmountUsd")} placeholder="5,000,000" keyboardType="number-pad" prefix="$" required />
+          <View style={styles.row}>
+            <View style={styles.flex1}>
+              <FormField label="LTV (%)" value={form.ltvPct} onChangeText={set("ltvPct")} placeholder="65.0" keyboardType="decimal-pad" suffix="%" hint="Loan-to-value" />
+            </View>
+            <View style={styles.gap} />
+            <View style={styles.flex1}>
+              <FormField label="DSCR (×)" value={form.dscrRatio} onChangeText={set("dscrRatio")} placeholder="1.25" keyboardType="decimal-pad" suffix="×" hint="Debt service coverage" />
             </View>
           </View>
-          <View style={[styles.card, styles.cardSpacing]}>
-            <SectionHeader title="Terms" />
-            <SelectField label="Interest Type" value={form.interestType} options={INTEREST_TYPES} onChange={set("interestType")} />
-            <View style={styles.row}>
-              <View style={styles.flex1}>
-                <FormField label="Interest Rate (% p.a.)" value={form.interestRatePct} onChangeText={set("interestRatePct")} placeholder="6.50" keyboardType="decimal-pad" suffix="%" />
-              </View>
-              <View style={styles.gap} />
-              <View style={styles.flex1}>
-                <FormField label="Loan Term (years)" value={form.loanTermYears} onChangeText={set("loanTermYears")} placeholder="5" keyboardType="number-pad" suffix="yrs" />
-              </View>
+          <SelectField label="Interest Type" value={form.interestType} options={INTEREST_TYPES} onChange={set("interestType")} />
+          <View style={styles.row}>
+            <View style={styles.flex1}>
+              <FormField label="Interest Rate (% p.a.)" value={form.interestRatePct} onChangeText={set("interestRatePct")} placeholder="6.50" keyboardType="decimal-pad" suffix="%" />
             </View>
-            <SelectField label="Amortization" value={form.amortizationType} options={AMORT_TYPES} onChange={set("amortizationType")} />
-            <FormField label="Target Closing Date" value={form.targetClosingDate} onChangeText={set("targetClosingDate")} placeholder="MM/DD/YYYY" />
+            <View style={styles.gap} />
+            <View style={styles.flex1}>
+              <FormField label="Loan Term (years)" value={form.loanTermYears} onChangeText={set("loanTermYears")} placeholder="5" keyboardType="number-pad" suffix="yrs" />
+            </View>
           </View>
-        </>
+          <SelectField label="Amortization" value={form.amortizationType} options={AMORT_TYPES} onChange={set("amortizationType")} />
+          <FormField label="Target Closing Date" value={form.targetClosingDate} onChangeText={set("targetClosingDate")} placeholder="MM/DD/YYYY" />
+        </View>
       );
     }
     return (
-      <>
-        <View style={styles.card}>
-          <SectionHeader title="Loan Fundamentals" />
-          <DetailRow label="Loan Type" value={app?.loanType} />
-          <DetailRow label="Loan Amount (USD)" value={app?.loanAmountUsd ? formatCurrencyFull(app.loanAmountUsd) : undefined} />
-          <DetailRow label="LTV (%)" value={app?.ltvPct ? `${app.ltvPct}%` : undefined} />
-          <DetailRow label="DSCR (×)" value={app?.dscrRatio ? `${app.dscrRatio}×` : undefined} last />
-        </View>
-        <View style={[styles.card, styles.cardSpacing]}>
-          <SectionHeader title="Terms" />
-          <DetailRow label="Interest Type" value={app?.interestType} />
-          <DetailRow label="Interest Rate (% p.a.)" value={app?.interestRatePct ? `${app.interestRatePct}%` : undefined} />
-          <DetailRow label="Loan Term" value={app?.loanTermYears ? `${app.loanTermYears} years` : undefined} />
-          <DetailRow label="Amortization" value={app?.amortizationType} />
-          <DetailRow label="Target Closing Date" value={app?.targetClosingDate} last />
-        </View>
-      </>
+      <View style={styles.card}>
+        <SectionHeader title="Terms" />
+        <DetailRow label="Loan Type" value={app?.loanType} />
+        <DetailRow label="Loan Amount (USD)" value={app?.loanAmountUsd ? formatCurrencyFull(app.loanAmountUsd) : undefined} />
+        <DetailRow label="LTV (%)" value={app?.ltvPct ? `${app.ltvPct}%` : undefined} />
+        <DetailRow label="DSCR (×)" value={app?.dscrRatio ? `${app.dscrRatio}×` : undefined} />
+        <DetailRow label="Interest Type" value={app?.interestType} />
+        <DetailRow label="Interest Rate (% p.a.)" value={app?.interestRatePct ? `${app.interestRatePct}%` : undefined} />
+        <DetailRow label="Loan Term" value={app?.loanTermYears ? `${app.loanTermYears} years` : undefined} />
+        <DetailRow label="Amortization" value={app?.amortizationType} />
+        <DetailRow label="Target Closing Date" value={app?.targetClosingDate} last />
+      </View>
     );
   }
 
