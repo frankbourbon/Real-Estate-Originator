@@ -4,7 +4,7 @@ import type { ApplicationStatus } from "@/services/core";
 
 export const PHASE_ORDER: ApplicationStatus[] = [
   "Inquiry",
-  "Letter of Interest",
+  "Initial Credit Review",
   "Application Start",
   "Application Processing",
   "Final Credit Review",
@@ -63,14 +63,14 @@ export const PHASE_INFO: Record<ApplicationStatus, PhaseInfo> = {
     ],
     notes: "⚠ Do not pull borrower credit — triggers HMDA reportable transaction under ECOA.",
   },
-  "Letter of Interest": {
-    status: "Letter of Interest",
+  "Initial Credit Review": {
+    status: "Initial Credit Review",
     phase: 2,
     persona: "Credit Risk",
     personaIcon: "shield",
     color: "#0078CF",
     bg: "#EAF6FF",
-    description: "Credit Risk evaluates submitted data against the credit box to decide whether to recommend issuing a Letter of Interest (LOI) to the borrower. The LOI is non-binding and does not consider borrower financials.",
+    description: "Credit Risk evaluates submitted data against the credit box to decide whether to recommend issuing a Initial Credit Review (LOI) to the borrower. The LOI is non-binding and does not consider borrower financials.",
     checklist: [
       "Credit box assessment completed",
       "LOI recommendation issued",
@@ -118,16 +118,16 @@ export const PHASE_INFO: Record<ApplicationStatus, PhaseInfo> = {
     personaIcon: "shield",
     color: "#6B46C1",
     bg: "#F3F0FF",
-    description: "Credit Risk evaluates all submitted data to recommend whether a Commitment Letter (CL) should be issued. The CL is a legally binding commitment to fund. Conditional approvals and credit risk exceptions are tracked here.",
+    description: "Credit Risk evaluates all submitted data to recommend whether to issue a Final Credit Review. This is a legally binding commitment to fund. Conditional approvals and credit risk exceptions are tracked here.",
     checklist: [
       "Appraisal reviewed",
       "Environmental review cleared",
       "Borrower forms reviewed",
       "Conditional approvals documented",
       "Credit risk exceptions documented (if any)",
-      "Commitment Letter recommendation issued",
+      "Final Credit Review recommendation issued",
     ],
-    notes: "The Commitment Letter is legally binding. All conditions and exceptions must be documented before issuance.",
+    notes: "The Final Credit Review is legally binding. All conditions and exceptions must be documented before issuance.",
   },
   "Pre-close": {
     status: "Pre-close",
@@ -140,7 +140,7 @@ export const PHASE_INFO: Record<ApplicationStatus, PhaseInfo> = {
     checklist: [
       "HMDA data complete",
       "All borrower forms signed and returned",
-      "Commitment Letter conditions satisfied",
+      "Final Credit Review conditions satisfied",
       "Loan file complete for doc prep",
     ],
   },
@@ -212,37 +212,37 @@ export const PHASE_INFO: Record<ApplicationStatus, PhaseInfo> = {
   "Inquiry Canceled": {
     status: "Inquiry Canceled", phase: 0, persona: "Sales", personaIcon: "briefcase",
     color: "#B91C1C", bg: "#FEE2E2",
-    description: "The borrower's inquiry was canceled before a Letter of Interest was issued.",
+    description: "The borrower's inquiry was canceled before a Initial Credit Review was issued.",
     checklist: ["Cancellation reason documented", "Borrower notified"],
   },
   "Inquiry Withdrawn": {
     status: "Inquiry Withdrawn", phase: 0, persona: "Sales", personaIcon: "briefcase",
     color: "#B91C1C", bg: "#FEE2E2",
-    description: "The borrower withdrew their inquiry before a Letter of Interest was issued.",
+    description: "The borrower withdrew their inquiry before a Initial Credit Review was issued.",
     checklist: ["Withdrawal reason documented", "Borrower notified"],
   },
   "Inquiry Denied": {
     status: "Inquiry Denied", phase: 0, persona: "Credit Risk", personaIcon: "shield",
     color: "#B91C1C", bg: "#FEE2E2",
-    description: "Credit Risk declined to issue a Letter of Interest based on the initial credit box assessment.",
+    description: "Credit Risk declined to issue a Initial Credit Review based on the initial credit box assessment.",
     checklist: ["Denial reason documented", "Adverse action notice issued"],
   },
   "Application Withdrawn": {
     status: "Application Withdrawn", phase: 0, persona: "Sales", personaIcon: "briefcase",
     color: "#B91C1C", bg: "#FEE2E2",
-    description: "The borrower withdrew their application after a Letter of Interest was issued.",
+    description: "The borrower withdrew their application after a Initial Credit Review was issued.",
     checklist: ["Withdrawal reason documented", "HMDA reportable event recorded", "Borrower notified"],
   },
   "Application Canceled": {
     status: "Application Canceled", phase: 0, persona: "Sales", personaIcon: "briefcase",
     color: "#B91C1C", bg: "#FEE2E2",
-    description: "The application was canceled after a Letter of Interest was issued.",
+    description: "The application was canceled after a Initial Credit Review was issued.",
     checklist: ["Cancellation reason documented", "HMDA reportable event recorded", "Borrower notified"],
   },
   "Application Denied": {
     status: "Application Denied", phase: 0, persona: "Credit Risk", personaIcon: "shield",
     color: "#B91C1C", bg: "#FEE2E2",
-    description: "Credit Risk declined to issue a Commitment Letter based on the final credit review.",
+    description: "Credit Risk declined to issue a Final Credit Review based on the final credit review.",
     checklist: ["Denial reason documented", "Adverse action notice issued", "HMDA reportable event recorded"],
   },
 };

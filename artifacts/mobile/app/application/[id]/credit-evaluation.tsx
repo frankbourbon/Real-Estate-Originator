@@ -61,7 +61,7 @@ export default function CreditEvaluationScreen() {
           </View>
           <View>
             <Text style={styles.headerEyebrow}>Credit Risk</Text>
-            <Text style={styles.headerLabel}>Letter of Interest</Text>
+            <Text style={styles.headerLabel}>Initial Credit Review</Text>
           </View>
         </View>
         {dirty && mounted ? (

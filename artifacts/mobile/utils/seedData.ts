@@ -191,10 +191,10 @@ export const SEED_APPLICATIONS: LOAApplication[] = [
     attachments: [],
   },
 
-  // ── 2. Letter of Interest — Retail New York ──────────────────────────────────
+  // ── 2. Initial Credit Review — Retail New York ──────────────────────────────────
   {
     id: uid("a02"), createdAt: dt(2026, 2, 20), updatedAt: dt(2026, 3, 5),
-    status: "Letter of Interest",
+    status: "Initial Credit Review",
     borrowerId: uid("b04"), propertyId: uid("p02"),
     loanType: "Refinance", loanAmountUsd: "12,200,000", loanTermYears: "7",
     interestType: "Fixed", interestRatePct: "6.40", amortizationType: "Interest Only",
@@ -554,7 +554,7 @@ export const SEED_CONDITIONS: Condition[] = [
     description: "Borrower to maintain minimum DSCR of 1.25x on a trailing 12-month basis.",
     status: "Pending",
     appliesTo: "Application",
-    phaseAddedAt: "Letter of Interest",
+    phaseAddedAt: "Initial Credit Review",
     createdByPersona: "Credit Risk",
   },
   {
@@ -564,7 +564,7 @@ export const SEED_CONDITIONS: Condition[] = [
     description: "Borrower must maintain a minimum liquidity reserve of $500,000 at all times.",
     status: "Pending",
     appliesTo: "Borrower",
-    phaseAddedAt: "Letter of Interest",
+    phaseAddedAt: "Initial Credit Review",
     createdByPersona: "Credit Risk",
   },
   {
@@ -608,7 +608,7 @@ export const SEED_CONDITIONS: Condition[] = [
     description: "Borrower to maintain DSCR ≥ 1.25x on a trailing 12-month basis throughout loan term.",
     status: "Pending",
     appliesTo: "Application",
-    phaseAddedAt: "Letter of Interest",
+    phaseAddedAt: "Initial Credit Review",
     createdByPersona: "Credit Risk",
   },
   {

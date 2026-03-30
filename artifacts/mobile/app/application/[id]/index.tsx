@@ -73,12 +73,12 @@ function buildPhaseSections(
   };
   const creditEval: SectionItem = {
     key: "credit-evaluation", route: `/application/${id}/credit-evaluation`,
-    label: "Letter of Interest", description: "Credit box assessment and LOI recommendation",
+    label: "Initial Credit Review", description: "Credit box assessment and LOI recommendation",
     icon: "shield", iconColor: "#0078CF", iconBg: "#EAF6FF",
   };
   const commitmentLetter: SectionItem = {
     key: "commitment-letter", route: `/application/${id}/commitment-letter`,
-    label: "Commitment Letter", description: "Commitment Letter recommendation and issued date",
+    label: "Final Credit Review", description: "Final Credit Review recommendation and issued date",
     icon: "shield", iconColor: "#6B46C1", iconBg: "#F3F0FF",
   };
   const processing: SectionItem = {
@@ -104,13 +104,13 @@ function buildPhaseSections(
   };
   const finalCreditDenial: SectionItem = {
     key: "commitment-letter", route: `/application/${id}/commitment-letter`,
-    label: "Credit Denial", description: "Commitment Letter decline and adverse action",
+    label: "Credit Denial", description: "Final Credit Review decline and adverse action",
     icon: "shield", iconColor: "#B91C1C", iconBg: "#FEE2E2",
   };
 
   return {
     "Inquiry":               [borrower, property],
-    "Letter of Interest":    [creditEval, borrower, property, loanTerms],
+    "Initial Credit Review": [creditEval, borrower, property, loanTerms],
     "Application Start":     [borrower, property, loanTerms, amortization],
     "Application Processing":[processing],
     "Final Credit Review":   [commitmentLetter],

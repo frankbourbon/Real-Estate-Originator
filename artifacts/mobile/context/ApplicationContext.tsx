@@ -40,7 +40,7 @@ export type AmortizationType =
  */
 export type ApplicationStatus =
   | "Inquiry"
-  | "Letter of Interest"
+  | "Initial Credit Review"
   | "Application Start"
   | "Application Processing"
   | "Final Credit Review"
@@ -53,7 +53,7 @@ export type ApplicationStatus =
 /** Legacy status values from v2 — migrated on load. */
 const LEGACY_STATUS_MAP: Record<string, ApplicationStatus> = {
   Draft: "Inquiry",
-  Submitted: "Letter of Interest",
+  Submitted: "Initial Credit Review",
   "Under Review": "Application Processing",
   Approved: "Final Credit Review",
   Declined: "Closing",
@@ -323,7 +323,7 @@ export type LOAApplication = {
   // ── Inquiry Phase (Sales) ─────────────────────────────────────────────────
   inquiryNotes: string;
 
-  // ── Letter of Interest Phase (Credit Risk) ────────────────────────────────
+  // ── Initial Credit Review Phase (Credit Risk) ────────────────────────────────
   creditBoxNotes: string;
   loiRecommended: boolean;
   loiIssuedDate: string;
@@ -921,7 +921,7 @@ const [ApplicationProvider, useApplications] = createContextHook(() => {
       .reduce((sum, a) => sum + parseFloat(a.loanAmountUsd.replace(/[^0-9.]/g, "") || "0"), 0),
     byPhase: Object.fromEntries(
       [
-        "Inquiry", "Letter of Interest", "Application Start", "Application Processing",
+        "Inquiry", "Initial Credit Review", "Application Start", "Application Processing",
         "Final Credit Review", "Pre-close", "Ready for Docs", "Docs Drawn", "Docs Back", "Closing",
       ].map((s) => [s, applications.filter((a) => a.status === s).length])
     ) as Record<ApplicationStatus, number>,

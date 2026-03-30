@@ -24,7 +24,7 @@ import { getBorrowerDisplayName, getPropertyShortAddress } from "@/utils/formatt
 const PHASE_FILTERS: (ApplicationStatus | "All")[] = [
   "All",
   "Inquiry",
-  "Letter of Interest",
+  "Initial Credit Review",
   "Application Start",
   "Application Processing",
   "Final Credit Review",
@@ -44,7 +44,7 @@ const PHASE_FILTERS: (ApplicationStatus | "All")[] = [
 type GroupKey = "Sales" | "Processing" | "Credit" | "Closing" | "Disposed";
 
 const GROUP_PHASES: Record<GroupKey, ApplicationStatus[]> = {
-  Sales:      ["Inquiry", "Letter of Interest", "Application Start"],
+  Sales:      ["Inquiry", "Initial Credit Review", "Application Start"],
   Processing: ["Application Processing", "Pre-close"],
   Credit:     ["Final Credit Review"],
   Closing:    ["Ready for Docs", "Docs Drawn", "Docs Back", "Closing"],
@@ -62,7 +62,7 @@ const GROUP_COLOR: Record<GroupKey, string> = {
 
 const CHIP_LABEL: Partial<Record<ApplicationStatus | "All", string>> = {
   "All":                    "All",
-  "Letter of Interest":     "LOI",
+  "Initial Credit Review":     "LOI",
   "Application Start":      "App Start",
   "Application Processing": "Processing",
   "Final Credit Review":    "Credit Review",

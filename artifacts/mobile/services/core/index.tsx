@@ -13,14 +13,14 @@ export type InterestType = "Fixed" | "Floating" | "Hybrid";
 export type AmortizationType = "Full Amortizing" | "Interest Only" | "Partial IO";
 
 export type ApplicationStatus =
-  | "Inquiry" | "Letter of Interest" | "Application Start" | "Application Processing"
+  | "Inquiry" | "Initial Credit Review" | "Application Start" | "Application Processing"
   | "Final Credit Review" | "Pre-close" | "Ready for Docs" | "Docs Drawn"
   | "Docs Back" | "Closing"
   | "Inquiry Canceled" | "Inquiry Withdrawn" | "Inquiry Denied"
   | "Application Withdrawn" | "Application Canceled" | "Application Denied";
 
 export const APPLICATION_STATUSES: ApplicationStatus[] = [
-  "Inquiry", "Letter of Interest", "Application Start", "Application Processing",
+  "Inquiry", "Initial Credit Review", "Application Start", "Application Processing",
   "Final Credit Review", "Pre-close", "Ready for Docs", "Docs Drawn", "Docs Back", "Closing",
   "Inquiry Canceled", "Inquiry Withdrawn", "Inquiry Denied",
   "Application Withdrawn", "Application Canceled", "Application Denied",
@@ -157,7 +157,7 @@ function emptyApp(borrowerId: string, propertyId: string): Omit<LoanApplication,
 // ─── Migration helpers ─────────────────────────────────────────────────────────
 
 const LEGACY_STATUS: Record<string, ApplicationStatus> = {
-  Draft: "Inquiry", Submitted: "Letter of Interest",
+  Draft: "Inquiry", Submitted: "Initial Credit Review",
   "Under Review": "Application Processing", Approved: "Final Credit Review", Declined: "Closing",
 };
 
@@ -399,7 +399,7 @@ const SEED_APPS: LoanApplication[] = [
     loanAmountUsd: "8,500,000", loanTermYears: "10", interestType: "Fixed",
     interestRatePct: "6.75", amortizationType: "Full Amortizing", ltvPct: "65",
     dscrRatio: "1.28", targetClosingDate: ds(2026,7,15) },
-  { id: "seed_a02", createdAt: d(2026,2,20), updatedAt: d(2026,3,5), status: "Letter of Interest",
+  { id: "seed_a02", createdAt: d(2026,2,20), updatedAt: d(2026,3,5), status: "Initial Credit Review",
     borrowerId: "seed_b04", propertyId: "seed_p02", loanType: "Refinance",
     loanAmountUsd: "12,200,000", loanTermYears: "7", interestType: "Fixed",
     interestRatePct: "6.40", amortizationType: "Interest Only", ltvPct: "60",

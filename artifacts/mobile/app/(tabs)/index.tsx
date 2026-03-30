@@ -27,7 +27,7 @@ const STAGE_GROUPS: { label: string; icon: string; color: string; bg: string; ph
   { label: "Inquiry",     icon: "search",       color: "#1B7F9E", bg: "#DBF5F7",
     phases: ["Inquiry"] },
   { label: "LOI",         icon: "file-text",    color: "#0078CF", bg: "#EAF6FF",
-    phases: ["Letter of Interest"] },
+    phases: ["Initial Credit Review"] },
   { label: "Application", icon: "clipboard",    color: "#C75300", bg: "#FFECDC",
     phases: ["Application Start", "Application Processing"] },
   { label: "Final",       icon: "shield",       color: "#6B4FBB", bg: "#F0EEFF",
@@ -245,7 +245,7 @@ export default function DashboardScreen() {
           <View style={styles.groupGrid}>
             {([
               { group: "Sales",      label: "SALES",   color: "#1B7F9E",
-                count: (stats.byPhase["Inquiry"] ?? 0) + (stats.byPhase["Letter of Interest"] ?? 0) + (stats.byPhase["Application Start"] ?? 0) },
+                count: (stats.byPhase["Inquiry"] ?? 0) + (stats.byPhase["Initial Credit Review"] ?? 0) + (stats.byPhase["Application Start"] ?? 0) },
               { group: "Processing", label: "PROCESS", color: "#C75300",
                 count: (stats.byPhase["Application Processing"] ?? 0) + (stats.byPhase["Pre-close"] ?? 0) },
               { group: "Credit",     label: "CREDIT",  color: "#6B4FBB",

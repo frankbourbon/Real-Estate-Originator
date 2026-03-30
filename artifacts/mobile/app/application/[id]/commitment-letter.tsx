@@ -63,7 +63,7 @@ export default function CommitmentLetterScreen() {
           </View>
           <View>
             <Text style={styles.headerEyebrow}>Credit Risk · Final Credit Review</Text>
-            <Text style={styles.headerLabel}>Commitment Letter</Text>
+            <Text style={styles.headerLabel}>Final Credit Review</Text>
           </View>
         </View>
         {dirty && mounted ? (
@@ -96,8 +96,8 @@ export default function CommitmentLetterScreen() {
         <View style={styles.card}>
           <View style={styles.switchRow}>
             <View style={styles.switchLabel}>
-              <Text style={styles.label}>CL Recommended</Text>
-              <Text style={styles.sublabel}>Credit Risk approves issuing Commitment Letter to borrower</Text>
+              <Text style={styles.label}>FCR Recommended</Text>
+              <Text style={styles.sublabel}>Credit Risk approves issuing Final Credit Review to borrower</Text>
             </View>
             <Switch
               value={commitmentLetterRecommended}
@@ -111,7 +111,7 @@ export default function CommitmentLetterScreen() {
             <>
               <View style={styles.divider} />
               <View style={styles.field}>
-                <Text style={styles.label}>Commitment Letter Issued Date</Text>
+                <Text style={styles.label}>Final Credit Review Issued Date</Text>
                 <TextInput
                   style={styles.input}
                   value={commitmentLetterIssuedDate}
