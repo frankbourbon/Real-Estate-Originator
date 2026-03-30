@@ -90,7 +90,7 @@ export default function CommitmentLetterScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.sectionNote}>
-          Legally binding commitment to fund. Issued after Final Credit Review approval. All conditions and exceptions must be documented before issuance.
+          Legally binding commitment to fund. Issued after Final Credit Review approval.
         </Text>
 
         <View style={styles.card}>

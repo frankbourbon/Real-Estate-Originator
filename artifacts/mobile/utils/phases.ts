@@ -127,7 +127,7 @@ export const PHASE_INFO: Record<ApplicationStatus, PhaseInfo> = {
       "Credit risk exceptions documented (if any)",
       "Final Credit Review recommendation issued",
     ],
-    notes: "The Final Credit Review is legally binding. All conditions and exceptions must be documented before issuance.",
+    notes: "The Final Credit Review is legally binding.",
   },
   "Pre-close": {
     status: "Pre-close",
