@@ -97,7 +97,6 @@ export default function CommitmentLetterScreen() {
           <View style={styles.switchRow}>
             <View style={styles.switchLabel}>
               <Text style={styles.label}>FCR Recommended</Text>
-              <Text style={styles.sublabel}>Credit Risk approves issuing Final Credit Review to borrower</Text>
             </View>
             <Switch
               value={commitmentLetterRecommended}
