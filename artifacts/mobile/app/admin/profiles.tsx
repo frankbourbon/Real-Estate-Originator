@@ -16,7 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
-import { Profile, useRbacService } from "@/services/rbac";
+import { Profile, useSystemCoreService } from "@/services/system-core";
 
 // ─── Color Picker ─────────────────────────────────────────────────────────────
 
@@ -134,13 +134,11 @@ function ProfileFormModal({
 
 function ProfileRow({
   profile,
-  entitlementCount,
   userCount,
   onEdit,
   onPress,
 }: {
   profile: Profile;
-  entitlementCount: number;
   userCount: number;
   onEdit: () => void;
   onPress: () => void;
@@ -153,11 +151,7 @@ function ProfileRow({
         {!!profile.description && (
           <Text style={s.profileDesc} numberOfLines={1}>{profile.description}</Text>
         )}
-        <View style={s.rowMeta}>
-          <Text style={s.metaText}>{entitlementCount} entitlement{entitlementCount !== 1 ? "s" : ""}</Text>
-          <Text style={s.metaDot}>·</Text>
-          <Text style={s.metaText}>{userCount} user{userCount !== 1 ? "s" : ""}</Text>
-        </View>
+        <Text style={s.metaText}>{userCount} user{userCount !== 1 ? "s" : ""} assigned</Text>
       </View>
       <TouchableOpacity onPress={onEdit} hitSlop={10} style={s.editBtn}>
         <Feather name="edit-2" size={14} color={Colors.light.textTertiary} />
@@ -172,7 +166,7 @@ function ProfileRow({
 export default function ProfilesScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
-  const { profiles, profileEnts, userProfiles, createProfile, updateProfile } = useRbacService();
+  const { profiles, userProfiles, createProfile, updateProfile } = useSystemCoreService();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editTarget, setEditTarget] = useState<Profile | null>(null);
@@ -242,7 +236,6 @@ export default function ProfilesScreen() {
             <View style={[s.rowWrapper, index < profiles.length - 1 && s.rowBorder]}>
               <ProfileRow
                 profile={item}
-                entitlementCount={profileEnts.filter((pe) => pe.profileId === item.id).length}
                 userCount={userProfiles.filter((up) => up.profileId === item.id).length}
                 onEdit={() => { setEditTarget(item); setModalVisible(true); }}
                 onPress={() => router.push(`/admin/profile/${item.id}` as any)}

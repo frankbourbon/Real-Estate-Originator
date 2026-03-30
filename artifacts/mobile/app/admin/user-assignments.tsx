@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
 import { useAdminService, AdminUser } from "@/services/admin";
-import { Profile, useRbacService } from "@/services/rbac";
+import { Profile, useSystemCoreService } from "@/services/system-core";
 
 // ─── Profile Chip ─────────────────────────────────────────────────────────────
 
@@ -130,7 +130,7 @@ export default function UserAssignmentsScreen() {
     userProfiles,
     assignUserProfile,
     removeUserProfile,
-  } = useRbacService();
+  } = useSystemCoreService();
 
   const [query, setQuery] = useState("");
 

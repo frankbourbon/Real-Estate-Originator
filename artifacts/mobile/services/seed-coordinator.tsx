@@ -18,42 +18,45 @@ import { usePreCloseService } from "@/services/pre-close";
 import { useProcessingService } from "@/services/processing";
 import { useRbacService } from "@/services/rbac";
 import { useReadyForDocsService } from "@/services/ready-for-docs";
+import { useSystemCoreService } from "@/services/system-core";
 import { useTasksService } from "@/services/tasks";
 
 /**
- * Coordinates seed data loading and clearing across all 19 services.
+ * Coordinates seed data loading and clearing across all 20 services.
  * Must be used inside <ServiceProviders>.
  *
- * Admin records represent the global employee registry and are independent of
- * loan records. RBAC profiles and assignments are loaded alongside admin users
- * so the seed dataset is immediately usable with permission checking.
+ * SystemCore and Admin are seeded together because they represent the global
+ * employee + profile registry. Rbac (entitlement mappings) is seeded alongside
+ * them so the full permission model is immediately usable.
  *
  * LoanTeam.clearForApplication removes loan-level members only; admin and RBAC
  * records are never affected by per-application operations.
  */
 export function useSeedCoordinator() {
-  const admin = useAdminService();
-  const rbac = useRbacService();
-  const core = useCoreService();
-  const phaseData = usePhaseDataService();
-  const inquiry = useInquiryService();
+  const systemCore = useSystemCoreService();
+  const admin      = useAdminService();
+  const rbac       = useRbacService();
+  const core       = useCoreService();
+  const phaseData  = usePhaseDataService();
+  const inquiry    = useInquiryService();
   const inquiryDisposition = useInquiryDispositionService();
-  const loi = useLetterOfInterestService();
-  const appStart = useApplicationStartService();
+  const loi        = useLetterOfInterestService();
+  const appStart   = useApplicationStartService();
   const appDisposition = useApplicationDispositionService();
   const processing = useProcessingService();
-  const fcr = useFinalCreditReviewService();
+  const fcr        = useFinalCreditReviewService();
   const conditions = useConditionsService();
-  const preClose = usePreCloseService();
-  const rfd = useReadyForDocsService();
-  const closing = useClosingService();
-  const documents = useDocumentsService();
-  const tasks = useTasksService();
-  const comments = useCommentsService();
-  const loanTeam = useLoanTeamService();
+  const preClose   = usePreCloseService();
+  const rfd        = useReadyForDocsService();
+  const closing    = useClosingService();
+  const documents  = useDocumentsService();
+  const tasks      = useTasksService();
+  const comments   = useCommentsService();
+  const loanTeam   = useLoanTeamService();
 
   const loadAllSeedData = useCallback(async () => {
     await Promise.all([
+      systemCore.loadSeedData(),
       admin.loadSeedData(),
       rbac.loadSeedData(),
       core.loadSeedData(),
@@ -73,12 +76,13 @@ export function useSeedCoordinator() {
       comments.loadSeedData(),
       loanTeam.loadSeedData(),
     ]);
-  }, [admin, rbac, core, inquiry, inquiryDisposition, loi, appStart, appDisposition,
-      processing, fcr, conditions, preClose, rfd, closing, documents, tasks,
-      comments, loanTeam]);
+  }, [systemCore, admin, rbac, core, inquiry, inquiryDisposition, loi, appStart,
+      appDisposition, processing, fcr, conditions, preClose, rfd, closing,
+      documents, tasks, comments, loanTeam]);
 
   const clearAllData = useCallback(async () => {
     await Promise.all([
+      systemCore.clearData(),
       admin.clearData(),
       rbac.clearData(),
       core.clearData(),
@@ -99,14 +103,14 @@ export function useSeedCoordinator() {
       comments.clearData(),
       loanTeam.clearData(),
     ]);
-  }, [admin, rbac, core, phaseData, inquiry, inquiryDisposition, loi, appStart,
-      appDisposition, processing, fcr, conditions, preClose, rfd, closing,
-      documents, tasks, comments, loanTeam]);
+  }, [systemCore, admin, rbac, core, phaseData, inquiry, inquiryDisposition, loi,
+      appStart, appDisposition, processing, fcr, conditions, preClose, rfd,
+      closing, documents, tasks, comments, loanTeam]);
 
   /**
    * Clears all phase-service data for a specific application (cascade delete).
    * Call this before deleting an application from CoreService.
-   * Admin and RBAC records are never touched — only loan-level data is removed.
+   * SystemCore, Admin, and RBAC records are never touched — only loan-level data is removed.
    */
   const clearForApplication = useCallback(async (applicationId: string) => {
     await Promise.all([

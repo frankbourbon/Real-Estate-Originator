@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
 import { ENTITLEMENTS, useRbacService } from "@/services/rbac";
+import { useSystemCoreService } from "@/services/system-core";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -120,9 +121,10 @@ export default function ProfileDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
-  const { profiles, getProfileEntitlementIds, toggleEntitlement, deleteProfile } = useRbacService();
+  const { getProfile, deleteProfile } = useSystemCoreService();
+  const { getProfileEntitlementIds, toggleEntitlement } = useRbacService();
 
-  const profile = profiles.find((p) => p.id === id);
+  const profile = getProfile(id ?? "");
   const grantedIds = getProfileEntitlementIds(id ?? "");
 
   const [confirmDelete, setConfirmDelete] = useState(false);

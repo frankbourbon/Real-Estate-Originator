@@ -14,8 +14,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
-import { ENTITLEMENTS } from "@/services/rbac";
-import { useRbacService } from "@/services/rbac";
+import { ENTITLEMENTS, MS_GROUPS } from "@/services/rbac";
+import { useSystemCoreService } from "@/services/system-core";
 import { useAdminService } from "@/services/admin";
 import { useSessionService } from "@/services/session";
 
@@ -33,7 +33,7 @@ function UserPickerModal({
   onClose: () => void;
 }) {
   const { users } = useAdminService();
-  const { profiles, userProfiles } = useRbacService();
+  const { profiles, userProfiles } = useSystemCoreService();
 
   const getProfileNamesForUser = (sid: string) => {
     const profileIds = userProfiles.filter((up) => up.userSid === sid).map((up) => up.profileId);
@@ -55,7 +55,6 @@ function UserPickerModal({
         </View>
 
         <ScrollView style={pm.list} keyboardShouldPersistTaps="handled">
-          {/* No session option */}
           <TouchableOpacity
             style={[pm.row, currentSid === null && pm.rowSelected]}
             onPress={() => { onSelect(null); onClose(); }}
@@ -110,7 +109,7 @@ function UserPickerModal({
 export default function RbacScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
-  const { profiles, userProfiles } = useRbacService();
+  const { profiles, userProfiles } = useSystemCoreService();
   const { currentSid, setCurrentSid } = useSessionService();
   const { users, getUser } = useAdminService();
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -120,13 +119,14 @@ export default function RbacScreen() {
     (u) => !userProfiles.some((up) => up.userSid === u.sid)
   ).length;
 
-  const sections = [
+  const systemCoreSections = [
     {
       key: "profiles",
       icon: "shield" as const,
       label: "Access Profiles",
       detail: `${profiles.length} profile${profiles.length !== 1 ? "s" : ""} defined`,
       route: "/admin/profiles",
+      warn: false,
     },
     {
       key: "users",
@@ -139,6 +139,35 @@ export default function RbacScreen() {
       warn: unassignedCount > 0,
     },
   ];
+
+  const entitlementSections = [
+    {
+      key: "entitlements",
+      icon: "sliders" as const,
+      label: "Entitlement Mapping",
+      detail: `${MS_GROUPS.length} microservices · ${ENTITLEMENTS.length} entitlements`,
+      route: "/admin/entitlements",
+      warn: false,
+    },
+  ];
+
+  const renderMenuRow = (sec: typeof systemCoreSections[0], idx: number, isLast: boolean) => (
+    <TouchableOpacity
+      key={sec.key}
+      style={[s.menuRow, !isLast && s.menuBorder]}
+      onPress={() => router.push(sec.route as any)}
+      activeOpacity={0.7}
+    >
+      <View style={[s.menuIcon, sec.warn && s.menuIconWarn]}>
+        <Feather name={sec.icon} size={18} color={sec.warn ? "#9E5B1B" : Colors.light.tint} />
+      </View>
+      <View style={s.menuBody}>
+        <Text style={s.menuLabel}>{sec.label}</Text>
+        <Text style={[s.menuDetail, sec.warn && s.menuDetailWarn]}>{sec.detail}</Text>
+      </View>
+      <Feather name="chevron-right" size={16} color={Colors.light.textTertiary} />
+    </TouchableOpacity>
+  );
 
   return (
     <View style={s.container}>
@@ -198,7 +227,6 @@ export default function RbacScreen() {
           </View>
         </View>
 
-        {/* ── Info banner ── */}
         <View style={s.infoBanner}>
           <Feather name="info" size={13} color={Colors.light.tint} style={{ marginTop: 1 }} />
           <Text style={s.infoText}>
@@ -207,51 +235,47 @@ export default function RbacScreen() {
           </Text>
         </View>
 
-        {/* ── RBAC Management ── */}
+        {/* ── System Core — Profile Registry ── */}
         <View style={s.sectionHeader}>
-          <Text style={s.sectionLabel}>RBAC Management</Text>
+          <Text style={s.sectionLabel}>System Core</Text>
+          <Text style={s.sectionSub}>Profiles &amp; user assignments</Text>
         </View>
-        {sections.map((sec, idx) => (
-          <TouchableOpacity
-            key={sec.key}
-            style={[s.menuRow, idx < sections.length - 1 && s.menuBorder]}
-            onPress={() => router.push(sec.route as any)}
-            activeOpacity={0.7}
-          >
-            <View style={[s.menuIcon, sec.warn && s.menuIconWarn]}>
-              <Feather name={sec.icon} size={18} color={sec.warn ? "#9E5B1B" : Colors.light.tint} />
-            </View>
-            <View style={s.menuBody}>
-              <Text style={s.menuLabel}>{sec.label}</Text>
-              <Text style={[s.menuDetail, sec.warn && s.menuDetailWarn]}>{sec.detail}</Text>
-            </View>
-            <Feather name="chevron-right" size={16} color={Colors.light.textTertiary} />
-          </TouchableOpacity>
-        ))}
+        {systemCoreSections.map((sec, idx) =>
+          renderMenuRow(sec, idx, idx === systemCoreSections.length - 1)
+        )}
+
+        {/* ── Microservice Entitlements ── */}
+        <View style={s.sectionHeader}>
+          <Text style={s.sectionLabel}>Microservice Entitlements</Text>
+          <Text style={s.sectionSub}>Per-MS access configuration</Text>
+        </View>
+        {entitlementSections.map((sec, idx) =>
+          renderMenuRow(sec as any, idx, true)
+        )}
 
         {/* ── Registry stats ── */}
         <View style={s.sectionHeader}>
-          <Text style={s.sectionLabel}>Entitlement Registry</Text>
+          <Text style={s.sectionLabel}>Registry Overview</Text>
         </View>
         <View style={s.statsCard}>
           <View style={s.stat}>
+            <Text style={s.statNum}>{MS_GROUPS.length}</Text>
+            <Text style={s.statLabel}>Microservices</Text>
+          </View>
+          <View style={s.statDivider} />
+          <View style={s.stat}>
             <Text style={s.statNum}>{ENTITLEMENTS.filter((e) => e.action === "VIEW").length}</Text>
-            <Text style={s.statLabel}>VIEW entitlements</Text>
+            <Text style={s.statLabel}>VIEW keys</Text>
           </View>
           <View style={s.statDivider} />
           <View style={s.stat}>
             <Text style={s.statNum}>{ENTITLEMENTS.filter((e) => e.action === "EDIT").length}</Text>
-            <Text style={s.statLabel}>EDIT entitlements</Text>
-          </View>
-          <View style={s.statDivider} />
-          <View style={s.stat}>
-            <Text style={s.statNum}>{new Set(ENTITLEMENTS.map((e) => e.microservice)).size}</Text>
-            <Text style={s.statLabel}>Microservices</Text>
+            <Text style={s.statLabel}>EDIT keys</Text>
           </View>
         </View>
         <Text style={s.registryNote}>
-          Entitlements are system-defined and cannot be added or removed. Administrators
-          assign entitlements to profiles, then assign profiles to users.
+          Entitlement keys are code-defined per microservice and cannot be added or removed at
+          runtime. Use Entitlement Mapping to configure which profiles have access to each service.
         </Text>
       </ScrollView>
 
@@ -307,6 +331,12 @@ const s = StyleSheet.create({
     color: Colors.light.textTertiary,
     textTransform: "uppercase",
     letterSpacing: 0.6,
+  },
+  sectionSub: {
+    fontSize: 11,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textTertiary,
+    marginTop: 1,
   },
 
   card: {
@@ -456,8 +486,6 @@ const s = StyleSheet.create({
     lineHeight: 16,
   },
 });
-
-// ─── User Picker Modal Styles ─────────────────────────────────────────────────
 
 const pm = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.4)" },
