@@ -4,20 +4,41 @@ import React from "react";
 import { AmortizationCalculator } from "@/components/AmortizationCalculator";
 import { SectionScreenLayout } from "@/components/SectionScreenLayout";
 import { useCoreService } from "@/services/core";
+import type { PhaseKey } from "@/services/phase-data";
+import { usePhaseDataService } from "@/services/phase-data";
 
 export default function AmortizationSection() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, phase: phaseParam } = useLocalSearchParams<{ id: string; phase: string }>();
+  const phase = (phaseParam as PhaseKey) ?? "inquiry";
+
   const { getApplication } = useCoreService();
+  const { getLoanTermsSnapshot } = usePhaseDataService();
+
   const app = getApplication(id);
+  const snap = getLoanTermsSnapshot(id, phase);
 
   if (!app) return null;
+
+  // Merge phase snapshot over app record so calculator uses this phase's terms
+  const merged = {
+    ...app,
+    loanType:        snap?.loanType        ?? app.loanType,
+    loanAmountUsd:   snap?.loanAmountUsd   ?? app.loanAmountUsd,
+    loanTermYears:   snap?.loanTermYears   ?? app.loanTermYears,
+    interestType:    snap?.interestType    ?? app.interestType,
+    interestRatePct: snap?.interestRatePct ?? app.interestRatePct,
+    amortizationType:snap?.amortizationType?? app.amortizationType,
+    ltvPct:          snap?.ltvPct          ?? app.ltvPct,
+    dscrRatio:       snap?.dscrRatio       ?? app.dscrRatio,
+    targetClosingDate: snap?.targetClosingDate ?? app.targetClosingDate,
+  };
 
   return (
     <SectionScreenLayout
       title="Amortization Calculator"
       subtitle="Rate build-up · Day count · Payment schedule"
     >
-      <AmortizationCalculator application={app} />
+      <AmortizationCalculator application={merged} />
     </SectionScreenLayout>
   );
 }

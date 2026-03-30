@@ -18,6 +18,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import Colors from "@/constants/colors";
 import type { ApplicationStatus } from "@/services/core";
 import { useCoreService } from "@/services/core";
+import { statusToPhase, usePhaseDataService } from "@/services/phase-data";
 import { useCommentsService } from "@/services/comments";
 import { useDocumentsService } from "@/services/documents";
 import { useConditionsService } from "@/services/conditions";
@@ -51,26 +52,31 @@ type SectionItem = {
 function buildPhaseSections(
   id: string,
 ): Record<ApplicationStatus, SectionItem[]> {
-  const borrower: SectionItem = {
-    key: "borrower", route: `/application/${id}/borrower`,
-    label: "Borrower Profile", description: "Identity, contact information, and financial profile",
-    icon: "user", iconColor: Colors.light.tint, iconBg: Colors.light.tintLight,
-  };
-  const property: SectionItem = {
-    key: "property", route: `/application/${id}/property`,
-    label: "Property Details", description: "Location, attributes, occupancy, rent roll, and operating history",
-    icon: "map-pin", iconColor: "#00875D", iconBg: "#EAF5F2",
-  };
-  const loanTerms: SectionItem = {
-    key: "loan", route: `/application/${id}/loan`,
-    label: "Loan Terms", description: "Structure, rate, LTV, DSCR, amortization type",
-    icon: "dollar-sign", iconColor: "#0078CF", iconBg: "#EAF6FF",
-  };
-  const amortization: SectionItem = {
-    key: "amortization", route: `/application/${id}/amortization`,
-    label: "Amortization Calculator", description: "Rate build-up, day count convention, payment schedule",
-    icon: "bar-chart-2", iconColor: "#0078CF", iconBg: "#EAF6FF",
-  };
+  // ── Core4 factory: each phase MS gets its own isolated snapshot via ?phase= ─
+  function core4(phase: string): SectionItem[] {
+    return [
+      {
+        key: "borrower", route: `/application/${id}/borrower?phase=${phase}`,
+        label: "Borrower Profile", description: "Identity, contact information, and financial profile",
+        icon: "user", iconColor: Colors.light.tint, iconBg: Colors.light.tintLight,
+      },
+      {
+        key: "property", route: `/application/${id}/property?phase=${phase}`,
+        label: "Property Details", description: "Location, attributes, occupancy, rent roll, and operating history",
+        icon: "map-pin", iconColor: "#00875D", iconBg: "#EAF5F2",
+      },
+      {
+        key: "loan", route: `/application/${id}/loan?phase=${phase}`,
+        label: "Loan Terms", description: "Structure, rate, LTV, DSCR, amortization type",
+        icon: "dollar-sign", iconColor: "#0078CF", iconBg: "#EAF6FF",
+      },
+      {
+        key: "amortization", route: `/application/${id}/amortization?phase=${phase}`,
+        label: "Amortization Calculator", description: "Rate build-up, day count convention, payment schedule",
+        icon: "bar-chart-2", iconColor: "#0078CF", iconBg: "#EAF6FF",
+      },
+    ];
+  }
   const creditEval: SectionItem = {
     key: "credit-evaluation", route: `/application/${id}/credit-evaluation`,
     label: "Initial Credit Review", description: "Credit box assessment and LOI recommendation",
@@ -108,37 +114,32 @@ function buildPhaseSections(
     icon: "shield", iconColor: "#B91C1C", iconBg: "#FEE2E2",
   };
 
-  // ── Core data pages shared across all active-phase MSs ──────────────────────
-  const coreData = [borrower, property, loanTerms, amortization];
-
   return {
     // ── Inquiry MS ────────────────────────────────────────────────────────────
-    "Inquiry":               [...coreData],
+    "Inquiry":               [...core4("inquiry")],
+    "Inquiry Canceled":      [inquiryDisposition, ...core4("inquiry")],
+    "Inquiry Withdrawn":     [inquiryDisposition, ...core4("inquiry")],
 
     // ── Initial Review MS ─────────────────────────────────────────────────────
-    "Initial Credit Review": [creditEval, ...coreData],
+    "Initial Credit Review": [creditEval, ...core4("initial-review")],
+    "Inquiry Denied":        [inquiryDisposition, creditEval, ...core4("initial-review")],
 
     // ── Application MS (Start + Processing unified) ───────────────────────────
-    "Application Start":     [processing, ...coreData],
-    "Application Processing":[processing, ...coreData],
+    "Application Start":     [processing, ...core4("application")],
+    "Application Processing":[processing, ...core4("application")],
+    "Application Withdrawn": [applicationDisposition, ...core4("application")],
+    "Application Canceled":  [applicationDisposition, ...core4("application")],
 
     // ── Final Review MS ───────────────────────────────────────────────────────
-    "Final Credit Review":   [commitmentLetter, ...coreData],
+    "Final Credit Review":   [commitmentLetter, ...core4("final-review")],
+    "Application Denied":    [finalCreditDenial, ...core4("final-review")],
 
     // ── Closing MS (Pre-close → Closing unified) ──────────────────────────────
-    "Pre-close":             [closingDetails, ...coreData],
-    "Ready for Docs":        [closingDetails, ...coreData],
-    "Docs Drawn":            [closingDetails, ...coreData],
-    "Docs Back":             [closingDetails, ...coreData],
-    "Closing":               [closingDetails, ...coreData],
-
-    // ── Disposition statuses ──────────────────────────────────────────────────
-    "Inquiry Canceled":      [inquiryDisposition, ...coreData],
-    "Inquiry Withdrawn":     [inquiryDisposition, ...coreData],
-    "Inquiry Denied":        [inquiryDisposition, creditEval, ...coreData],
-    "Application Withdrawn": [applicationDisposition, ...coreData],
-    "Application Canceled":  [applicationDisposition, ...coreData],
-    "Application Denied":    [finalCreditDenial, ...coreData],
+    "Pre-close":             [closingDetails, ...core4("closing")],
+    "Ready for Docs":        [closingDetails, ...core4("closing")],
+    "Docs Drawn":            [closingDetails, ...core4("closing")],
+    "Docs Back":             [closingDetails, ...core4("closing")],
+    "Closing":               [closingDetails, ...core4("closing")],
   };
 }
 
@@ -464,6 +465,7 @@ const pt = StyleSheet.create({
 export default function ApplicationOverviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication, getBorrower, getProperty, updateApplication, deleteApplication, getCollaborators } = useCoreService();
+  const { promoteSnapshots, getLoanTermsSnapshot } = usePhaseDataService();
   const { getComments } = useCommentsService();
   const { getDocuments } = useDocumentsService();
   const { getConditions } = useConditionsService();
@@ -500,7 +502,54 @@ export default function ApplicationOverviewScreen() {
   const handleAdvance = async () => {
     const idx = PHASE_ORDER.indexOf(app.status);
     if (idx >= 0 && idx < PHASE_ORDER.length - 1) {
-      await updateApplication(id, { status: PHASE_ORDER[idx + 1] });
+      const nextStatus = PHASE_ORDER[idx + 1];
+      const fromPhase = statusToPhase(app.status);
+      const toPhase   = statusToPhase(nextStatus);
+
+      // Cross-MS boundary: promote Core4 snapshots before updating status
+      if (fromPhase !== toPhase) {
+        await promoteSnapshots(id, fromPhase, toPhase, {
+          borrower: {
+            firstName: borrower?.firstName ?? "", lastName: borrower?.lastName ?? "",
+            entityName: borrower?.entityName ?? "",
+            emails: borrower?.emails ?? [], phones: borrower?.phones ?? [],
+            mailingAddresses: borrower?.mailingAddresses ?? [],
+            creExperienceYears: borrower?.creExperienceYears ?? "",
+            netWorthUsd: borrower?.netWorthUsd ?? "",
+            liquidityUsd: borrower?.liquidityUsd ?? "",
+            creditScore: borrower?.creditScore ?? "",
+          },
+          property: {
+            legalAddress: property?.legalAddress ?? "",
+            locations: property?.locations ?? [],
+            streetAddress: property?.streetAddress ?? "", city: property?.city ?? "",
+            state: property?.state ?? "", zipCode: property?.zipCode ?? "",
+            latitude: property?.latitude ?? "", longitude: property?.longitude ?? "",
+            googlePlaceId: property?.googlePlaceId ?? "",
+            propertyType: property?.propertyType ?? "Office",
+            grossSqFt: property?.grossSqFt ?? "", numberOfUnits: property?.numberOfUnits ?? "",
+            yearBuilt: property?.yearBuilt ?? "",
+            physicalOccupancyPct: property?.physicalOccupancyPct ?? "",
+            economicOccupancyPct: property?.economicOccupancyPct ?? "",
+          },
+          loanTerms: (() => {
+            const snap = getLoanTermsSnapshot(id, fromPhase);
+            return {
+              loanType: snap?.loanType ?? app.loanType ?? "Acquisition",
+              loanAmountUsd: snap?.loanAmountUsd ?? String(app.loanAmountUsd ?? ""),
+              loanTermYears: snap?.loanTermYears ?? String(app.loanTermYears ?? ""),
+              interestType: snap?.interestType ?? app.interestType ?? "Fixed",
+              interestRatePct: snap?.interestRatePct ?? String(app.interestRatePct ?? ""),
+              amortizationType: snap?.amortizationType ?? app.amortizationType ?? "Full Amortizing",
+              ltvPct: snap?.ltvPct ?? String(app.ltvPct ?? ""),
+              dscrRatio: snap?.dscrRatio ?? String(app.dscrRatio ?? ""),
+              targetClosingDate: snap?.targetClosingDate ?? app.targetClosingDate ?? "",
+            };
+          })(),
+        });
+      }
+
+      await updateApplication(id, { status: nextStatus });
     }
   };
 

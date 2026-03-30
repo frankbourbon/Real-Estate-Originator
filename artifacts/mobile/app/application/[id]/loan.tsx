@@ -22,6 +22,8 @@ import type {
   LoanType,
 } from "@/services/core";
 import { useCoreService } from "@/services/core";
+import type { PhaseKey } from "@/services/phase-data";
+import { usePhaseDataService } from "@/services/phase-data";
 import { formatCurrencyFull } from "@/utils/formatting";
 
 const LOAN_TYPES: LoanType[] = ["Acquisition", "Refinance", "Construction", "Bridge", "Permanent"];
@@ -72,51 +74,68 @@ const hdr = StyleSheet.create({
 });
 
 export default function LoanSection() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { getApplication, updateApplication } = useCoreService();
+  const { id, phase: phaseParam } = useLocalSearchParams<{ id: string; phase: string }>();
+  const phase = (phaseParam as PhaseKey) ?? "inquiry";
+
+  const { getApplication } = useCoreService();
+  const { getLoanTermsSnapshot, saveLoanTermsSnapshot } = usePhaseDataService();
+
   const app = getApplication(id);
+  const snap = getLoanTermsSnapshot(id, phase);
+
+  // Phase snapshot is authoritative; fall back to embedded app loan terms if no snapshot yet
+  const loanType        = snap?.loanType        ?? app?.loanType        ?? "Acquisition";
+  const loanAmountUsd   = snap?.loanAmountUsd   ?? String(app?.loanAmountUsd   ?? "");
+  const ltvPct          = snap?.ltvPct          ?? String(app?.ltvPct          ?? "");
+  const dscrRatio       = snap?.dscrRatio       ?? String(app?.dscrRatio       ?? "");
+  const interestType    = snap?.interestType    ?? app?.interestType    ?? "Fixed";
+  const interestRatePct = snap?.interestRatePct ?? String(app?.interestRatePct ?? "");
+  const loanTermYears   = snap?.loanTermYears   ?? String(app?.loanTermYears   ?? "");
+  const amortizationType= snap?.amortizationType?? app?.amortizationType?? "Full Amortizing";
+  const targetClosingDate = snap?.targetClosingDate ?? app?.targetClosingDate ?? "";
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
-    loanType: app?.loanType ?? ("Acquisition" as LoanType),
-    loanAmountUsd: app?.loanAmountUsd != null ? String(app.loanAmountUsd) : "",
-    ltvPct: app?.ltvPct != null ? String(app.ltvPct) : "",
-    dscrRatio: app?.dscrRatio != null ? String(app.dscrRatio) : "",
-    interestType: app?.interestType ?? ("Fixed" as InterestType),
-    interestRatePct: app?.interestRatePct != null ? String(app.interestRatePct) : "",
-    loanTermYears: app?.loanTermYears != null ? String(app.loanTermYears) : "",
-    amortizationType: app?.amortizationType ?? ("Full Amortizing" as AmortizationType),
-    targetClosingDate: app?.targetClosingDate ?? "",
+    loanType:          loanType        as LoanType,
+    loanAmountUsd,
+    ltvPct,
+    dscrRatio,
+    interestType:      interestType    as InterestType,
+    interestRatePct,
+    loanTermYears,
+    amortizationType:  amortizationType as AmortizationType,
+    targetClosingDate,
   });
 
   const set = (key: string) => (val: string) => setForm((f) => ({ ...f, [key]: val }));
 
   const handleEdit = () => {
     setForm({
-      loanType: app?.loanType ?? "Acquisition",
-      loanAmountUsd: app?.loanAmountUsd != null ? String(app.loanAmountUsd) : "",
-      ltvPct: app?.ltvPct != null ? String(app.ltvPct) : "",
-      dscrRatio: app?.dscrRatio != null ? String(app.dscrRatio) : "",
-      interestType: app?.interestType ?? "Fixed",
-      interestRatePct: app?.interestRatePct != null ? String(app.interestRatePct) : "",
-      loanTermYears: app?.loanTermYears != null ? String(app.loanTermYears) : "",
-      amortizationType: app?.amortizationType ?? "Full Amortizing",
-      targetClosingDate: app?.targetClosingDate ?? "",
+      loanType:          loanType         as LoanType,
+      loanAmountUsd,
+      ltvPct,
+      dscrRatio,
+      interestType:      interestType     as InterestType,
+      interestRatePct,
+      loanTermYears,
+      amortizationType:  amortizationType as AmortizationType,
+      targetClosingDate,
     });
     setEditing(true);
   };
 
   const handleSave = async () => {
-    await updateApplication(id, {
-      loanType: form.loanType,
-      loanAmountUsd: form.loanAmountUsd ? Number(form.loanAmountUsd) : undefined,
-      ltvPct: form.ltvPct ? Number(form.ltvPct) : undefined,
-      dscrRatio: form.dscrRatio ? Number(form.dscrRatio) : undefined,
-      interestType: form.interestType,
-      interestRatePct: form.interestRatePct ? Number(form.interestRatePct) : undefined,
-      loanTermYears: form.loanTermYears ? Number(form.loanTermYears) : undefined,
+    // Writes to this phase's isolated snapshot — does not cascade to other phases
+    await saveLoanTermsSnapshot(id, phase, {
+      loanType:         form.loanType,
+      loanAmountUsd:    form.loanAmountUsd,
+      ltvPct:           form.ltvPct,
+      dscrRatio:        form.dscrRatio,
+      interestType:     form.interestType,
+      interestRatePct:  form.interestRatePct,
+      loanTermYears:    form.loanTermYears,
       amortizationType: form.amortizationType,
-      targetClosingDate: form.targetClosingDate || undefined,
+      targetClosingDate: form.targetClosingDate,
     });
     setEditing(false);
   };

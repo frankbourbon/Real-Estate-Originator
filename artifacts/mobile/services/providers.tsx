@@ -13,6 +13,7 @@ import { InquiryDispositionServiceProvider } from "@/services/inquiry-dispositio
 import { InquiryServiceProvider } from "@/services/inquiry";
 import { LetterOfInterestServiceProvider } from "@/services/letter-of-interest";
 import { LoanTeamServiceProvider } from "@/services/loan-team";
+import { PhaseDataServiceProvider } from "@/services/phase-data";
 import { PreCloseServiceProvider } from "@/services/pre-close";
 import { ProcessingServiceProvider } from "@/services/processing";
 import { ReadyForDocsServiceProvider } from "@/services/ready-for-docs";
@@ -31,6 +32,7 @@ export function ServiceProviders({ children }: { children: React.ReactNode }) {
   return (
     <AdminServiceProvider>
       <CoreServiceProvider>
+        <PhaseDataServiceProvider>
         <InquiryServiceProvider>
           <InquiryDispositionServiceProvider>
             <LetterOfInterestServiceProvider>
@@ -62,6 +64,7 @@ export function ServiceProviders({ children }: { children: React.ReactNode }) {
             </LetterOfInterestServiceProvider>
           </InquiryDispositionServiceProvider>
         </InquiryServiceProvider>
+        </PhaseDataServiceProvider>
       </CoreServiceProvider>
     </AdminServiceProvider>
   );

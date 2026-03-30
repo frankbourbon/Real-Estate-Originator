@@ -25,6 +25,8 @@ import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
 import type { PropertyLocation, PropertyType } from "@/services/core";
 import { useCoreService } from "@/services/core";
+import type { PhaseKey } from "@/services/phase-data";
+import { usePhaseDataService } from "@/services/phase-data";
 import { useInquiryService } from "@/services/inquiry";
 import { formatSqFt, getPropertyCityState } from "@/utils/formatting";
 

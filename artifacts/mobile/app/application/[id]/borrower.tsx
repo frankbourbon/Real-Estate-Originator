@@ -19,6 +19,8 @@ import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
 import type { ContactMethod, MailingAddress } from "@/services/core";
 import { useCoreService } from "@/services/core";
+import type { PhaseKey } from "@/services/phase-data";
+import { usePhaseDataService } from "@/services/phase-data";
 import { formatCurrencyFull, getBorrowerDisplayName } from "@/utils/formatting";
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
@@ -412,10 +414,18 @@ function FinancialsEdit({ form, set }: { form: any; set: (k: string) => (v: stri
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function BorrowerSection() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { getApplication, getBorrower, updateBorrower } = useCoreService();
+  const { id, phase: phaseParam } = useLocalSearchParams<{ id: string; phase: string }>();
+  const phase = (phaseParam as PhaseKey) ?? "inquiry";
+
+  const { getApplication, getBorrower } = useCoreService();
+  const { getBorrowerSnapshot, saveBorrowerSnapshot } = usePhaseDataService();
+
   const app = getApplication(id);
-  const borrower = getBorrower(app?.borrowerId ?? "");
+  const coreBorrower = getBorrower(app?.borrowerId ?? "");
+
+  // Phase snapshot is authoritative; fall back to shared core record if no snapshot exists yet
+  const snapshot = getBorrowerSnapshot(id, phase);
+  const borrower = snapshot ?? coreBorrower;
 
   const [activeTab, setActiveTab] = useState("identity");
   const [editing, setEditing] = useState(false);
@@ -451,18 +461,18 @@ export default function BorrowerSection() {
   };
 
   const handleSave = async () => {
-    if (!borrower) return;
-    await updateBorrower(borrower.id, {
-      firstName: form.firstName || undefined,
-      lastName: form.lastName || undefined,
-      entityName: form.entityName || undefined,
+    // Writes to this phase's isolated snapshot — does not cascade to other phases
+    await saveBorrowerSnapshot(id, phase, {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      entityName: form.entityName,
       emails: form.emails,
       phones: form.phones,
       mailingAddresses: form.mailingAddresses,
-      creExperienceYears: form.creExperienceYears || undefined,
-      netWorthUsd: form.netWorthUsd || undefined,
-      liquidityUsd: form.liquidityUsd || undefined,
-      creditScore: form.creditScore || undefined,
+      creExperienceYears: form.creExperienceYears,
+      netWorthUsd: form.netWorthUsd,
+      liquidityUsd: form.liquidityUsd,
+      creditScore: form.creditScore,
     });
     setEditing(false);
   };
