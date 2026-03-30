@@ -96,7 +96,7 @@ export default function CommitmentLetterScreen() {
         <View style={styles.card}>
           <View style={styles.switchRow}>
             <View style={styles.switchLabel}>
-              <Text style={styles.label}>FCR Recommended</Text>
+              <Text style={styles.label}>CL Recommended</Text>
             </View>
             <Switch
               value={commitmentLetterRecommended}
