@@ -503,65 +503,78 @@ export default function ApplicationOverviewScreen() {
     );
   };
 
-  const handleAdvance = async () => {
+  const handleAdvance = () => {
     const idx = PHASE_ORDER.indexOf(app.status);
-    if (idx >= 0 && idx < PHASE_ORDER.length - 1) {
-      const nextStatus = PHASE_ORDER[idx + 1];
-      const fromPhase = statusToPhase(app.status);
-      const toPhase   = statusToPhase(nextStatus);
+    if (idx < 0 || idx >= PHASE_ORDER.length - 1) return;
+    const nextStatus = PHASE_ORDER[idx + 1];
+    confirmDestructive(
+      "Advance Phase",
+      `Move this application from "${app.status}" to "${nextStatus}"?`,
+      "Advance",
+      async () => {
+        const fromPhase = statusToPhase(app.status);
+        const toPhase   = statusToPhase(nextStatus);
 
-      // Cross-MS boundary: promote Core4 snapshots before updating status
-      if (fromPhase !== toPhase) {
-        await promoteSnapshots(id, fromPhase, toPhase, {
-          borrower: {
-            firstName: borrower?.firstName ?? "", lastName: borrower?.lastName ?? "",
-            entityName: borrower?.entityName ?? "",
-            emails: borrower?.emails ?? [], phones: borrower?.phones ?? [],
-            mailingAddresses: borrower?.mailingAddresses ?? [],
-            creExperienceYears: borrower?.creExperienceYears ?? "",
-            netWorthUsd: borrower?.netWorthUsd ?? "",
-            liquidityUsd: borrower?.liquidityUsd ?? "",
-            creditScore: borrower?.creditScore ?? "",
-          },
-          property: {
-            legalAddress: property?.legalAddress ?? "",
-            locations: property?.locations ?? [],
-            streetAddress: property?.streetAddress ?? "", city: property?.city ?? "",
-            state: property?.state ?? "", zipCode: property?.zipCode ?? "",
-            latitude: property?.latitude ?? "", longitude: property?.longitude ?? "",
-            googlePlaceId: property?.googlePlaceId ?? "",
-            propertyType: property?.propertyType ?? "Office",
-            grossSqFt: property?.grossSqFt ?? "", numberOfUnits: property?.numberOfUnits ?? "",
-            yearBuilt: property?.yearBuilt ?? "",
-            physicalOccupancyPct: property?.physicalOccupancyPct ?? "",
-            economicOccupancyPct: property?.economicOccupancyPct ?? "",
-          },
-          loanTerms: (() => {
-            const snap = getLoanTermsSnapshot(id, fromPhase);
-            return {
-              loanType: snap?.loanType ?? app.loanType ?? "Acquisition",
-              loanAmountUsd: snap?.loanAmountUsd ?? String(app.loanAmountUsd ?? ""),
-              loanTermYears: snap?.loanTermYears ?? String(app.loanTermYears ?? ""),
-              interestType: snap?.interestType ?? app.interestType ?? "Fixed",
-              interestRatePct: snap?.interestRatePct ?? String(app.interestRatePct ?? ""),
-              amortizationType: snap?.amortizationType ?? app.amortizationType ?? "Full Amortizing",
-              ltvPct: snap?.ltvPct ?? String(app.ltvPct ?? ""),
-              dscrRatio: snap?.dscrRatio ?? String(app.dscrRatio ?? ""),
-              targetClosingDate: snap?.targetClosingDate ?? app.targetClosingDate ?? "",
-            };
-          })(),
-        });
-      }
+        // Cross-MS boundary: promote Core4 snapshots before updating status
+        if (fromPhase !== toPhase) {
+          await promoteSnapshots(id, fromPhase, toPhase, {
+            borrower: {
+              firstName: borrower?.firstName ?? "", lastName: borrower?.lastName ?? "",
+              entityName: borrower?.entityName ?? "",
+              emails: borrower?.emails ?? [], phones: borrower?.phones ?? [],
+              mailingAddresses: borrower?.mailingAddresses ?? [],
+              creExperienceYears: borrower?.creExperienceYears ?? "",
+              netWorthUsd: borrower?.netWorthUsd ?? "",
+              liquidityUsd: borrower?.liquidityUsd ?? "",
+              creditScore: borrower?.creditScore ?? "",
+            },
+            property: {
+              legalAddress: property?.legalAddress ?? "",
+              locations: property?.locations ?? [],
+              streetAddress: property?.streetAddress ?? "", city: property?.city ?? "",
+              state: property?.state ?? "", zipCode: property?.zipCode ?? "",
+              latitude: property?.latitude ?? "", longitude: property?.longitude ?? "",
+              googlePlaceId: property?.googlePlaceId ?? "",
+              propertyType: property?.propertyType ?? "Office",
+              grossSqFt: property?.grossSqFt ?? "", numberOfUnits: property?.numberOfUnits ?? "",
+              yearBuilt: property?.yearBuilt ?? "",
+              physicalOccupancyPct: property?.physicalOccupancyPct ?? "",
+              economicOccupancyPct: property?.economicOccupancyPct ?? "",
+            },
+            loanTerms: (() => {
+              const snap = getLoanTermsSnapshot(id, fromPhase);
+              return {
+                loanType: snap?.loanType ?? app.loanType ?? "Acquisition",
+                loanAmountUsd: snap?.loanAmountUsd ?? String(app.loanAmountUsd ?? ""),
+                loanTermYears: snap?.loanTermYears ?? String(app.loanTermYears ?? ""),
+                interestType: snap?.interestType ?? app.interestType ?? "Fixed",
+                interestRatePct: snap?.interestRatePct ?? String(app.interestRatePct ?? ""),
+                amortizationType: snap?.amortizationType ?? app.amortizationType ?? "Full Amortizing",
+                ltvPct: snap?.ltvPct ?? String(app.ltvPct ?? ""),
+                dscrRatio: snap?.dscrRatio ?? String(app.dscrRatio ?? ""),
+                targetClosingDate: snap?.targetClosingDate ?? app.targetClosingDate ?? "",
+              };
+            })(),
+          });
+        }
 
-      await updateApplication(id, { status: nextStatus });
-    }
+        await updateApplication(id, { status: nextStatus });
+      },
+    );
   };
 
-  const handleRetreat = async () => {
+  const handleRetreat = () => {
     const idx = PHASE_ORDER.indexOf(app.status);
-    if (idx > 0) {
-      await updateApplication(id, { status: PHASE_ORDER[idx - 1] });
-    }
+    if (idx <= 0) return;
+    const prevStatus = PHASE_ORDER[idx - 1];
+    confirmDestructive(
+      "Move Back",
+      `Retreat this application from "${app.status}" to "${prevStatus}"?`,
+      "Move Back",
+      async () => {
+        await updateApplication(id, { status: prevStatus });
+      },
+    );
   };
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
