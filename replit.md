@@ -104,7 +104,7 @@ Expo React Native app — LOA Origination System for commercial real estate lend
 **Services** (`services/`):
 | Service | Storage Key(s) | Responsibility |
 |---|---|---|
-| `core` | `svc_core_apps_v2`, `svc_core_borrowers_v2`, `svc_core_properties_v3` | LoanApplication (100), Borrower (70), Property (100), pipeline stats |
+| `core` | `svc_core_apps_v2`, `svc_core_borrowers_v2`, `svc_core_properties_v3` | LoanApplication (100), Borrower (70), Property (100), pipeline stats. `RateType` = "Fixed Rate" \| "Adjustable Rate" \| "Hybrid". 9 rate pricing fields on `LoanApplication` (stored 6dp, displayed 3dp). |
 | `inquiry` | `svc_inquiry_notes_v2`, `svc_inquiry_rent_roll_v2`, `svc_inquiry_op_history_v2` | 88 inquiry notes, rent roll units (MISMO), operating history years (MISMO) |
 | `initial-credit-review` | `svc_icr_v1` | ICR record per app (73 records): credit box notes, LOI issued/expiration |
 | `application` | `svc_application_v1` | Application Start + Processing: deposit, signed LOI, rate lock, appraisal, env status, borrower forms |
@@ -123,7 +123,8 @@ Expo React Native app — LOA Origination System for commercial real estate lend
 
 **Key screens** (all under `app/application/[id]/`):
 - `index.tsx` — Overview: badge counts from 5 services, status advance/retreat
-- `loan.tsx`, `borrower.tsx`, `property.tsx` — `useCoreService` inline editing
+- `loan.tsx` — Phase-snapshot editing via `usePhaseDataService`. Terms card + Fixed Rate card (always) + Adjustable Rate card (Adjustable/Hybrid only). Live computed `allInFixedRate` and `proformaAdjustableAllInRate` (6dp stored, 3dp displayed). Variance fields accept negative values.
+- `borrower.tsx`, `property.tsx` — `useCoreService` inline editing
 - `amortization.tsx` — Amortization calculator, reads loan terms from core
 - `credit-evaluation.tsx` — `useLetterOfInterestService` + `useFinalCreditReviewService`
 - `processing.tsx` — `useProcessingService` + `usePreCloseService`

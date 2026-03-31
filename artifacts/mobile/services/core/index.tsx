@@ -10,6 +10,7 @@ export type PropertyType =
 
 export type LoanType = "Acquisition" | "Refinance" | "Construction" | "Bridge" | "Permanent";
 export type InterestType = "Fixed" | "Floating" | "Hybrid";
+export type RateType = "Fixed Rate" | "Adjustable Rate" | "Hybrid";
 export type AmortizationType = "Full Amortizing" | "Interest Only" | "Partial IO";
 
 export type ApplicationStatus =
@@ -103,6 +104,17 @@ export type LoanApplication = {
   ltvPct: string;
   dscrRatio: string;
   targetClosingDate: string;
+  // ── Rate pricing fields (stored at 6dp, displayed at 3dp) ──
+  rateType: RateType;
+  baseRate: string;
+  fixedRateVariance: string;
+  indexName: string;
+  indexRate: string;
+  spreadOnFixed: string;
+  allInFixedRate: string;          // calc: baseRate + fixedRateVariance + indexRate + spreadOnFixed
+  adjustableRateVariance: string;
+  spreadOnAdjustable: string;
+  proformaAdjustableAllInRate: string; // calc: baseRate + adjustableRateVariance + indexRate + spreadOnAdjustable
 };
 
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
@@ -151,6 +163,10 @@ function emptyApp(borrowerId: string, propertyId: string): Omit<LoanApplication,
     loanType: "Acquisition", loanAmountUsd: "", loanTermYears: "",
     interestType: "Fixed", interestRatePct: "", amortizationType: "Full Amortizing",
     ltvPct: "", dscrRatio: "", targetClosingDate: "",
+    rateType: "Fixed Rate",
+    baseRate: "", fixedRateVariance: "", indexName: "", indexRate: "",
+    spreadOnFixed: "", allInFixedRate: "",
+    adjustableRateVariance: "", spreadOnAdjustable: "", proformaAdjustableAllInRate: "",
   };
 }
 

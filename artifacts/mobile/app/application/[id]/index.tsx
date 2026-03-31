@@ -553,6 +553,16 @@ export default function ApplicationOverviewScreen() {
                 ltvPct: snap?.ltvPct ?? String(app.ltvPct ?? ""),
                 dscrRatio: snap?.dscrRatio ?? String(app.dscrRatio ?? ""),
                 targetClosingDate: snap?.targetClosingDate ?? app.targetClosingDate ?? "",
+                rateType: snap?.rateType ?? app.rateType ?? "Fixed Rate",
+                baseRate: snap?.baseRate ?? app.baseRate ?? "",
+                fixedRateVariance: snap?.fixedRateVariance ?? app.fixedRateVariance ?? "",
+                indexName: snap?.indexName ?? app.indexName ?? "",
+                indexRate: snap?.indexRate ?? app.indexRate ?? "",
+                spreadOnFixed: snap?.spreadOnFixed ?? app.spreadOnFixed ?? "",
+                allInFixedRate: snap?.allInFixedRate ?? app.allInFixedRate ?? "",
+                adjustableRateVariance: snap?.adjustableRateVariance ?? app.adjustableRateVariance ?? "",
+                spreadOnAdjustable: snap?.spreadOnAdjustable ?? app.spreadOnAdjustable ?? "",
+                proformaAdjustableAllInRate: snap?.proformaAdjustableAllInRate ?? app.proformaAdjustableAllInRate ?? "",
               };
             })(),
           });

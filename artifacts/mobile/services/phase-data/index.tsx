@@ -11,6 +11,7 @@ import type {
   MailingAddress,
   PropertyLocation,
   PropertyType,
+  RateType,
 } from "@/services/core";
 
 // ─── Phase key — one per phase microservice ───────────────────────────────────
@@ -98,6 +99,17 @@ export type LoanTermsSnapshot = {
   ltvPct: string;
   dscrRatio: string;
   targetClosingDate: string;
+  // ── Rate pricing fields (stored at 6dp, displayed at 3dp) ──
+  rateType: RateType;
+  baseRate: string;
+  fixedRateVariance: string;
+  indexName: string;
+  indexRate: string;
+  spreadOnFixed: string;
+  allInFixedRate: string;
+  adjustableRateVariance: string;
+  spreadOnAdjustable: string;
+  proformaAdjustableAllInRate: string;
 };
 
 // ─── Fallback shapes (passed in from calling code so service stays isolated) ──
@@ -111,7 +123,7 @@ export type LoanTermsFallback = Omit<LoanTermsSnapshot, "applicationId" | "phase
 const KEYS = {
   borrowers:  "svc_phase_borrowers_v1",
   properties: "svc_phase_properties_v1",
-  loanTerms:  "svc_phase_loan_terms_v1",
+  loanTerms:  "svc_phase_loan_terms_v2",
 };
 
 function snapId(applicationId: string, phase: PhaseKey): string {
@@ -259,7 +271,14 @@ const [PhaseDataServiceProvider, usePhaseDataService] = createContextHook(() => 
             loanTermYears: srcLT.loanTermYears, interestType: srcLT.interestType,
             interestRatePct: srcLT.interestRatePct, amortizationType: srcLT.amortizationType,
             ltvPct: srcLT.ltvPct, dscrRatio: srcLT.dscrRatio,
-            targetClosingDate: srcLT.targetClosingDate }
+            targetClosingDate: srcLT.targetClosingDate,
+            rateType: srcLT.rateType, baseRate: srcLT.baseRate,
+            fixedRateVariance: srcLT.fixedRateVariance, indexName: srcLT.indexName,
+            indexRate: srcLT.indexRate, spreadOnFixed: srcLT.spreadOnFixed,
+            allInFixedRate: srcLT.allInFixedRate,
+            adjustableRateVariance: srcLT.adjustableRateVariance,
+            spreadOnAdjustable: srcLT.spreadOnAdjustable,
+            proformaAdjustableAllInRate: srcLT.proformaAdjustableAllInRate }
         : fallback.loanTerms;
       const nextLT = loanTermsSnaps.filter(s => snapId(s.applicationId, s.phase) !== toId);
       nextLT.push({ ...ltData, applicationId, phase: toPhase });

@@ -20,6 +20,7 @@ import type {
   AmortizationType,
   InterestType,
   LoanType,
+  RateType,
 } from "@/services/core";
 import { useCoreService } from "@/services/core";
 import type { PhaseKey } from "@/services/phase-data";
@@ -28,10 +29,30 @@ import { formatCurrencyFull } from "@/utils/formatting";
 import { AccessDenied } from "@/components/AccessDenied";
 import { usePermission } from "@/hooks/usePermission";
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const LOAN_TYPES: LoanType[] = ["Acquisition", "Refinance", "Construction", "Bridge", "Permanent"];
-const INTEREST_TYPES: InterestType[] = ["Fixed", "Floating", "Hybrid"];
+const RATE_TYPES: RateType[] = ["Fixed Rate", "Adjustable Rate", "Hybrid"];
 const AMORT_TYPES: AmortizationType[] = ["Full Amortizing", "Interest Only", "Partial IO"];
 
+// ─── Rate helpers ─────────────────────────────────────────────────────────────
+
+/** Sum string rate parts; stores result at 6dp. Returns "" if all inputs are empty. */
+function calcRate(...parts: string[]): string {
+  if (parts.every((p) => p.trim() === "")) return "";
+  const result = parts.reduce((acc, p) => acc + (parseFloat(p) || 0), 0);
+  return result.toFixed(6);
+}
+
+/** Display a stored rate value naturally rounded to 3dp. */
+function fmt3(val: string): string {
+  if (!val || val.trim() === "") return "";
+  const n = parseFloat(val);
+  if (isNaN(n)) return val;
+  return n.toFixed(3);
+}
+
+// ─── Header buttons ───────────────────────────────────────────────────────────
 
 function EditBtn({ onPress }: { onPress: () => void }) {
   return (
@@ -75,6 +96,19 @@ const hdr = StyleSheet.create({
   saveText: { fontSize: 12, fontFamily: "OpenSans_700Bold", color: "#fff" },
 });
 
+// ─── Calc badge (read-only label for computed fields) ─────────────────────────
+
+function CalcBadge() {
+  return (
+    <View style={styles.calcBadge}>
+      <Feather name="zap" size={10} color={Colors.light.tint} />
+      <Text style={styles.calcBadgeText}>Calculated</Text>
+    </View>
+  );
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function LoanSection() {
   const { id, phase: phaseParam } = useLocalSearchParams<{ id: string; phase: string }>();
   const phase = (phaseParam as PhaseKey) ?? "inquiry";
@@ -87,84 +121,127 @@ export default function LoanSection() {
   const snap = getLoanTermsSnapshot(id, phase);
 
   // Phase snapshot is authoritative; fall back to embedded app loan terms if no snapshot yet
-  const loanType        = snap?.loanType        ?? app?.loanType        ?? "Acquisition";
-  const loanAmountUsd   = snap?.loanAmountUsd   ?? String(app?.loanAmountUsd   ?? "");
-  const ltvPct          = snap?.ltvPct          ?? String(app?.ltvPct          ?? "");
-  const dscrRatio       = snap?.dscrRatio       ?? String(app?.dscrRatio       ?? "");
-  const interestType    = snap?.interestType    ?? app?.interestType    ?? "Fixed";
-  const interestRatePct = snap?.interestRatePct ?? String(app?.interestRatePct ?? "");
-  const loanTermYears   = snap?.loanTermYears   ?? String(app?.loanTermYears   ?? "");
-  const amortizationType= snap?.amortizationType?? app?.amortizationType?? "Full Amortizing";
-  const targetClosingDate = snap?.targetClosingDate ?? app?.targetClosingDate ?? "";
+  const loanType          = snap?.loanType          ?? app?.loanType          ?? "Acquisition";
+  const loanAmountUsd     = snap?.loanAmountUsd      ?? String(app?.loanAmountUsd   ?? "");
+  const ltvPct            = snap?.ltvPct             ?? String(app?.ltvPct           ?? "");
+  const dscrRatio         = snap?.dscrRatio          ?? String(app?.dscrRatio        ?? "");
+  const interestType      = snap?.interestType       ?? app?.interestType      ?? "Fixed";
+  const interestRatePct   = snap?.interestRatePct    ?? String(app?.interestRatePct  ?? "");
+  const loanTermYears     = snap?.loanTermYears       ?? String(app?.loanTermYears    ?? "");
+  const amortizationType  = snap?.amortizationType   ?? app?.amortizationType  ?? "Full Amortizing";
+  const targetClosingDate = snap?.targetClosingDate  ?? app?.targetClosingDate  ?? "";
+
+  // Rate pricing fields
+  const rateType                    = snap?.rateType                    ?? app?.rateType                    ?? "Fixed Rate";
+  const baseRate                    = snap?.baseRate                    ?? app?.baseRate                    ?? "";
+  const fixedRateVariance           = snap?.fixedRateVariance           ?? app?.fixedRateVariance           ?? "";
+  const indexName                   = snap?.indexName                   ?? app?.indexName                   ?? "";
+  const indexRate                   = snap?.indexRate                   ?? app?.indexRate                   ?? "";
+  const spreadOnFixed               = snap?.spreadOnFixed               ?? app?.spreadOnFixed               ?? "";
+  const allInFixedRate              = snap?.allInFixedRate              ?? app?.allInFixedRate              ?? "";
+  const adjustableRateVariance      = snap?.adjustableRateVariance      ?? app?.adjustableRateVariance      ?? "";
+  const spreadOnAdjustable          = snap?.spreadOnAdjustable          ?? app?.spreadOnAdjustable          ?? "";
+  const proformaAdjustableAllInRate = snap?.proformaAdjustableAllInRate ?? app?.proformaAdjustableAllInRate ?? "";
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
-    loanType:          loanType        as LoanType,
+    loanType:          loanType         as LoanType,
     loanAmountUsd,
     ltvPct,
     dscrRatio,
-    interestType:      interestType    as InterestType,
+    interestType:      interestType     as InterestType,
     interestRatePct,
     loanTermYears,
     amortizationType:  amortizationType as AmortizationType,
     targetClosingDate,
+    rateType:          rateType         as RateType,
+    baseRate,
+    fixedRateVariance,
+    indexName,
+    indexRate,
+    spreadOnFixed,
+    adjustableRateVariance,
+    spreadOnAdjustable,
   });
 
   const set = (key: string) => (val: string) => setForm((f) => ({ ...f, [key]: val }));
 
+  // ── Live calc (client-side, from current form state) ──────────────────────
+  const liveAllInFixed = calcRate(form.baseRate, form.fixedRateVariance, form.indexRate, form.spreadOnFixed);
+  const liveProformaAdj = calcRate(form.baseRate, form.adjustableRateVariance, form.indexRate, form.spreadOnAdjustable);
+
+  // Adjustable fields visible for Adjustable Rate and Hybrid
+  const showAdjEditing = form.rateType === "Adjustable Rate" || form.rateType === "Hybrid";
+  const showAdjRead    = rateType === "Adjustable Rate" || rateType === "Hybrid";
+
   const handleEdit = () => {
     setForm({
-      loanType:          loanType         as LoanType,
-      loanAmountUsd,
-      ltvPct,
-      dscrRatio,
-      interestType:      interestType     as InterestType,
-      interestRatePct,
-      loanTermYears,
-      amortizationType:  amortizationType as AmortizationType,
+      loanType:         loanType         as LoanType,
+      loanAmountUsd,    ltvPct,           dscrRatio,
+      interestType:     interestType     as InterestType,
+      interestRatePct,  loanTermYears,
+      amortizationType: amortizationType as AmortizationType,
       targetClosingDate,
+      rateType:         rateType         as RateType,
+      baseRate,         fixedRateVariance, indexName, indexRate,
+      spreadOnFixed,    adjustableRateVariance, spreadOnAdjustable,
     });
     setEditing(true);
   };
 
   const handleSave = async () => {
-    // Writes to this phase's isolated snapshot — does not cascade to other phases
+    // Server-side calc: compute and store authoritative values
+    const computedAllInFixed    = calcRate(form.baseRate, form.fixedRateVariance, form.indexRate, form.spreadOnFixed);
+    const computedProformaAdj   = calcRate(form.baseRate, form.adjustableRateVariance, form.indexRate, form.spreadOnAdjustable);
+
     await saveLoanTermsSnapshot(id, phase, {
-      loanType:         form.loanType,
-      loanAmountUsd:    form.loanAmountUsd,
-      ltvPct:           form.ltvPct,
-      dscrRatio:        form.dscrRatio,
-      interestType:     form.interestType,
-      interestRatePct:  form.interestRatePct,
-      loanTermYears:    form.loanTermYears,
-      amortizationType: form.amortizationType,
-      targetClosingDate: form.targetClosingDate,
+      loanType:                    form.loanType,
+      loanAmountUsd:               form.loanAmountUsd,
+      ltvPct:                      form.ltvPct,
+      dscrRatio:                   form.dscrRatio,
+      interestType:                form.interestType,
+      interestRatePct:             form.interestRatePct,
+      loanTermYears:               form.loanTermYears,
+      amortizationType:            form.amortizationType,
+      targetClosingDate:           form.targetClosingDate,
+      rateType:                    form.rateType,
+      baseRate:                    form.baseRate,
+      fixedRateVariance:           form.fixedRateVariance,
+      indexName:                   form.indexName,
+      indexRate:                   form.indexRate,
+      spreadOnFixed:               form.spreadOnFixed,
+      allInFixedRate:              computedAllInFixed,
+      adjustableRateVariance:      form.adjustableRateVariance,
+      spreadOnAdjustable:          form.spreadOnAdjustable,
+      proformaAdjustableAllInRate: computedProformaAdj,
     });
     setEditing(false);
   };
 
   const handleCancel = () => setEditing(false);
 
-  function renderContent() {
-    if (editing) {
-      return (
+  // ── Edit form ─────────────────────────────────────────────────────────────
+
+  function renderEdit() {
+    return (
+      <>
+        {/* Terms */}
         <View style={styles.card}>
           <SectionHeader title="Terms" />
           <SelectField label="Loan Type" value={form.loanType} options={LOAN_TYPES} onChange={set("loanType")} required />
           <FormField label="Loan Amount (USD)" value={form.loanAmountUsd} onChangeText={set("loanAmountUsd")} placeholder="5,000,000" keyboardType="number-pad" prefix="$" required />
           <View style={styles.row}>
             <View style={styles.flex1}>
-              <FormField label="LTV (%)" value={form.ltvPct} onChangeText={set("ltvPct")} placeholder="65.0" keyboardType="decimal-pad" suffix="%" hint="Loan-to-value" />
+              <FormField label="LTV (%)" value={form.ltvPct} onChangeText={set("ltvPct")} placeholder="65.000" keyboardType="decimal-pad" suffix="%" hint="Loan-to-value" />
             </View>
             <View style={styles.gap} />
             <View style={styles.flex1}>
-              <FormField label="DSCR (×)" value={form.dscrRatio} onChangeText={set("dscrRatio")} placeholder="1.25" keyboardType="decimal-pad" suffix="×" hint="Debt service coverage" />
+              <FormField label="DSCR (×)" value={form.dscrRatio} onChangeText={set("dscrRatio")} placeholder="1.250" keyboardType="decimal-pad" suffix="×" hint="Debt service coverage" />
             </View>
           </View>
-          <SelectField label="Interest Type" value={form.interestType} options={INTEREST_TYPES} onChange={set("interestType")} />
           <View style={styles.row}>
             <View style={styles.flex1}>
-              <FormField label="Interest Rate (% p.a.)" value={form.interestRatePct} onChangeText={set("interestRatePct")} placeholder="6.50" keyboardType="decimal-pad" suffix="%" />
+              <SelectField label="Rate Type" value={form.rateType} options={RATE_TYPES} onChange={(v) => set("rateType")(v)} />
             </View>
             <View style={styles.gap} />
             <View style={styles.flex1}>
@@ -174,21 +251,154 @@ export default function LoanSection() {
           <SelectField label="Amortization" value={form.amortizationType} options={AMORT_TYPES} onChange={set("amortizationType")} />
           <FormField label="Target Closing Date" value={form.targetClosingDate} onChangeText={set("targetClosingDate")} placeholder="MM/DD/YYYY" />
         </View>
-      );
-    }
+
+        {/* Fixed Rate Attributes — always visible */}
+        <View style={[styles.card, styles.cardSpacing]}>
+          <SectionHeader title="Fixed Rate" />
+          <FormField
+            label="Base Rate (% p.a.)"
+            value={form.baseRate}
+            onChangeText={set("baseRate")}
+            placeholder="0.000"
+            keyboardType="decimal-pad"
+            suffix="%"
+            hint="6 decimal precision stored"
+          />
+          <FormField
+            label="Fixed Rate Variance (%)"
+            value={form.fixedRateVariance}
+            onChangeText={set("fixedRateVariance")}
+            placeholder="-0.125 or 0.250"
+            keyboardType="numbers-and-punctuation"
+            suffix="%"
+            hint="Supports positive and negative values"
+          />
+          <FormField
+            label="Index Name"
+            value={form.indexName}
+            onChangeText={set("indexName")}
+            placeholder="SOFR, LIBOR, Prime…"
+          />
+          <FormField
+            label="Index Rate (% p.a.)"
+            value={form.indexRate}
+            onChangeText={set("indexRate")}
+            placeholder="0.000"
+            keyboardType="decimal-pad"
+            suffix="%"
+          />
+          <FormField
+            label="Spread on Fixed (%)"
+            value={form.spreadOnFixed}
+            onChangeText={set("spreadOnFixed")}
+            placeholder="0.000"
+            keyboardType="decimal-pad"
+            suffix="%"
+          />
+          {/* Calculated — read-only, live */}
+          <View style={styles.calcRow}>
+            <CalcBadge />
+          </View>
+          <FormField
+            label="All In Fixed Rate (%)"
+            value={fmt3(liveAllInFixed)}
+            onChangeText={() => {}}
+            suffix="%"
+            editable={false}
+            hint="Base Rate + Fixed Rate Variance + Index Rate + Spread on Fixed"
+          />
+        </View>
+
+        {/* Adjustable Rate Attributes — Adjustable Rate or Hybrid only */}
+        {showAdjEditing && (
+          <View style={[styles.card, styles.cardSpacing]}>
+            <SectionHeader title="Adjustable Rate" />
+            <FormField
+              label="Adjustable Rate Variance (%)"
+              value={form.adjustableRateVariance}
+              onChangeText={set("adjustableRateVariance")}
+              placeholder="-0.125 or 0.250"
+              keyboardType="numbers-and-punctuation"
+              suffix="%"
+              hint="Supports positive and negative values"
+            />
+            <FormField
+              label="Spread on Adjustable (%)"
+              value={form.spreadOnAdjustable}
+              onChangeText={set("spreadOnAdjustable")}
+              placeholder="0.000"
+              keyboardType="decimal-pad"
+              suffix="%"
+            />
+            {/* Calculated — read-only, live */}
+            <View style={styles.calcRow}>
+              <CalcBadge />
+            </View>
+            <FormField
+              label="Proforma Adjustable All In Rate (%)"
+              value={fmt3(liveProformaAdj)}
+              onChangeText={() => {}}
+              suffix="%"
+              editable={false}
+              hint="Base Rate + Adjustable Rate Variance + Index Rate + Spread on Adjustable"
+            />
+          </View>
+        )}
+      </>
+    );
+  }
+
+  // ── Read view ─────────────────────────────────────────────────────────────
+
+  function renderRead() {
     return (
-      <View style={styles.card}>
-        <SectionHeader title="Terms" />
-        <DetailRow label="Loan Type" value={loanType} />
-        <DetailRow label="Loan Amount (USD)" value={loanAmountUsd ? formatCurrencyFull(loanAmountUsd) : undefined} />
-        <DetailRow label="LTV (%)" value={ltvPct ? `${ltvPct}%` : undefined} />
-        <DetailRow label="DSCR (×)" value={dscrRatio ? `${dscrRatio}×` : undefined} />
-        <DetailRow label="Interest Type" value={interestType} />
-        <DetailRow label="Interest Rate (% p.a.)" value={interestRatePct ? `${interestRatePct}%` : undefined} />
-        <DetailRow label="Loan Term" value={loanTermYears ? `${loanTermYears} years` : undefined} />
-        <DetailRow label="Amortization" value={amortizationType} />
-        <DetailRow label="Target Closing Date" value={targetClosingDate || undefined} last />
-      </View>
+      <>
+        {/* Terms */}
+        <View style={styles.card}>
+          <SectionHeader title="Terms" />
+          <DetailRow label="Loan Type" value={loanType} />
+          <DetailRow label="Loan Amount (USD)" value={loanAmountUsd ? formatCurrencyFull(loanAmountUsd) : undefined} />
+          <DetailRow label="LTV (%)" value={ltvPct ? `${fmt3(ltvPct)}%` : undefined} />
+          <DetailRow label="DSCR (×)" value={dscrRatio ? `${fmt3(dscrRatio)}×` : undefined} />
+          <DetailRow label="Rate Type" value={rateType} />
+          <DetailRow label="Loan Term" value={loanTermYears ? `${loanTermYears} years` : undefined} />
+          <DetailRow label="Amortization" value={amortizationType} />
+          <DetailRow label="Target Closing Date" value={targetClosingDate || undefined} last />
+        </View>
+
+        {/* Fixed Rate Attributes — always visible */}
+        <View style={[styles.card, styles.cardSpacing]}>
+          <SectionHeader title="Fixed Rate" />
+          <DetailRow label="Base Rate" value={baseRate ? `${fmt3(baseRate)}%` : undefined} />
+          <DetailRow label="Fixed Rate Variance" value={fixedRateVariance ? `${fmt3(fixedRateVariance)}%` : undefined} />
+          <DetailRow label="Index Name" value={indexName || undefined} />
+          <DetailRow label="Index Rate" value={indexRate ? `${fmt3(indexRate)}%` : undefined} />
+          <DetailRow label="Spread on Fixed" value={spreadOnFixed ? `${fmt3(spreadOnFixed)}%` : undefined} />
+          <View style={styles.calcDivider} />
+          <DetailRow
+            label="All In Fixed Rate"
+            value={allInFixedRate ? `${fmt3(allInFixedRate)}%` : undefined}
+            last={!showAdjRead}
+            hint="Calculated"
+          />
+        </View>
+
+        {/* Adjustable Rate Attributes — Adjustable Rate or Hybrid only */}
+        {showAdjRead && (
+          <View style={[styles.card, styles.cardSpacing]}>
+            <SectionHeader title="Adjustable Rate" />
+            <DetailRow label="Adjustable Rate Variance" value={adjustableRateVariance ? `${fmt3(adjustableRateVariance)}%` : undefined} />
+            <DetailRow label="Spread on Adjustable" value={spreadOnAdjustable ? `${fmt3(spreadOnAdjustable)}%` : undefined} />
+            <View style={styles.calcDivider} />
+            <DetailRow
+              label="Proforma Adjustable All In Rate"
+              value={proformaAdjustableAllInRate ? `${fmt3(proformaAdjustableAllInRate)}%` : undefined}
+              last
+              hint="Calculated"
+            />
+          </View>
+        )}
+      </>
     );
   }
 
@@ -208,11 +418,13 @@ export default function LoanSection() {
             : canEdit ? <EditBtn onPress={handleEdit} /> : undefined
         }
       >
-        {renderContent()}
+        {editing ? renderEdit() : renderRead()}
       </SectionScreenLayout>
     </KeyboardAvoidingView>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   card: {
@@ -226,4 +438,33 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "flex-end" },
   flex1: { flex: 1 },
   gap: { width: 8 },
+  calcRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+    marginTop: -4,
+  },
+  calcBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: Colors.light.background,
+    borderWidth: 1,
+    borderColor: Colors.light.tint,
+    borderRadius: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  calcBadgeText: {
+    fontSize: 10,
+    fontFamily: "OpenSans_600SemiBold",
+    color: Colors.light.tint,
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
+  },
+  calcDivider: {
+    height: 1,
+    backgroundColor: Colors.light.border,
+    marginVertical: 8,
+  },
 });
