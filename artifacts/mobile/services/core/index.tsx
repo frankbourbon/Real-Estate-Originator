@@ -122,7 +122,7 @@ export type LoanApplication = {
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 
 const KEYS = {
-  apps: "svc_core_apps_v4",
+  apps: "svc_core_apps_v5",
   borrowers: "svc_core_borrowers_v2",
   properties: "svc_core_properties_v3",
   collaborators: "svc_core_collab_v1",
@@ -1402,11 +1402,11 @@ function nr(rt: RateType = "Fixed Rate"): RS {
     spreadOnAdjustable: "", proformaAdjustableAllInRate: "" };
 }
 
-// Index name + rate shorthands
-const SOFR_N = "SOFR 30-Day Avg"; const SOFR_R = "4.300000";
-const T5_N   = "US Treasury 5-Yr";  const T5_R   = "4.150000";
-const T10_N  = "US Treasury 10-Yr"; const T10_R  = "4.450000";
-const PRI_N  = "Prime Rate";         const PRI_R  = "7.500000";
+// Index name + rate shorthands (names match the UI pick list)
+const SOFR_N = "SOFR";        const SOFR_R = "4.300000";
+const T5_N   = "5Y Treasury"; const T5_R   = "4.150000";
+const T10_N  = "10Y Treasury"; const T10_R  = "4.450000";
+const PRI_N  = "Prime";        const PRI_R  = "7.500000";
 
 // ── Fixed Rate presets (air = 0 + fv + idxR + sf) ────────────────────────────
 const FR_580 = fr(SOFR_N, SOFR_R, "0.000000", "1.500000", "5.800000"); // 0+0+4.30+1.50

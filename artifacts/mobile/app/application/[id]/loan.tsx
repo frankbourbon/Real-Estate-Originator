@@ -35,6 +35,7 @@ import { usePermission } from "@/hooks/usePermission";
 const LOAN_TYPES: LoanType[] = ["Acquisition", "Refinance", "Construction", "Bridge", "Permanent"];
 const RATE_TYPES: RateType[] = ["Fixed Rate", "Adjustable Rate", "Hybrid"];
 const AMORT_TYPES: AmortizationType[] = ["Full Amortizing", "Interest Only", "Partial IO"];
+const INDEX_NAMES = ["SOFR", "5Y Treasury", "10Y Treasury", "Prime", "Other"] as const;
 
 // ─── Header buttons ───────────────────────────────────────────────────────────
 
@@ -265,11 +266,11 @@ export default function LoanSection() {
             suffix="%"
             hint="Supports positive and negative values"
           />
-          <FormField
+          <SelectField
             label="Index Name"
             value={form.indexName}
-            onChangeText={set("indexName")}
-            placeholder="SOFR, LIBOR, Prime…"
+            options={[...INDEX_NAMES]}
+            onChange={set("indexName")}
           />
           <FormField
             label="Index Rate (% p.a.)"
@@ -314,11 +315,11 @@ export default function LoanSection() {
               suffix="%"
               hint="Supports positive and negative values"
             />
-            <FormField
+            <SelectField
               label="Adjustable Index Name"
               value={form.adjustableIndexName}
-              onChangeText={set("adjustableIndexName")}
-              placeholder="SOFR, Prime Rate…"
+              options={[...INDEX_NAMES]}
+              onChange={set("adjustableIndexName")}
             />
             <FormField
               label="Adjustable Index Rate (% p.a.)"
