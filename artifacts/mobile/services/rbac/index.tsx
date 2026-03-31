@@ -45,9 +45,9 @@ function ent(
 }
 
 /**
- * 8 MS groups — aligned with the actual microservice decomposition:
+ * 9 MS groups — aligned with the actual microservice decomposition:
  *   Loan Core → Inquiry → Initial Credit Review → Application → Final Credit Review
- *   → Closing → Documents → Tasks
+ *   → Closing → Documents → Tasks → Admin Access Control
  *
  * Loan Core owns: Dashboard, Applications list, Loan Team (active originators),
  * Collaboration (per-loan ACL by SID), and Comments (threaded discussion).
@@ -173,6 +173,15 @@ export const MS_GROUPS: MsGroup[] = [
     entitlements: [
       ent("tasks.main", "Tasks", "Tasks", "VIEW"),
       ent("tasks.main", "Tasks", "Tasks", "EDIT"),
+    ],
+  },
+  {
+    ms: "Admin Access Control", msKey: "admin-access", colorHex: "#374151",
+    entitlements: [
+      ent("admin.profiles",    "Admin Access Control", "Access Profiles",   "VIEW"),
+      ent("admin.profiles",    "Admin Access Control", "Access Profiles",   "EDIT"),
+      ent("admin.assignments", "Admin Access Control", "User Assignments",  "VIEW"),
+      ent("admin.assignments", "Admin Access Control", "User Assignments",  "EDIT"),
     ],
   },
 ];

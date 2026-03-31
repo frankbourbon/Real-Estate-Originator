@@ -14,6 +14,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 import { useAdminService, AdminUser } from "@/services/admin";
 import { Profile, useSystemCoreService } from "@/services/system-core";
 
@@ -124,6 +126,7 @@ function UserRow({
 export default function UserAssignmentsScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  const { canView, canEdit } = usePermission("admin.assignments");
   const { users, loading: usersLoading } = useAdminService();
   const {
     profiles,
@@ -131,8 +134,9 @@ export default function UserAssignmentsScreen() {
     assignUserProfile,
     removeUserProfile,
   } = useSystemCoreService();
-
   const [query, setQuery] = useState("");
+
+  if (!canView) return <AccessDenied screenLabel="User Assignments" />;
 
   const filtered = query.trim()
     ? users.filter(

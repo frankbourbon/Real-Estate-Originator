@@ -16,6 +16,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
+import { AccessDenied } from "@/components/AccessDenied";
+import { usePermission } from "@/hooks/usePermission";
 import { Profile, useSystemCoreService } from "@/services/system-core";
 
 // ─── Color Picker ─────────────────────────────────────────────────────────────
@@ -166,10 +168,12 @@ function ProfileRow({
 export default function ProfilesScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  const { canView, canEdit } = usePermission("admin.profiles");
   const { profiles, userProfiles, createProfile, updateProfile } = useSystemCoreService();
-
   const [modalVisible, setModalVisible] = useState(false);
   const [editTarget, setEditTarget] = useState<Profile | null>(null);
+
+  if (!canView) return <AccessDenied screenLabel="Access Profiles" />;
 
   const handleSave = async (form: { name: string; description: string; colorHex: string }) => {
     setModalVisible(false);
