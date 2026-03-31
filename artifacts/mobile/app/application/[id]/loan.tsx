@@ -124,6 +124,8 @@ export default function LoanSection() {
   const spreadOnFixed               = snap?.spreadOnFixed               ?? app?.spreadOnFixed               ?? "";
   const allInFixedRate              = snap?.allInFixedRate              ?? app?.allInFixedRate              ?? "";
   const adjustableRateVariance      = snap?.adjustableRateVariance      ?? app?.adjustableRateVariance      ?? "";
+  const adjustableIndexName         = snap?.adjustableIndexName         ?? app?.adjustableIndexName         ?? "";
+  const adjustableIndexRate         = snap?.adjustableIndexRate         ?? app?.adjustableIndexRate         ?? "";
   const spreadOnAdjustable          = snap?.spreadOnAdjustable          ?? app?.spreadOnAdjustable          ?? "";
   const proformaAdjustableAllInRate = snap?.proformaAdjustableAllInRate ?? app?.proformaAdjustableAllInRate ?? "";
 
@@ -145,6 +147,8 @@ export default function LoanSection() {
     indexRate,
     spreadOnFixed,
     adjustableRateVariance,
+    adjustableIndexName,
+    adjustableIndexRate,
     spreadOnAdjustable,
   });
 
@@ -152,7 +156,7 @@ export default function LoanSection() {
 
   // ── Live calc (client-side, from current form state) ──────────────────────
   const liveAllInFixed  = calcAllInFixed(form.baseRate, form.fixedRateVariance, form.indexRate, form.spreadOnFixed);
-  const liveProformaAdj = calcProformaAdjustable(form.baseRate, form.adjustableRateVariance, form.indexRate, form.spreadOnAdjustable);
+  const liveProformaAdj = calcProformaAdjustable(form.baseRate, form.adjustableRateVariance, form.adjustableIndexRate, form.spreadOnAdjustable);
 
   // Adjustable fields visible for Adjustable Rate and Hybrid
   const showAdjEditing = form.rateType === "Adjustable Rate" || form.rateType === "Hybrid";
@@ -168,7 +172,9 @@ export default function LoanSection() {
       targetClosingDate,
       rateType:         rateType         as RateType,
       baseRate,         fixedRateVariance, indexName, indexRate,
-      spreadOnFixed,    adjustableRateVariance, spreadOnAdjustable,
+      spreadOnFixed,    adjustableRateVariance,
+      adjustableIndexName, adjustableIndexRate,
+      spreadOnAdjustable,
     });
     setEditing(true);
   };
@@ -176,7 +182,7 @@ export default function LoanSection() {
   const handleSave = async () => {
     // Server-side calc: compute and store authoritative values
     const computedAllInFixed  = calcAllInFixed(form.baseRate, form.fixedRateVariance, form.indexRate, form.spreadOnFixed);
-    const computedProformaAdj = calcProformaAdjustable(form.baseRate, form.adjustableRateVariance, form.indexRate, form.spreadOnAdjustable);
+    const computedProformaAdj = calcProformaAdjustable(form.baseRate, form.adjustableRateVariance, form.adjustableIndexRate, form.spreadOnAdjustable);
 
     await saveLoanTermsSnapshot(id, phase, {
       loanType:                    form.loanType,
@@ -196,6 +202,8 @@ export default function LoanSection() {
       spreadOnFixed:               form.spreadOnFixed,
       allInFixedRate:              computedAllInFixed,
       adjustableRateVariance:      form.adjustableRateVariance,
+      adjustableIndexName:         form.adjustableIndexName,
+      adjustableIndexRate:         form.adjustableIndexRate,
       spreadOnAdjustable:          form.spreadOnAdjustable,
       proformaAdjustableAllInRate: computedProformaAdj,
     });
@@ -307,6 +315,20 @@ export default function LoanSection() {
               hint="Supports positive and negative values"
             />
             <FormField
+              label="Adjustable Index Name"
+              value={form.adjustableIndexName}
+              onChangeText={set("adjustableIndexName")}
+              placeholder="SOFR, Prime Rate…"
+            />
+            <FormField
+              label="Adjustable Index Rate (% p.a.)"
+              value={form.adjustableIndexRate}
+              onChangeText={set("adjustableIndexRate")}
+              placeholder="0.000"
+              keyboardType="decimal-pad"
+              suffix="%"
+            />
+            <FormField
               label="Spread on Adjustable (%)"
               value={form.spreadOnAdjustable}
               onChangeText={set("spreadOnAdjustable")}
@@ -324,7 +346,7 @@ export default function LoanSection() {
               onChangeText={() => {}}
               suffix="%"
               editable={false}
-              hint="Base Rate + Adjustable Rate Variance + Index Rate + Spread on Adjustable"
+              hint="Base Rate + Adjustable Rate Variance + Adjustable Index Rate + Spread on Adjustable"
             />
           </View>
         )}
@@ -372,6 +394,8 @@ export default function LoanSection() {
           <View style={[styles.card, styles.cardSpacing]}>
             <SectionHeader title="Adjustable Rate" />
             <DetailRow label="Adjustable Rate Variance" value={adjustableRateVariance ? `${fmt3(adjustableRateVariance)}%` : undefined} />
+            <DetailRow label="Adjustable Index Name" value={adjustableIndexName || undefined} />
+            <DetailRow label="Adjustable Index Rate" value={adjustableIndexRate ? `${fmt3(adjustableIndexRate)}%` : undefined} />
             <DetailRow label="Spread on Adjustable" value={spreadOnAdjustable ? `${fmt3(spreadOnAdjustable)}%` : undefined} />
             <View style={styles.calcDivider} />
             <DetailRow

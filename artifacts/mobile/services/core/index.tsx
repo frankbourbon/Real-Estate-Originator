@@ -113,14 +113,16 @@ export type LoanApplication = {
   spreadOnFixed: string;
   allInFixedRate: string;          // calc: baseRate + fixedRateVariance + indexRate + spreadOnFixed
   adjustableRateVariance: string;
+  adjustableIndexName: string;
+  adjustableIndexRate: string;
   spreadOnAdjustable: string;
-  proformaAdjustableAllInRate: string; // calc: baseRate + adjustableRateVariance + indexRate + spreadOnAdjustable
+  proformaAdjustableAllInRate: string; // calc: baseRate + adjustableRateVariance + adjustableIndexRate + spreadOnAdjustable
 };
 
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 
 const KEYS = {
-  apps: "svc_core_apps_v3",
+  apps: "svc_core_apps_v4",
   borrowers: "svc_core_borrowers_v2",
   properties: "svc_core_properties_v3",
   collaborators: "svc_core_collab_v1",
@@ -166,7 +168,8 @@ function emptyApp(borrowerId: string, propertyId: string): Omit<LoanApplication,
     rateType: "Fixed Rate",
     baseRate: "", fixedRateVariance: "", indexName: "", indexRate: "",
     spreadOnFixed: "", allInFixedRate: "",
-    adjustableRateVariance: "", spreadOnAdjustable: "", proformaAdjustableAllInRate: "",
+    adjustableRateVariance: "", adjustableIndexName: "", adjustableIndexRate: "",
+    spreadOnAdjustable: "", proformaAdjustableAllInRate: "",
   };
 }
 
@@ -1359,14 +1362,15 @@ const SEED_PROPERTIES: Property[] = [
 ];
 
 // ─── Rate-seed helpers ────────────────────────────────────────────────────────
-// These helpers build the 10 rate-pricing fields spread into each seeded app.
+// These helpers build the 12 rate-pricing fields spread into each seeded app.
 // base = "0" for all seeds (pure index + spread construction; no separate base).
 // allInFixedRate  = base(0) + fixedRateVariance + indexRate + spreadOnFixed
-// proformaAdjRate = base(0) + adjustableRateVariance + indexRate + spreadOnAdjustable
+// proformaAdjRate = base(0) + adjustableRateVariance + adjustableIndexRate + spreadOnAdjustable
 
 type RS = Pick<LoanApplication,
   | "rateType" | "baseRate" | "fixedRateVariance" | "indexName" | "indexRate"
   | "spreadOnFixed" | "allInFixedRate" | "adjustableRateVariance"
+  | "adjustableIndexName" | "adjustableIndexRate"
   | "spreadOnAdjustable" | "proformaAdjustableAllInRate">;
 
 type SeedApp = Omit<LoanApplication, keyof RS> & Partial<RS>;
@@ -1374,23 +1378,27 @@ type SeedApp = Omit<LoanApplication, keyof RS> & Partial<RS>;
 function fr(idx: string, idxR: string, fv: string, sf: string, air: string): RS {
   return { rateType: "Fixed Rate", baseRate: "0",
     fixedRateVariance: fv, indexName: idx, indexRate: idxR, spreadOnFixed: sf, allInFixedRate: air,
-    adjustableRateVariance: "", spreadOnAdjustable: "", proformaAdjustableAllInRate: "" };
+    adjustableRateVariance: "", adjustableIndexName: "", adjustableIndexRate: "",
+    spreadOnAdjustable: "", proformaAdjustableAllInRate: "" };
 }
-function ar(idx: string, idxR: string, fv: string, sf: string, air: string,
-            av: string, sa: string, par: string): RS {
+function ar(fixedIdx: string, fixedIdxR: string, fv: string, sf: string, air: string,
+            av: string, adjIdx: string, adjIdxR: string, sa: string, par: string): RS {
   return { rateType: "Adjustable Rate", baseRate: "0",
-    fixedRateVariance: fv, indexName: idx, indexRate: idxR, spreadOnFixed: sf, allInFixedRate: air,
-    adjustableRateVariance: av, spreadOnAdjustable: sa, proformaAdjustableAllInRate: par };
+    fixedRateVariance: fv, indexName: fixedIdx, indexRate: fixedIdxR, spreadOnFixed: sf, allInFixedRate: air,
+    adjustableRateVariance: av, adjustableIndexName: adjIdx, adjustableIndexRate: adjIdxR,
+    spreadOnAdjustable: sa, proformaAdjustableAllInRate: par };
 }
-function hy(idx: string, idxR: string, fv: string, sf: string, air: string,
-            av: string, sa: string, par: string): RS {
+function hy(fixedIdx: string, fixedIdxR: string, fv: string, sf: string, air: string,
+            av: string, adjIdx: string, adjIdxR: string, sa: string, par: string): RS {
   return { rateType: "Hybrid", baseRate: "0",
-    fixedRateVariance: fv, indexName: idx, indexRate: idxR, spreadOnFixed: sf, allInFixedRate: air,
-    adjustableRateVariance: av, spreadOnAdjustable: sa, proformaAdjustableAllInRate: par };
+    fixedRateVariance: fv, indexName: fixedIdx, indexRate: fixedIdxR, spreadOnFixed: sf, allInFixedRate: air,
+    adjustableRateVariance: av, adjustableIndexName: adjIdx, adjustableIndexRate: adjIdxR,
+    spreadOnAdjustable: sa, proformaAdjustableAllInRate: par };
 }
 function nr(rt: RateType = "Fixed Rate"): RS {
   return { rateType: rt, baseRate: "", fixedRateVariance: "", indexName: "", indexRate: "",
     spreadOnFixed: "", allInFixedRate: "", adjustableRateVariance: "",
+    adjustableIndexName: "", adjustableIndexRate: "",
     spreadOnAdjustable: "", proformaAdjustableAllInRate: "" };
 }
 
@@ -1411,18 +1419,29 @@ const FR_695 = fr(T10_N,  T10_R,  "0.000000", "2.500000", "6.950000"); // 0+0+4.
 const FR_705 = fr(SOFR_N, SOFR_R, "0.500000", "2.250000", "7.050000"); // 0+0.50+4.30+2.25
 
 // ── Adjustable Rate presets (Fixed ref section + Adjustable section) ──────────
-// Fixed: 0+fv+idxR+sf  |  Adj: 0+av+idxR+sa
-const AR_605 = ar(SOFR_N, SOFR_R, "0.000000", "1.500000", "5.800000", "0.500000", "1.250000", "6.050000");
-const AR_655 = ar(SOFR_N, SOFR_R, "0.000000", "1.750000", "6.050000", "0.750000", "1.500000", "6.550000");
-const AR_730 = ar(SOFR_N, SOFR_R, "0.000000", "2.250000", "6.550000", "1.000000", "2.000000", "7.300000");
-const AR_780 = ar(SOFR_N, SOFR_R, "0.000000", "2.750000", "7.050000", "1.250000", "2.250000", "7.800000");
-const AR_800 = ar(PRI_N,  PRI_R,  "-0.125000","0.000000", "7.375000", "0.500000", "0.000000", "8.000000");
+// Fixed: 0+fv+fixedIdxR+sf  |  Adj: 0+av+adjIdxR+sa  (each section has its own index)
+const AR_605 = ar(SOFR_N, SOFR_R, "0.000000", "1.500000", "5.800000",
+                  "0.500000", SOFR_N, SOFR_R, "1.250000", "6.050000"); // adj: 0+0.5+4.30+1.25
+const AR_655 = ar(SOFR_N, SOFR_R, "0.000000", "1.750000", "6.050000",
+                  "0.750000", SOFR_N, SOFR_R, "1.500000", "6.550000"); // adj: 0+0.75+4.30+1.50
+const AR_730 = ar(SOFR_N, SOFR_R, "0.000000", "2.250000", "6.550000",
+                  "1.000000", SOFR_N, SOFR_R, "2.000000", "7.300000"); // adj: 0+1.00+4.30+2.00
+const AR_780 = ar(SOFR_N, SOFR_R, "0.000000", "2.750000", "7.050000",
+                  "1.250000", SOFR_N, SOFR_R, "2.250000", "7.800000"); // adj: 0+1.25+4.30+2.25
+const AR_800 = ar(PRI_N,  PRI_R,  "-0.125000","0.000000", "7.375000",
+                  "0.500000", PRI_N,  PRI_R,  "0.000000", "8.000000"); // adj: 0+0.50+7.50+0.00
 
 // ── Hybrid presets (both Fixed and Adjustable sections populated) ─────────────
-const HY_615_640 = hy(T5_N,   T5_R,   "0.000000", "2.000000", "6.150000", "0.500000", "1.750000", "6.400000");
-const HY_655_680 = hy(SOFR_N, SOFR_R, "0.250000", "2.000000", "6.550000", "0.750000", "1.750000", "6.800000");
-const HY_670_695 = hy(T10_N,  T10_R,  "0.250000", "2.000000", "6.700000", "0.500000", "2.000000", "6.950000");
-const HY_705_755 = hy(SOFR_N, SOFR_R, "0.500000", "2.250000", "7.050000", "0.750000", "2.500000", "7.550000");
+// HY_615_640: fixed=T5, adjustable=SOFR  |  HY_655_680: both SOFR
+// HY_670_695: fixed=T10, adjustable=SOFR |  HY_705_755: both SOFR
+const HY_615_640 = hy(T5_N,   T5_R,   "0.000000", "2.000000", "6.150000",
+                       "0.500000", SOFR_N, SOFR_R, "1.600000", "6.400000"); // adj: 0+0.50+4.30+1.60
+const HY_655_680 = hy(SOFR_N, SOFR_R, "0.250000", "2.000000", "6.550000",
+                       "0.750000", SOFR_N, SOFR_R, "1.750000", "6.800000"); // adj: 0+0.75+4.30+1.75
+const HY_670_695 = hy(T10_N,  T10_R,  "0.250000", "2.000000", "6.700000",
+                       "0.500000", SOFR_N, SOFR_R, "2.150000", "6.950000"); // adj: 0+0.50+4.30+2.15
+const HY_705_755 = hy(SOFR_N, SOFR_R, "0.500000", "2.250000", "7.050000",
+                       "0.750000", SOFR_N, SOFR_R, "2.500000", "7.550000"); // adj: 0+0.75+4.30+2.50
 
 const SEED_APPS: SeedApp[] = [
   { id: "seed_a01", createdAt: d(2026,3,14), updatedAt: d(2026,3,14), status: "Inquiry",

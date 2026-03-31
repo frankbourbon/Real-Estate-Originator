@@ -108,6 +108,8 @@ export type LoanTermsSnapshot = {
   spreadOnFixed: string;
   allInFixedRate: string;
   adjustableRateVariance: string;
+  adjustableIndexName: string;
+  adjustableIndexRate: string;
   spreadOnAdjustable: string;
   proformaAdjustableAllInRate: string;
 };
@@ -123,7 +125,7 @@ export type LoanTermsFallback = Omit<LoanTermsSnapshot, "applicationId" | "phase
 const KEYS = {
   borrowers:  "svc_phase_borrowers_v1",
   properties: "svc_phase_properties_v1",
-  loanTerms:  "svc_phase_loan_terms_v2",
+  loanTerms:  "svc_phase_loan_terms_v3",
 };
 
 function snapId(applicationId: string, phase: PhaseKey): string {
@@ -277,6 +279,8 @@ const [PhaseDataServiceProvider, usePhaseDataService] = createContextHook(() => 
             indexRate: srcLT.indexRate, spreadOnFixed: srcLT.spreadOnFixed,
             allInFixedRate: srcLT.allInFixedRate,
             adjustableRateVariance: srcLT.adjustableRateVariance,
+            adjustableIndexName: srcLT.adjustableIndexName,
+            adjustableIndexRate: srcLT.adjustableIndexRate,
             spreadOnAdjustable: srcLT.spreadOnAdjustable,
             proformaAdjustableAllInRate: srcLT.proformaAdjustableAllInRate }
         : fallback.loanTerms;

@@ -197,8 +197,36 @@ describe("SEED_APPS + SEED_APP_RATES — rate data integrity", () => {
     Object.values(SEED_APP_RATES)
       .filter((r) => r.rateType !== "Fixed Rate" && r.proformaAdjustableAllInRate)
       .forEach((r) => {
-        const expected = parse(r.adjustableRateVariance) + parse(r.indexRate) + parse(r.spreadOnAdjustable);
+        // Formula: baseRate + adjustableRateVariance + adjustableIndexRate + spreadOnAdjustable
+        // baseRate = "0" for all seeds
+        const expected = parse(r.adjustableRateVariance) + parse(r.adjustableIndexRate) + parse(r.spreadOnAdjustable);
         expect(Math.abs(parse(r.proformaAdjustableAllInRate) - expected)).toBeLessThan(0.0001);
+      });
+  });
+
+  test("Adjustable/Hybrid entries with pricing data have non-empty adjustableIndexName", () => {
+    Object.values(SEED_APP_RATES)
+      .filter((r) => r.rateType !== "Fixed Rate" && r.proformaAdjustableAllInRate)
+      .forEach((r) => {
+        expect(r.adjustableIndexName).toBeTruthy();
+      });
+  });
+
+  test("Adjustable/Hybrid entries with pricing data have non-empty adjustableIndexRate stored at 6dp", () => {
+    Object.values(SEED_APP_RATES)
+      .filter((r) => r.rateType !== "Fixed Rate" && r.proformaAdjustableAllInRate)
+      .forEach((r) => {
+        expect(r.adjustableIndexRate).not.toBe("");
+        expect(r.adjustableIndexRate.split(".")[1]).toHaveLength(6);
+      });
+  });
+
+  test("Fixed Rate entries have empty adjustableIndexName and adjustableIndexRate", () => {
+    Object.values(SEED_APP_RATES)
+      .filter((r) => r.rateType === "Fixed Rate" && r.allInFixedRate)
+      .forEach((r) => {
+        expect(r.adjustableIndexName).toBe("");
+        expect(r.adjustableIndexRate).toBe("");
       });
   });
 });

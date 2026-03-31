@@ -1,12 +1,13 @@
 /**
- * Unit tests for the Loan Terms feature refactor.
+ * Unit tests for the Loan Terms feature.
  *
  * Covers:
- *   - calcRate        — core accumulation helper (utils/rate-calc.ts)
- *   - fmt3            — 3dp display formatter    (utils/rate-calc.ts)
- *   - calcAllInFixed  — Fixed Rate calc formula  (utils/rate-calc.ts)
+ *   - calcRate              — core accumulation helper (utils/rate-calc.ts)
+ *   - fmt3                  — 3dp display formatter    (utils/rate-calc.ts)
+ *   - calcAllInFixed        — Fixed Rate calc formula  (utils/rate-calc.ts)
  *   - calcProformaAdjustable — Adjustable calc formula (utils/rate-calc.ts)
- *   - RateType        — value exhaustiveness and conditional-section rules
+ *     • uses dedicated adjustableIndexRate (NOT the Fixed Rate section's indexRate)
+ *   - RateType              — value exhaustiveness and conditional-section rules
  *   - 6dp storage / 3dp display precision contract
  */
 
@@ -99,12 +100,10 @@ describe("fmt3 — 3dp display formatter", () => {
   });
 
   test("rounds at the 4th decimal place (rounds up)", () => {
-    // 7.6257 → binary representation is slightly above 7.6257, rounds to 7.626
     expect(fmt3("7.6257")).toBe("7.626");
   });
 
   test("rounds at the 4th decimal place (rounds down)", () => {
-    // 7.6253 → rounds to 7.625
     expect(fmt3("7.6253")).toBe("7.625");
   });
 
@@ -158,14 +157,34 @@ describe("calcAllInFixed — baseRate + fixedVariance + indexRate + spreadOnFixe
 });
 
 // ─── calcProformaAdjustable ───────────────────────────────────────────────────
+// Third parameter is adjustableIndexRate — separate from Fixed Rate's indexRate.
+// Formula: baseRate + adjustableRateVariance + adjustableIndexRate + spreadOnAdjustable
 
-describe("calcProformaAdjustable — baseRate + adjVariance + indexRate + spreadOnAdj", () => {
+describe("calcProformaAdjustable — baseRate + adjVariance + adjustableIndexRate + spreadOnAdj", () => {
   test("correct formula: 4 + 0.375 + 1.5 + 0.75 = 6.625", () => {
     expect(calcProformaAdjustable("4.0", "0.375", "1.5", "0.75")).toBe("6.625000");
   });
 
   test("negative variance reduces the all-in rate", () => {
     expect(calcProformaAdjustable("5.0", "-0.5", "1.5", "0.75")).toBe("6.750000");
+  });
+
+  test("uses adjustableIndexRate independently from fixed indexRate", () => {
+    // Fixed index might be T5 at 4.15; adjustable index might be SOFR at 4.30
+    const fixedCalc = calcAllInFixed("0", "0", "4.15", "2.00");       // uses T5
+    const adjCalc   = calcProformaAdjustable("0", "0.5", "4.30", "1.60"); // uses SOFR
+    expect(fixedCalc).toBe("6.150000");
+    expect(adjCalc).toBe("6.400000");
+    // Confirm they differ — each section's index is independent
+    expect(fixedCalc).not.toBe(adjCalc);
+  });
+
+  test("adjustable index SOFR 4.30 with variance 0.5 and spread 1.25 = 6.05", () => {
+    expect(calcProformaAdjustable("0", "0.500000", "4.300000", "1.250000")).toBe("6.050000");
+  });
+
+  test("Prime Rate 7.50 as adjustable index: 0 + 0.5 + 7.5 + 0 = 8.0", () => {
+    expect(calcProformaAdjustable("0", "0.500000", "7.500000", "0.000000")).toBe("8.000000");
   });
 
   test("returns empty string when all inputs are empty", () => {
@@ -179,6 +198,12 @@ describe("calcProformaAdjustable — baseRate + adjVariance + indexRate + spread
 
   test("base rate alone is returned at 6dp when other inputs are empty", () => {
     expect(calcProformaAdjustable("6.5", "", "", "")).toBe("6.500000");
+  });
+
+  test("hybrid scenario: T10 fixed index does not affect adjustable calc", () => {
+    // HY_670_695: fixed uses T10 (4.45), adjustable uses SOFR (4.30)
+    const adjCalc = calcProformaAdjustable("0", "0.500000", "4.300000", "2.150000");
+    expect(adjCalc).toBe("6.950000");
   });
 });
 
@@ -207,9 +232,9 @@ describe("RateType — value exhaustiveness", () => {
 describe("RateType — adjustable section conditional visibility", () => {
   /**
    * Business rule: the Adjustable Rate section (adjustableRateVariance,
-   * spreadOnAdjustable, proformaAdjustableAllInRate) is shown only when
-   * rateType is "Adjustable Rate" or "Hybrid".
-   * The Fixed Rate section is always shown.
+   * adjustableIndexName, adjustableIndexRate, spreadOnAdjustable,
+   * proformaAdjustableAllInRate) is shown only when rateType is
+   * "Adjustable Rate" or "Hybrid".  The Fixed Rate section is always shown.
    */
   function showAdjustableSection(rt: RateType): boolean {
     return rt === "Adjustable Rate" || rt === "Hybrid";
@@ -230,23 +255,51 @@ describe("RateType — adjustable section conditional visibility", () => {
   test("Fixed Rate section is always shown (invariant for all types)", () => {
     const allTypes: RateType[] = ["Fixed Rate", "Adjustable Rate", "Hybrid"];
     allTypes.forEach((rt) => {
-      // Fixed section has no visibility gate — it's always true
       const showFixed = true;
       expect(showFixed).toBe(true);
-      void rt; // type used for exhaustiveness
+      void rt;
     });
+  });
+});
+
+// ─── Adjustable section field set ─────────────────────────────────────────────
+
+describe("Adjustable Rate section — required fields", () => {
+  /**
+   * Business rule: when rateType is Adjustable or Hybrid, the Adjustable Rate
+   * card must expose exactly these 5 fields:
+   *   1. adjustableRateVariance  (supports +/−, 6dp stored)
+   *   2. adjustableIndexName     (free-text string)
+   *   3. adjustableIndexRate     (6dp stored, separate from fixed indexRate)
+   *   4. spreadOnAdjustable      (6dp stored)
+   *   5. proformaAdjustableAllInRate (calc, read-only)
+   */
+  const ADJUSTABLE_FIELDS = [
+    "adjustableRateVariance",
+    "adjustableIndexName",
+    "adjustableIndexRate",
+    "spreadOnAdjustable",
+    "proformaAdjustableAllInRate",
+  ] as const;
+
+  test("all 5 adjustable-section fields are enumerated", () => {
+    expect(ADJUSTABLE_FIELDS).toHaveLength(5);
+  });
+
+  test("adjustableIndexRate is distinct from fixed indexRate", () => {
+    expect(ADJUSTABLE_FIELDS).toContain("adjustableIndexRate");
+    expect(ADJUSTABLE_FIELDS).not.toContain("indexRate");
+  });
+
+  test("proformaAdjustableAllInRate is the only calc field in the section", () => {
+    const calcFields = ADJUSTABLE_FIELDS.filter(f => f === "proformaAdjustableAllInRate");
+    expect(calcFields).toHaveLength(1);
   });
 });
 
 // ─── ApplicationCard rate display logic ──────────────────────────────────────
 
 describe("ApplicationCard — rate label and value selection", () => {
-  /**
-   * Business rule (from ApplicationCard.tsx):
-   *   rateType === "Adjustable Rate"  → label "Proforma Adj.", value = proformaAdjustableAllInRate
-   *   rateType === "Fixed Rate"       → label "All In Rate",   value = allInFixedRate
-   *   rateType === "Hybrid"           → label "All In Rate",   value = allInFixedRate
-   */
   function selectRate(
     rateType: string,
     allInFixedRate: string,
@@ -330,6 +383,13 @@ describe("Precision contract — 6dp storage, 3dp display", () => {
     expect(display).toBe("7.500");
   });
 
+  test("round-trip using SOFR adjustable index: 0+0.75+4.30+1.75 = 6.80", () => {
+    const stored  = calcProformaAdjustable("0", "0.750000", "4.300000", "1.750000");
+    const display = fmt3(stored);
+    expect(stored).toBe("6.800000");
+    expect(display).toBe("6.800");
+  });
+
   test("negative all-in rate stores and displays correctly", () => {
     const stored  = calcAllInFixed("1.0", "-2.0", "0", "0");
     const display = fmt3(stored);
@@ -346,7 +406,15 @@ describe("Precision contract — 6dp storage, 3dp display", () => {
   test("two different rates with same 3dp display may differ at 6dp (precision preserved in storage)", () => {
     const a = calcRate("1.000001");
     const b = calcRate("1.000002");
-    expect(fmt3(a)).toBe(fmt3(b));       // same at 3dp
-    expect(a).not.toBe(b);              // distinct at 6dp
+    expect(fmt3(a)).toBe(fmt3(b));
+    expect(a).not.toBe(b);
+  });
+
+  test("adjustableIndexRate and fixed indexRate can differ and both stored at 6dp", () => {
+    const fixedIdx = "4.150000"; // T5
+    const adjIdx   = "4.300000"; // SOFR
+    expect(fixedIdx).not.toBe(adjIdx);
+    expect(fixedIdx.split(".")[1]).toHaveLength(6);
+    expect(adjIdx.split(".")[1]).toHaveLength(6);
   });
 });

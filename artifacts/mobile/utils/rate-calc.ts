@@ -42,13 +42,15 @@ export function calcAllInFixed(
 
 /**
  * Compute the Proforma Adjustable All In Rate component.
- * Formula: baseRate + adjustableRateVariance + indexRate + spreadOnAdjustable
+ * Formula: baseRate + adjustableRateVariance + adjustableIndexRate + spreadOnAdjustable
+ *
+ * Note: uses the dedicated adjustableIndexRate, not the Fixed Rate section's indexRate.
  */
 export function calcProformaAdjustable(
   baseRate: string,
   adjustableRateVariance: string,
-  indexRate: string,
+  adjustableIndexRate: string,
   spreadOnAdjustable: string,
 ): string {
-  return calcRate(baseRate, adjustableRateVariance, indexRate, spreadOnAdjustable);
+  return calcRate(baseRate, adjustableRateVariance, adjustableIndexRate, spreadOnAdjustable);
 }
