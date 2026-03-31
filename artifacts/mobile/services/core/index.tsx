@@ -120,7 +120,7 @@ export type LoanApplication = {
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 
 const KEYS = {
-  apps: "svc_core_apps_v2",
+  apps: "svc_core_apps_v3",
   borrowers: "svc_core_borrowers_v2",
   properties: "svc_core_properties_v3",
   collaborators: "svc_core_collab_v1",
@@ -1358,7 +1358,73 @@ const SEED_PROPERTIES: Property[] = [
     physicalOccupancyPct: "72", economicOccupancyPct: "68" },
 ];
 
-const SEED_APPS: LoanApplication[] = [
+// ─── Rate-seed helpers ────────────────────────────────────────────────────────
+// These helpers build the 10 rate-pricing fields spread into each seeded app.
+// base = "0" for all seeds (pure index + spread construction; no separate base).
+// allInFixedRate  = base(0) + fixedRateVariance + indexRate + spreadOnFixed
+// proformaAdjRate = base(0) + adjustableRateVariance + indexRate + spreadOnAdjustable
+
+type RS = Pick<LoanApplication,
+  | "rateType" | "baseRate" | "fixedRateVariance" | "indexName" | "indexRate"
+  | "spreadOnFixed" | "allInFixedRate" | "adjustableRateVariance"
+  | "spreadOnAdjustable" | "proformaAdjustableAllInRate">;
+
+type SeedApp = Omit<LoanApplication, keyof RS> & Partial<RS>;
+
+function fr(idx: string, idxR: string, fv: string, sf: string, air: string): RS {
+  return { rateType: "Fixed Rate", baseRate: "0",
+    fixedRateVariance: fv, indexName: idx, indexRate: idxR, spreadOnFixed: sf, allInFixedRate: air,
+    adjustableRateVariance: "", spreadOnAdjustable: "", proformaAdjustableAllInRate: "" };
+}
+function ar(idx: string, idxR: string, fv: string, sf: string, air: string,
+            av: string, sa: string, par: string): RS {
+  return { rateType: "Adjustable Rate", baseRate: "0",
+    fixedRateVariance: fv, indexName: idx, indexRate: idxR, spreadOnFixed: sf, allInFixedRate: air,
+    adjustableRateVariance: av, spreadOnAdjustable: sa, proformaAdjustableAllInRate: par };
+}
+function hy(idx: string, idxR: string, fv: string, sf: string, air: string,
+            av: string, sa: string, par: string): RS {
+  return { rateType: "Hybrid", baseRate: "0",
+    fixedRateVariance: fv, indexName: idx, indexRate: idxR, spreadOnFixed: sf, allInFixedRate: air,
+    adjustableRateVariance: av, spreadOnAdjustable: sa, proformaAdjustableAllInRate: par };
+}
+function nr(rt: RateType = "Fixed Rate"): RS {
+  return { rateType: rt, baseRate: "", fixedRateVariance: "", indexName: "", indexRate: "",
+    spreadOnFixed: "", allInFixedRate: "", adjustableRateVariance: "",
+    spreadOnAdjustable: "", proformaAdjustableAllInRate: "" };
+}
+
+// Index name + rate shorthands
+const SOFR_N = "SOFR 30-Day Avg"; const SOFR_R = "4.300000";
+const T5_N   = "US Treasury 5-Yr";  const T5_R   = "4.150000";
+const T10_N  = "US Treasury 10-Yr"; const T10_R  = "4.450000";
+const PRI_N  = "Prime Rate";         const PRI_R  = "7.500000";
+
+// ── Fixed Rate presets (air = 0 + fv + idxR + sf) ────────────────────────────
+const FR_580 = fr(SOFR_N, SOFR_R, "0.000000", "1.500000", "5.800000"); // 0+0+4.30+1.50
+const FR_595 = fr(T10_N,  T10_R,  "0.000000", "1.500000", "5.950000"); // 0+0+4.45+1.50
+const FR_615 = fr(T5_N,   T5_R,   "0.000000", "2.000000", "6.150000"); // 0+0+4.15+2.00
+const FR_640 = fr(T5_N,   T5_R,   "0.250000", "2.000000", "6.400000"); // 0+0.25+4.15+2.00
+const FR_655 = fr(SOFR_N, SOFR_R, "0.250000", "2.000000", "6.550000"); // 0+0.25+4.30+2.00
+const FR_670 = fr(T10_N,  T10_R,  "0.250000", "2.000000", "6.700000"); // 0+0.25+4.45+2.00
+const FR_695 = fr(T10_N,  T10_R,  "0.000000", "2.500000", "6.950000"); // 0+0+4.45+2.50
+const FR_705 = fr(SOFR_N, SOFR_R, "0.500000", "2.250000", "7.050000"); // 0+0.50+4.30+2.25
+
+// ── Adjustable Rate presets (Fixed ref section + Adjustable section) ──────────
+// Fixed: 0+fv+idxR+sf  |  Adj: 0+av+idxR+sa
+const AR_605 = ar(SOFR_N, SOFR_R, "0.000000", "1.500000", "5.800000", "0.500000", "1.250000", "6.050000");
+const AR_655 = ar(SOFR_N, SOFR_R, "0.000000", "1.750000", "6.050000", "0.750000", "1.500000", "6.550000");
+const AR_730 = ar(SOFR_N, SOFR_R, "0.000000", "2.250000", "6.550000", "1.000000", "2.000000", "7.300000");
+const AR_780 = ar(SOFR_N, SOFR_R, "0.000000", "2.750000", "7.050000", "1.250000", "2.250000", "7.800000");
+const AR_800 = ar(PRI_N,  PRI_R,  "-0.125000","0.000000", "7.375000", "0.500000", "0.000000", "8.000000");
+
+// ── Hybrid presets (both Fixed and Adjustable sections populated) ─────────────
+const HY_615_640 = hy(T5_N,   T5_R,   "0.000000", "2.000000", "6.150000", "0.500000", "1.750000", "6.400000");
+const HY_655_680 = hy(SOFR_N, SOFR_R, "0.250000", "2.000000", "6.550000", "0.750000", "1.750000", "6.800000");
+const HY_670_695 = hy(T10_N,  T10_R,  "0.250000", "2.000000", "6.700000", "0.500000", "2.000000", "6.950000");
+const HY_705_755 = hy(SOFR_N, SOFR_R, "0.500000", "2.250000", "7.050000", "0.750000", "2.500000", "7.550000");
+
+const SEED_APPS: SeedApp[] = [
   { id: "seed_a01", createdAt: d(2026,3,14), updatedAt: d(2026,3,14), status: "Inquiry",
     borrowerId: "seed_b08", propertyId: "seed_p01", loanType: "Acquisition",
     loanAmountUsd: "8,500,000", loanTermYears: "10", interestType: "Fixed",
@@ -1877,6 +1943,130 @@ const SEED_APPS: LoanApplication[] = [
     dscrRatio: "1.02", targetClosingDate: ds(2025,9,30) },
 ];
 
+// ─── Rate data for every seed app ─────────────────────────────────────────────
+// Applied at first-install seed time. Distribution: ~42 Fixed Rate, ~27 Adjustable Rate, ~31 Hybrid.
+// Active pipeline apps (a01–a84, a94–a100) get full pricing; early-stage inquiries and
+// pure-terminal apps (a11, a13, a16–a25, a85–a93) get rateType only with empty rate strings.
+const SEED_APP_RATES: Record<string, RS> = {
+  // ── Showcase + early workflow (a01–a15) ──────────────────────────────────────
+  "seed_a01": FR_670,          // Acquisition / App Processing — Fixed 6.70%
+  "seed_a02": HY_655_680,      // Refinance / ICR — Hybrid 6.55% / 6.80%
+  "seed_a03": FR_615,          // Acquisition / App Start — Fixed 6.15%
+  "seed_a04": AR_655,          // Refinance / App Processing — Adj 6.05% ref / 6.55% proforma
+  "seed_a05": AR_780,          // Acquisition / FCR (Floating) — Adj 7.05% ref / 7.80% proforma
+  "seed_a06": FR_655,          // Acquisition / Pre-close — Fixed 6.55%
+  "seed_a07": AR_730,          // Refinance / Docs (Floating) — Adj 6.55% ref / 7.30% proforma
+  "seed_a08": FR_595,          // Acquisition / Docs Drawn — Fixed 5.95%
+  "seed_a09": HY_615_640,      // Refinance / Docs Back — Hybrid 6.15% / 6.40%
+  "seed_a10": FR_580,          // Refinance / Closing — Fixed 5.80%
+  "seed_a11": nr("Fixed Rate"),// Acquisition / Inquiry — no pricing yet
+  "seed_a12": HY_670_695,      // Refinance / App Processing — Hybrid 6.70% / 6.95%
+  "seed_a13": nr("Adjustable Rate"), // Acquisition / Inquiry Canceled — no pricing
+  "seed_a14": AR_800,          // Bridge / App Withdrawn (Floating) — Adj/Prime 7.375% / 8.00%
+  "seed_a15": FR_640,          // Refinance / App Denied — Fixed 6.40%
+  // ── Inquiry (a16–a25) — no pricing yet ───────────────────────────────────────
+  "seed_a16": nr("Fixed Rate"),
+  "seed_a17": nr("Fixed Rate"),
+  "seed_a18": nr("Adjustable Rate"),
+  "seed_a19": nr("Adjustable Rate"),
+  "seed_a20": nr("Fixed Rate"),
+  "seed_a21": nr("Fixed Rate"),
+  "seed_a22": nr("Hybrid"),
+  "seed_a23": nr("Fixed Rate"),
+  "seed_a24": nr("Adjustable Rate"),
+  "seed_a25": nr("Fixed Rate"),
+  // ── Initial Credit Review (a26–a34) ──────────────────────────────────────────
+  "seed_a26": FR_670,          // Acquisition — Fixed 6.70%
+  "seed_a27": HY_655_680,      // Refinance — Hybrid 6.55% / 6.80%
+  "seed_a28": AR_730,          // Bridge (Floating) — Adj 6.55% / 7.30%
+  "seed_a29": AR_605,          // Acquisition — Adj 5.80% ref / 6.05% proforma
+  "seed_a30": FR_580,          // Permanent — Fixed 5.80%
+  "seed_a31": HY_670_695,      // Refinance (was Hybrid interestType) — Hybrid 6.70% / 6.95%
+  "seed_a32": HY_615_640,      // Acquisition — Hybrid 6.15% / 6.40%
+  "seed_a33": AR_780,          // Construction (Floating) — Adj 7.05% / 7.80%
+  "seed_a34": AR_780,          // Bridge (Floating) — Adj 7.05% / 7.80%
+  // ── Application Start (a35–a43) ───────────────────────────────────────────────
+  "seed_a35": FR_640,          // Refinance — Fixed 6.40%
+  "seed_a36": FR_670,          // Acquisition — Fixed 6.70%
+  "seed_a37": FR_580,          // Permanent — Fixed 5.80%
+  "seed_a38": AR_730,          // Bridge (Floating) — Adj 6.55% / 7.30%
+  "seed_a39": HY_655_680,      // Refinance — Hybrid 6.55% / 6.80%
+  "seed_a40": FR_655,          // Acquisition — Fixed 6.55%
+  "seed_a41": AR_780,          // Construction (Floating) — Adj 7.05% / 7.80%
+  "seed_a42": HY_615_640,      // Refinance — Hybrid 6.15% / 6.40%
+  "seed_a43": HY_670_695,      // Acquisition (was Hybrid interestType) — Hybrid 6.70% / 6.95%
+  // ── Application Processing (a44–a50) ─────────────────────────────────────────
+  "seed_a44": AR_605,          // Refinance — Adj 5.80% ref / 6.05% proforma
+  "seed_a45": FR_640,          // Acquisition — Fixed 6.40%
+  "seed_a46": AR_780,          // Bridge (Floating) — Adj 7.05% / 7.80%
+  "seed_a47": FR_580,          // Permanent — Fixed 5.80%
+  "seed_a48": HY_615_640,      // Refinance — Hybrid 6.15% / 6.40%
+  "seed_a49": FR_655,          // Acquisition — Fixed 6.55%
+  "seed_a50": AR_780,          // Construction (Floating) — Adj 7.05% / 7.80%
+  // ── Final Credit Review (a51–a58) ────────────────────────────────────────────
+  "seed_a51": FR_615,          // Acquisition — Fixed 6.15%
+  "seed_a52": FR_595,          // Refinance — Fixed 5.95%
+  "seed_a53": AR_730,          // Bridge (Floating) — Adj 6.55% / 7.30%
+  "seed_a54": FR_580,          // Permanent — Fixed 5.80%
+  "seed_a55": HY_615_640,      // Acquisition — Hybrid 6.15% / 6.40%
+  "seed_a56": HY_670_695,      // Refinance — Hybrid 6.70% / 6.95%
+  "seed_a57": HY_705_755,      // Acquisition (was Hybrid interestType) — Hybrid 7.05% / 7.55%
+  "seed_a58": AR_800,          // Bridge (Floating) — Adj/Prime 7.375% / 8.00%
+  // ── Pre-close (a59–a65) ──────────────────────────────────────────────────────
+  "seed_a59": FR_595,          // Refinance — Fixed 5.95%
+  "seed_a60": FR_640,          // Acquisition — Fixed 6.40%
+  "seed_a61": FR_580,          // Permanent — Fixed 5.80%
+  "seed_a62": AR_730,          // Bridge (Floating) — Adj 6.55% / 7.30%
+  "seed_a63": HY_655_680,      // Refinance — Hybrid 6.55% / 6.80%
+  "seed_a64": FR_655,          // Acquisition — Fixed 6.55%
+  "seed_a65": AR_780,          // Construction (Floating) — Adj 7.05% / 7.80%
+  // ── Ready for Docs (a66–a72) ─────────────────────────────────────────────────
+  "seed_a66": FR_595,          // Refinance — Fixed 5.95%
+  "seed_a67": FR_655,          // Acquisition — Fixed 6.55%
+  "seed_a68": FR_580,          // Permanent — Fixed 5.80%
+  "seed_a69": AR_730,          // Bridge (Floating) — Adj 6.55% / 7.30%
+  "seed_a70": HY_655_680,      // Refinance — Hybrid 6.55% / 6.80%
+  "seed_a71": FR_670,          // Acquisition — Fixed 6.70%
+  "seed_a72": HY_705_755,      // Acquisition (was Hybrid interestType) — Hybrid 7.05% / 7.55%
+  // ── Docs Drawn (a73–a76) ─────────────────────────────────────────────────────
+  "seed_a73": FR_580,          // Refinance — Fixed 5.80%
+  "seed_a74": FR_640,          // Acquisition — Fixed 6.40%
+  "seed_a75": AR_730,          // Bridge (Floating) — Adj 6.55% / 7.30%
+  "seed_a76": FR_580,          // Permanent — Fixed 5.80%
+  // ── Docs Back (a77–a80) ──────────────────────────────────────────────────────
+  "seed_a77": FR_615,          // Refinance — Fixed 6.15%
+  "seed_a78": FR_670,          // Acquisition — Fixed 6.70%
+  "seed_a79": AR_730,          // Bridge (Floating) — Adj 6.55% / 7.30%
+  "seed_a80": FR_580,          // Permanent — Fixed 5.80%
+  // ── Closing (a81–a84) ────────────────────────────────────────────────────────
+  "seed_a81": FR_595,          // Refinance — Fixed 5.95%
+  "seed_a82": HY_615_640,      // Acquisition — Hybrid 6.15% / 6.40%
+  "seed_a83": AR_730,          // Bridge (Floating) — Adj 6.55% / 7.30%
+  "seed_a84": FR_580,          // Permanent — Fixed 5.80%
+  // ── Terminal — Inquiry Canceled (a85–a89) — no pricing ───────────────────────
+  "seed_a85": nr("Fixed Rate"),
+  "seed_a86": nr("Fixed Rate"),
+  "seed_a87": nr("Adjustable Rate"),
+  "seed_a88": nr("Fixed Rate"),
+  "seed_a89": nr("Fixed Rate"),
+  // ── Terminal — Inquiry Withdrawn (a90–a93) — no pricing ──────────────────────
+  "seed_a90": nr("Adjustable Rate"),
+  "seed_a91": nr("Fixed Rate"),
+  "seed_a92": nr("Adjustable Rate"),
+  "seed_a93": nr("Fixed Rate"),
+  // ── Terminal — Inquiry Denied (a94–a95) — has rate data ──────────────────────
+  "seed_a94": FR_695,          // Acquisition denied — Fixed 6.95%
+  "seed_a95": FR_695,          // Refinance denied — Fixed 6.95%
+  // ── Terminal — App Withdrawn (a96–a97) ───────────────────────────────────────
+  "seed_a96": FR_705,          // Acquisition withdrawn — Fixed 7.05%
+  "seed_a97": AR_800,          // Bridge withdrawn (Floating) — Adj/Prime 7.375% / 8.00%
+  // ── Terminal — App Canceled (a98) ────────────────────────────────────────────
+  "seed_a98": AR_800,          // Construction canceled (Floating) — Adj/Prime
+  // ── Terminal — App Denied (a99–a100) ─────────────────────────────────────────
+  "seed_a99":  FR_695,         // Acquisition denied — Fixed 6.95%
+  "seed_a100": FR_695,         // Refinance denied — Fixed 6.95%
+};
+
 // ─── Context ──────────────────────────────────────────────────────────────────
 
 const [CoreServiceProvider, useCoreService] = createContextHook(() => {
@@ -1901,8 +2091,11 @@ const [CoreServiceProvider, useCoreService] = createContextHook(() => {
           status: migrateStatus(a.status),
         })));
       } else {
-        await AsyncStorage.setItem(KEYS.apps, JSON.stringify(SEED_APPS));
-        setApplications(SEED_APPS);
+        const seeded = SEED_APPS.map(
+          (a) => ({ ...a, ...(SEED_APP_RATES[a.id ?? ""] ?? nr()) })
+        ) as LoanApplication[];
+        await AsyncStorage.setItem(KEYS.apps, JSON.stringify(seeded));
+        setApplications(seeded);
       }
       if (bors) {
         setBorrowers((JSON.parse(bors) as any[]).map(migrateBorrower));
@@ -2068,4 +2261,4 @@ const [CoreServiceProvider, useCoreService] = createContextHook(() => {
   };
 });
 
-export { CoreServiceProvider, useCoreService };
+export { CoreServiceProvider, useCoreService, SEED_APPS, SEED_APP_RATES };
