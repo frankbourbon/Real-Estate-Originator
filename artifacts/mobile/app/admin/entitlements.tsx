@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
-import { MS_GROUPS, MsGroup, useRbacService } from "@/services/rbac";
+import { ENTITLEMENTS, MS_GROUPS, MsGroup, useRbacService } from "@/services/rbac";
 import { Profile, useSystemCoreService } from "@/services/system-core";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -271,6 +271,24 @@ export default function EntitlementsScreen() {
           ]}
           showsVerticalScrollIndicator={false}
         >
+          {/* ── Registry Overview chips ── */}
+          <View style={s.statsRow}>
+            <View style={s.statChip}>
+              <Text style={s.statNum}>{MS_GROUPS.length}</Text>
+              <Text style={s.statLabel}>Microservices</Text>
+            </View>
+            <View style={s.statDivider} />
+            <View style={s.statChip}>
+              <Text style={s.statNum}>{ENTITLEMENTS.filter((e) => e.action === "VIEW").length}</Text>
+              <Text style={s.statLabel}>VIEW keys</Text>
+            </View>
+            <View style={s.statDivider} />
+            <View style={s.statChip}>
+              <Text style={s.statNum}>{ENTITLEMENTS.filter((e) => e.action === "EDIT").length}</Text>
+              <Text style={s.statLabel}>EDIT keys</Text>
+            </View>
+          </View>
+
           {MS_GROUPS.map((group) => (
             <MsPanel
               key={group.msKey}
@@ -292,6 +310,34 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.light.background },
   scroll: { flex: 1 },
   content: { paddingTop: 8 },
+
+  statsRow: {
+    flexDirection: "row",
+    backgroundColor: Colors.light.backgroundCard,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: Colors.light.border,
+    marginBottom: 8,
+    paddingVertical: 14,
+  },
+  statChip: { flex: 1, alignItems: "center" },
+  statNum: {
+    fontSize: 20,
+    fontFamily: "OpenSans_700Bold",
+    color: Colors.light.tint,
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 11,
+    fontFamily: "OpenSans_400Regular",
+    color: Colors.light.textSecondary,
+    textAlign: "center",
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: Colors.light.border,
+    marginVertical: 4,
+  },
 
   header: {
     backgroundColor: Colors.light.surface,

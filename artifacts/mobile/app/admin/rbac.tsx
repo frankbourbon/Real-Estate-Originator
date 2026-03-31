@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
-import { ENTITLEMENTS, MS_GROUPS } from "@/services/rbac";
+import { MS_GROUPS } from "@/services/rbac";
 import { useSystemCoreService } from "@/services/system-core";
 import { useAdminService } from "@/services/admin";
 import { useSessionService } from "@/services/session";
@@ -252,31 +252,6 @@ export default function RbacScreen() {
         {entitlementSections.map((sec, idx) =>
           renderMenuRow(sec as any, idx, true)
         )}
-
-        {/* ── Registry stats ── */}
-        <View style={s.sectionHeader}>
-          <Text style={s.sectionLabel}>Registry Overview</Text>
-        </View>
-        <View style={s.statsCard}>
-          <View style={s.stat}>
-            <Text style={s.statNum}>{MS_GROUPS.length}</Text>
-            <Text style={s.statLabel}>Microservices</Text>
-          </View>
-          <View style={s.statDivider} />
-          <View style={s.stat}>
-            <Text style={s.statNum}>{ENTITLEMENTS.filter((e) => e.action === "VIEW").length}</Text>
-            <Text style={s.statLabel}>VIEW keys</Text>
-          </View>
-          <View style={s.statDivider} />
-          <View style={s.stat}>
-            <Text style={s.statNum}>{ENTITLEMENTS.filter((e) => e.action === "EDIT").length}</Text>
-            <Text style={s.statLabel}>EDIT keys</Text>
-          </View>
-        </View>
-        <Text style={s.registryNote}>
-          Entitlement keys are code-defined per microservice and cannot be added or removed at
-          runtime. Use Entitlement Mapping to configure which profiles have access to each service.
-        </Text>
       </ScrollView>
 
       <UserPickerModal
@@ -451,40 +426,6 @@ const s = StyleSheet.create({
   },
   menuDetailWarn: { color: "#9E5B1B" },
 
-  statsCard: {
-    backgroundColor: Colors.light.backgroundCard,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: Colors.light.border,
-    flexDirection: "row",
-    paddingVertical: 16,
-  },
-  stat: { flex: 1, alignItems: "center" },
-  statNum: {
-    fontSize: 22,
-    fontFamily: "OpenSans_700Bold",
-    color: Colors.light.tint,
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: 11,
-    fontFamily: "OpenSans_400Regular",
-    color: Colors.light.textSecondary,
-    textAlign: "center",
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: Colors.light.border,
-    marginVertical: 4,
-  },
-  registryNote: {
-    fontSize: 11,
-    fontFamily: "OpenSans_400Regular",
-    color: Colors.light.textTertiary,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    lineHeight: 16,
-  },
 });
 
 const pm = StyleSheet.create({
