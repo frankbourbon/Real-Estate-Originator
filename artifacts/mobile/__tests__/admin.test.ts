@@ -29,45 +29,29 @@ describe("SEED_ADMIN_USERS", () => {
     expect(new Set(sids).size).toBe(sids.length);
   });
 
-  test("SIDs follow the expected A1XXXXX format", () => {
-    SEED_ADMIN_USERS.forEach((u) => {
-      expect(u.sid).toMatch(/^A\d{6}$/);
-    });
+  test("SIDs follow the A1XXXXX format", () => {
+    SEED_ADMIN_USERS.forEach((u) => expect(u.sid).toMatch(/^A\d{6}$/));
   });
 
-  test("A100001 is James Miller (the system admin)", () => {
+  test("A100001 is James Miller (system admin)", () => {
     const u = SEED_ADMIN_USERS.find((u) => u.sid === "A100001");
     expect(u?.firstName).toBe("James");
     expect(u?.lastName).toBe("Miller");
   });
 
+  test("A100002 is Sarah Chen", () => {
+    const u = SEED_ADMIN_USERS.find((u) => u.sid === "A100002");
+    expect(u?.firstName).toBe("Sarah");
+    expect(u?.lastName).toBe("Chen");
+  });
+
   test("all createdAt are valid ISO strings", () => {
-    SEED_ADMIN_USERS.forEach((u) => {
-      expect(isNaN(new Date(u.createdAt).getTime())).toBe(false);
-    });
-  });
-});
-
-// ─── getUser pure logic ───────────────────────────────────────────────────────
-
-describe("getUser logic", () => {
-  test("returns user matching SID", () => {
-    const result = SEED_ADMIN_USERS.find((u) => u.sid === "A100002");
-    expect(result?.firstName).toBe("Sarah");
-    expect(result?.lastName).toBe("Chen");
-  });
-
-  test("returns undefined for unknown SID", () => {
-    const result = SEED_ADMIN_USERS.find((u) => u.sid === "ZZZZZZ");
-    expect(result).toBeUndefined();
+    SEED_ADMIN_USERS.forEach((u) => expect(isNaN(new Date(u.createdAt).getTime())).toBe(false));
   });
 });
 
 // ─── searchUsers pure logic ───────────────────────────────────────────────────
 
-/**
- * Replicates the searchUsers logic from AdminService exactly as coded in the service.
- */
 function searchUsers(users: AdminUser[], q: string): AdminUser[] {
   if (!q.trim()) return [...users].sort((a, b) => a.lastName.localeCompare(b.lastName));
   const lower = q.toLowerCase();
@@ -99,8 +83,7 @@ describe("searchUsers logic", () => {
   });
 
   test("whitespace-only query returns all users sorted", () => {
-    const result = searchUsers(users, "   ");
-    expect(result).toHaveLength(users.length);
+    expect(searchUsers(users, "   ")).toHaveLength(users.length);
   });
 
   test("searches by lastName (case-insensitive)", () => {
@@ -115,7 +98,7 @@ describe("searchUsers logic", () => {
     expect(result[0].sid).toBe("A100002");
   });
 
-  test("searches by SID", () => {
+  test("searches by full SID", () => {
     const result = searchUsers(users, "A100004");
     expect(result).toHaveLength(1);
     expect(result[0].firstName).toBe("Linda");
@@ -139,28 +122,26 @@ describe("searchUsers logic", () => {
     expect(result[0].sid).toBe("A100003");
   });
 
-  test("search returns multiple matches when applicable", () => {
-    const usersWithCommonName: AdminUser[] = [
+  test("search returns multiple matches", () => {
+    const withExtra: AdminUser[] = [
       ...users,
-      { sid: "A100006", firstName: "Sara",  lastName: "Johnson", createdAt: "", updatedAt: "" },
+      { sid: "A100006", firstName: "Sara", lastName: "Johnson", createdAt: "", updatedAt: "" },
     ];
-    const result = searchUsers(usersWithCommonName, "johnson");
-    expect(result).toHaveLength(2);
+    expect(searchUsers(withExtra, "johnson")).toHaveLength(2);
   });
 
   test("no match returns empty array", () => {
-    const result = searchUsers(users, "zzzznotexist");
-    expect(result).toHaveLength(0);
+    expect(searchUsers(users, "zzzznotexist")).toHaveLength(0);
   });
 
-  test("search results are sorted by lastName", () => {
-    const result = searchUsers(users, "a100"); // matches all A100xxx SIDs
+  test("results are sorted by lastName", () => {
+    const result = searchUsers(users, "a100");
     const lastNames = result.map((u) => u.lastName);
     expect(lastNames).toEqual([...lastNames].sort((a, b) => a.localeCompare(b)));
   });
 
   test("partial lastName match works", () => {
-    const result = searchUsers(users, "will"); // Williams
+    const result = searchUsers(users, "will");
     expect(result).toHaveLength(1);
     expect(result[0].lastName).toBe("Williams");
   });
@@ -188,22 +169,17 @@ describe("addUser / updateUser / deleteUser pure logic", () => {
   });
 
   test("deleteUser with unknown SID leaves array unchanged", () => {
-    const result = users.filter((u) => u.sid !== "UNKNOWN");
-    expect(result).toHaveLength(users.length);
+    expect(users.filter((u) => u.sid !== "UNKNOWN")).toHaveLength(users.length);
   });
 
   test("updateUser applies patch to correct user", () => {
-    const result = users.map((u) =>
-      u.sid === "A001" ? { ...u, firstName: "Alexandra" } : u
-    );
+    const result = users.map((u) => u.sid === "A001" ? { ...u, firstName: "Alexandra" } : u);
     expect(result.find((u) => u.sid === "A001")?.firstName).toBe("Alexandra");
-    expect(result.find((u) => u.sid === "A002")?.firstName).toBe("Bob"); // untouched
+    expect(result.find((u) => u.sid === "A002")?.firstName).toBe("Bob");
   });
 
   test("updateUser preserves SID (immutable)", () => {
-    const result = users.map((u) =>
-      u.sid === "A001" ? { ...u, lastName: "Anderson" } : u
-    );
+    const result = users.map((u) => u.sid === "A001" ? { ...u, lastName: "Anderson" } : u);
     expect(result.find((u) => u.sid === "A001")?.sid).toBe("A001");
   });
 });
