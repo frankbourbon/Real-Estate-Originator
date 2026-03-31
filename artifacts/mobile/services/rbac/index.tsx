@@ -68,6 +68,8 @@ export const MS_GROUPS: MsGroup[] = [
       ent("collaboration.main",  "Loan Core", "Collaboration",  "EDIT"),
       ent("comments.main",       "Loan Core", "Comments",       "VIEW"),
       ent("comments.main",       "Loan Core", "Comments",       "EDIT"),
+      ent("conditions.main",     "Loan Core", "Conditions",     "VIEW"),
+      ent("conditions.main",     "Loan Core", "Conditions",     "EDIT"),
     ],
   },
   {
@@ -138,8 +140,6 @@ export const MS_GROUPS: MsGroup[] = [
       ent("final-review.amortization","Final Credit Review", "Amortization at FCR", "EDIT"),
       ent("fcr.main",                 "Final Credit Review", "Final Credit Review",  "VIEW"),
       ent("fcr.main",                 "Final Credit Review", "Final Credit Review",  "EDIT"),
-      ent("conditions.main",          "Final Credit Review", "Conditions",           "VIEW"),
-      ent("conditions.main",          "Final Credit Review", "Conditions",           "EDIT"),
       ent("exceptions.main",          "Final Credit Review", "Exceptions",           "VIEW"),
       ent("exceptions.main",          "Final Credit Review", "Exceptions",           "EDIT"),
       ent("commitment.letter",        "Final Credit Review", "Commitment Letter",    "VIEW"),
@@ -221,7 +221,7 @@ const CA_EDIT_KEYS = new Set([
   // FCR phase
   "final-review.borrower", "final-review.property",
   "final-review.loan-terms", "final-review.amortization",
-  "fcr.main", "conditions.main", "exceptions.main",
+  "fcr.main", "exceptions.main",
 ]);
 
 const CO_EDIT_KEYS = new Set([
