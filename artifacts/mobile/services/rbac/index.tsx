@@ -46,7 +46,7 @@ function ent(
 
 /**
  * 11 Phase MS groups — aligned with the actual microservice decomposition:
- *   Core → Inquiry → Initial Credit Review → Application → Final Credit Review
+ *   Loan Core → Inquiry → Initial Credit Review → Application → Final Credit Review
  *   → Closing → Documents → Loan Team → Comments → Tasks → Collaboration
  *
  * Collaboration = per-loan ACL (read-only access grants by SID).
@@ -57,14 +57,14 @@ function ent(
  * Amortization. The permission key prefix matches the PhaseKey ("inquiry",
  * "initial-review", "application", "final-review", "closing"), e.g.
  * "inquiry.borrower", "application.property", "closing.loan-terms", etc.
- * Core owns only the pipeline-level screens (Dashboard and Applications list).
+ * Loan Core owns only the pipeline-level screens (Dashboard and Applications list).
  */
 export const MS_GROUPS: MsGroup[] = [
   {
-    ms: "Core", msKey: "core", colorHex: "#1B7F9E",
+    ms: "Loan Core", msKey: "core", colorHex: "#1B7F9E",
     entitlements: [
-      ent("core.dashboard",    "Core", "Dashboard",    "VIEW"),
-      ent("core.applications", "Core", "Applications", "VIEW"),
+      ent("core.dashboard",    "Loan Core", "Dashboard",    "VIEW"),
+      ent("core.applications", "Loan Core", "Applications", "VIEW"),
     ],
   },
   {
