@@ -45,26 +45,29 @@ function ent(
 }
 
 /**
- * 11 Phase MS groups — aligned with the actual microservice decomposition:
+ * 8 MS groups — aligned with the actual microservice decomposition:
  *   Loan Core → Inquiry → Initial Credit Review → Application → Final Credit Review
- *   → Closing → Documents → Loan Team → Comments → Tasks → Collaboration
+ *   → Closing → Documents → Tasks
  *
- * Collaboration = per-loan ACL (read-only access grants by SID).
- * Loan Team     = active originators working the deal (roles/responsibilities).
- * These are distinct MS with separate data, screens, and entitlements.
+ * Loan Core owns: Dashboard, Applications list, Loan Team (active originators),
+ * Collaboration (per-loan ACL by SID), and Comments (threaded discussion).
  *
- * Each phase MS owns its own instance of Borrower, Property, Loan Terms, and
- * Amortization. The permission key prefix matches the PhaseKey ("inquiry",
- * "initial-review", "application", "final-review", "closing"), e.g.
- * "inquiry.borrower", "application.property", "closing.loan-terms", etc.
- * Loan Core owns only the pipeline-level screens (Dashboard and Applications list).
+ * Each phase MS (Inquiry → Closing) owns its own instance of Borrower, Property,
+ * Loan Terms, and Amortization. Permission key prefix matches PhaseKey, e.g.
+ * "inquiry.borrower", "application.property", "closing.loan-terms".
  */
 export const MS_GROUPS: MsGroup[] = [
   {
     ms: "Loan Core", msKey: "core", colorHex: "#1B7F9E",
     entitlements: [
-      ent("core.dashboard",    "Loan Core", "Dashboard",    "VIEW"),
-      ent("core.applications", "Loan Core", "Applications", "VIEW"),
+      ent("core.dashboard",      "Loan Core", "Dashboard",      "VIEW"),
+      ent("core.applications",   "Loan Core", "Applications",   "VIEW"),
+      ent("loan-team.main",      "Loan Core", "Loan Team",      "VIEW"),
+      ent("loan-team.main",      "Loan Core", "Loan Team",      "EDIT"),
+      ent("collaboration.main",  "Loan Core", "Collaboration",  "VIEW"),
+      ent("collaboration.main",  "Loan Core", "Collaboration",  "EDIT"),
+      ent("comments.main",       "Loan Core", "Comments",       "VIEW"),
+      ent("comments.main",       "Loan Core", "Comments",       "EDIT"),
     ],
   },
   {
@@ -166,31 +169,10 @@ export const MS_GROUPS: MsGroup[] = [
     ],
   },
   {
-    ms: "Loan Team", msKey: "loan-team", colorHex: "#C75300",
-    entitlements: [
-      ent("loan-team.main", "Loan Team", "Loan Team", "VIEW"),
-      ent("loan-team.main", "Loan Team", "Loan Team", "EDIT"),
-    ],
-  },
-  {
-    ms: "Comments", msKey: "comments", colorHex: "#6B7280",
-    entitlements: [
-      ent("comments.main", "Comments", "Comments", "VIEW"),
-      ent("comments.main", "Comments", "Comments", "EDIT"),
-    ],
-  },
-  {
     ms: "Tasks", msKey: "tasks", colorHex: "#0A6B3E",
     entitlements: [
       ent("tasks.main", "Tasks", "Tasks", "VIEW"),
       ent("tasks.main", "Tasks", "Tasks", "EDIT"),
-    ],
-  },
-  {
-    ms: "Collaboration", msKey: "collaboration", colorHex: "#7C3AED",
-    entitlements: [
-      ent("collaboration.main", "Collaboration", "Collaboration", "VIEW"),
-      ent("collaboration.main", "Collaboration", "Collaboration", "EDIT"),
     ],
   },
 ];
