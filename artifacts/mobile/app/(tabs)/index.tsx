@@ -215,7 +215,7 @@ export default function DashboardScreen() {
         {/* ── Masthead (Salt dark surface — blue-900) ── */}
         <View style={styles.masthead}>
           <View>
-            <Text style={styles.mastheadEyebrow}>J.P. Morgan Commercial Banking</Text>
+            <Text style={styles.mastheadEyebrow}>Commercial Banking</Text>
             <Text style={styles.mastheadTitle}>Loan Origination</Text>
           </View>
           <TouchableOpacity style={styles.menuBtn} onPress={() => setMenuOpen(true)} activeOpacity={0.7}>
