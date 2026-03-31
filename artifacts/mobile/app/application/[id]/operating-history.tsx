@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   Modal,
   Platform,
   Pressable,
@@ -16,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
+import { confirmDestructive } from "@/utils/confirm";
 import type { OperatingPeriodType, OperatingYear } from "@/services/inquiry";
 import { useInquiryService } from "@/services/inquiry";
 import { useCoreService } from "@/services/core";
@@ -597,10 +597,12 @@ export default function OperatingHistoryScreen() {
   };
 
   const handleDelete = (year: OperatingYear) => {
-    Alert.alert("Delete Period", `Remove ${year.periodType} ${year.periodYear}?`, [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => deleteYear(year.id) },
-    ]);
+    confirmDestructive(
+      "Delete Period",
+      `Remove ${year.periodType} ${year.periodYear}?`,
+      "Delete",
+      () => deleteYear(year.id),
+    );
   };
 
   return (

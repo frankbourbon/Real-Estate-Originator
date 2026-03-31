@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   Modal,
   Platform,
   Pressable,
@@ -16,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
+import { confirmDestructive } from "@/utils/confirm";
 import type { CollaborationMember } from "@/services/core";
 import { useCoreService } from "@/services/core";
 import { AccessDenied } from "@/components/AccessDenied";
@@ -264,13 +264,11 @@ export default function CollaborationScreen() {
   };
 
   const handleDelete = (member: CollaborationMember) => {
-    Alert.alert(
+    confirmDestructive(
       "Remove Collaborator",
       `Remove ${member.firstName} ${member.lastName} (${member.sid}) from this loan?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Remove", style: "destructive", onPress: () => removeCollaborator(member.id) },
-      ],
+      "Remove",
+      () => removeCollaborator(member.id),
     );
   };
 

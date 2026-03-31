@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   FlatList,
   Modal,
   Platform,
@@ -22,6 +21,7 @@ import { useAdminService } from "@/services/admin";
 import type { FunctionalGroup, TeamMember, TeamRole } from "@/services/loan-team";
 import { ALL_ROLES, ROLE_GROUPS, getRoleGroup, useLoanTeamService } from "@/services/loan-team";
 import { useCoreService } from "@/services/core";
+import { confirmDestructive } from "@/utils/confirm";
 import { getPropertyShortAddress, getPropertyCityState } from "@/utils/formatting";
 import { AccessDenied } from "@/components/AccessDenied";
 import { usePermission } from "@/hooks/usePermission";
@@ -338,13 +338,11 @@ export default function LoanTeamScreen() {
   }
 
   const handleRemove = (member: TeamMember) => {
-    Alert.alert(
+    confirmDestructive(
       "Remove team member",
       `Remove ${member.firstName} ${member.lastName} from this loan?\n\nThis does not delete them from the employee registry.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Remove", style: "destructive", onPress: () => removeTeamMember(member.id) },
-      ]
+      "Remove",
+      () => removeTeamMember(member.id),
     );
   };
 

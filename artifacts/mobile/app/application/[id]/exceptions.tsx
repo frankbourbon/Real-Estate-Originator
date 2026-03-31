@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -15,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
+import { confirmDestructive, showAlert } from "@/utils/confirm";
 import type {
   ApprovalAuthorityLevel,
   Exception,
@@ -289,7 +289,7 @@ export default function ExceptionsScreen() {
     setSaving(true);
     try {
       if (modal.mode === "add") {
-        if (!draft.description.trim()) { Alert.alert("Required", "Please enter an exception description."); return; }
+        if (!draft.description.trim()) { showAlert("Required", "Please enter an exception description."); return; }
         await addException(id, { phaseAddedAt: app?.status ?? "Inquiry", ...draft });
       } else if (modal.mode === "edit") {
         await updateException(modal.item.id, draft);
@@ -299,10 +299,12 @@ export default function ExceptionsScreen() {
   }
 
   function handleDelete(item: Exception) {
-    Alert.alert("Delete Exception", "Remove this exception permanently?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => deleteException(item.id) },
-    ]);
+    confirmDestructive(
+      "Delete Exception",
+      "Remove this exception permanently?",
+      "Delete",
+      () => deleteException(item.id),
+    );
   }
 
   if (!canView) return <AccessDenied screenLabel="Policy Exceptions" />;

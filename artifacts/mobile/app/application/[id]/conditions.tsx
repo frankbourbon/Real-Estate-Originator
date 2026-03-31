@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -15,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
+import { confirmDestructive, showAlert } from "@/utils/confirm";
 import type {
   AppliesToRef,
   Condition,
@@ -443,7 +443,7 @@ export default function ConditionsScreen() {
     try {
       if (modal.mode === "add-condition") {
         if (!draft.description.trim()) {
-          Alert.alert("Required", "Please enter a condition description.");
+          showAlert("Required", "Please enter a condition description.");
           return;
         }
         await addCondition(id, {
@@ -460,10 +460,12 @@ export default function ConditionsScreen() {
   }
 
   function handleDelete(item: Condition) {
-    Alert.alert("Delete Condition", "Remove this condition permanently?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => deleteCondition(item.id) },
-    ]);
+    confirmDestructive(
+      "Delete Condition",
+      "Remove this condition permanently?",
+      "Delete",
+      () => deleteCondition(item.id),
+    );
   }
 
   if (!canView) return <AccessDenied screenLabel="Conditions" />;

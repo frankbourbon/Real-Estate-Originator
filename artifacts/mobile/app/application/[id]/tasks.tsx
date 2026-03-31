@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Modal,
   Platform,
   Pressable,
@@ -20,6 +19,7 @@ import type { ApplicationStatus } from "@/services/core";
 import type { LoanTask } from "@/services/tasks";
 import { useTasksService } from "@/services/tasks";
 import { useCoreService } from "@/services/core";
+import { confirmDestructive } from "@/utils/confirm";
 import { PHASE_INFO, PHASE_ORDER } from "@/utils/phases";
 import { AccessDenied } from "@/components/AccessDenied";
 import { usePermission } from "@/hooks/usePermission";
@@ -340,10 +340,12 @@ export default function TasksScreen() {
 
   const handleDelete = (task: LoanTask) => {
     if (!task.isCustom) return;
-    Alert.alert("Delete Task", `Delete "${task.title}"?`, [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => deleteTask(task.id) },
-    ]);
+    confirmDestructive(
+      "Delete Task",
+      `Delete "${task.title}"?`,
+      "Delete",
+      () => deleteTask(task.id),
+    );
   };
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;

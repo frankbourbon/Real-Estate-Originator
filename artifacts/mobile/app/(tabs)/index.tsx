@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   Modal,
   Platform,
   Pressable,
@@ -18,6 +17,7 @@ import { ApplicationCard } from "@/components/ApplicationCard";
 import Colors from "@/constants/colors";
 import { useCoreService } from "@/services/core";
 import { useSeedCoordinator } from "@/services/seed-coordinator";
+import { confirmDestructive } from "@/utils/confirm";
 import { formatCurrency } from "@/utils/formatting";
 import { PHASE_INFO } from "@/utils/phases";
 
@@ -182,20 +182,15 @@ export default function DashboardScreen() {
 
   const handleClearSample = () => {
     setMenuOpen(false);
-    Alert.alert(
+    confirmDestructive(
       "Clear Sample Data",
       "This will remove all sample loan applications. Real applications you created will not be affected.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Clear Sample Data", style: "destructive",
-          onPress: async () => {
-            setSeeding(true);
-            await clearAllData();
-            setSeeding(false);
-          },
-        },
-      ]
+      "Clear Sample Data",
+      async () => {
+        setSeeding(true);
+        await clearAllData();
+        setSeeding(false);
+      },
     );
   };
 

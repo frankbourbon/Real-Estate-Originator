@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   Modal,
   Platform,
   Pressable,
@@ -31,6 +30,7 @@ import {
   getPropertyCityState,
   getPropertyShortAddress,
 } from "@/utils/formatting";
+import { confirmDestructive } from "@/utils/confirm";
 import { DISPOSITION_STATUSES, PHASE_INFO, PHASE_ORDER } from "@/utils/phases";
 import { AccessDenied } from "@/components/AccessDenied";
 import { usePermission } from "@/hooks/usePermission";
@@ -495,13 +495,12 @@ export default function ApplicationOverviewScreen() {
   if (!canView) return <AccessDenied screenLabel="Application Overview" />;
 
   const handleDelete = () => {
-    Alert.alert("Delete Application", "This action cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete", style: "destructive",
-        onPress: async () => { await deleteApplication(id); router.back(); },
-      },
-    ]);
+    confirmDestructive(
+      "Delete Application",
+      "This action cannot be undone.",
+      "Delete",
+      async () => { await deleteApplication(id); router.back(); },
+    );
   };
 
   const handleAdvance = async () => {

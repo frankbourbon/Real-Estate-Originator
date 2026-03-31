@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   Modal,
   Platform,
   Pressable,
@@ -16,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
+import { confirmDestructive } from "@/utils/confirm";
 import type {
   LeaseStatusType,
   LeaseType,
@@ -619,10 +619,12 @@ export default function RentRollScreen() {
   };
 
   const handleDelete = (unit: RentRollUnit) => {
-    Alert.alert("Delete Unit", `Remove unit "${unit.unitIdentifier}"?`, [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => deleteUnit(unit.id) },
-    ]);
+    confirmDestructive(
+      "Delete Unit",
+      `Remove unit "${unit.unitIdentifier}"?`,
+      "Delete",
+      () => deleteUnit(unit.id),
+    );
   };
 
   return (
