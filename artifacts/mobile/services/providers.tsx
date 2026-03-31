@@ -4,6 +4,7 @@ import { AdminServiceProvider } from "@/services/admin";
 import { ApplicationDispositionServiceProvider } from "@/services/application-disposition";
 import { ApplicationServiceProvider } from "@/services/application";
 import { ClosingServiceProvider } from "@/services/closing";
+import { CommentsServiceProvider } from "@/services/comments";
 import { ConditionsServiceProvider } from "@/services/conditions";
 import { CoreServiceProvider } from "@/services/core";
 import { DocumentsServiceProvider } from "@/services/documents";
@@ -50,9 +51,11 @@ export function ServiceProviders({ children }: { children: React.ReactNode }) {
                             <ClosingServiceProvider>
                               <DocumentsServiceProvider>
                                 <TasksServiceProvider>
-                                  <LoanTeamServiceProvider>
-                                    {children}
-                                  </LoanTeamServiceProvider>
+                                  <CommentsServiceProvider>
+                                    <LoanTeamServiceProvider>
+                                      {children}
+                                    </LoanTeamServiceProvider>
+                                  </CommentsServiceProvider>
                                 </TasksServiceProvider>
                               </DocumentsServiceProvider>
                             </ClosingServiceProvider>

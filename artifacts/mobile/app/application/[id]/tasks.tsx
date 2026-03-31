@@ -277,7 +277,7 @@ export default function TasksScreen() {
   const { getApplication } = useCoreService();
   const { getTasksForApplication, seedTasksForPhase, toggleTask, addTask, deleteTask } = useTasksService();
   const insets = useSafeAreaInsets();
-  const { canView, canEdit } = usePermission("collaboration.tasks");
+  const { canView, canEdit } = usePermission("tasks.main");
 
   const [seeded, setSeeded] = useState(false);
   const [modalPhase, setModalPhase] = useState<ApplicationStatus | null>(null);

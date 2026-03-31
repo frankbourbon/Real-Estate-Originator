@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import Colors from "@/constants/colors";
 import { useCoreService } from "@/services/core";
 import type { LoanApplication } from "@/services/core";
-import { useLoanTeamService } from "@/services/loan-team";
+import { useCommentsService } from "@/services/comments";
 import { useDocumentsService } from "@/services/documents";
 import {
   formatCurrency,
@@ -23,7 +23,7 @@ type Props = {
 
 export function ApplicationCard({ application }: Props) {
   const { getBorrower, getProperty } = useCoreService();
-  const { getComments } = useLoanTeamService();
+  const { getComments } = useCommentsService();
   const { getDocuments } = useDocumentsService();
 
   const borrower = getBorrower(application.borrowerId);

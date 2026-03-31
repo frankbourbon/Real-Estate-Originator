@@ -19,6 +19,7 @@ import Colors from "@/constants/colors";
 import type { ApplicationStatus } from "@/services/core";
 import { useCoreService } from "@/services/core";
 import { statusToPhase, usePhaseDataService } from "@/services/phase-data";
+import { useCommentsService } from "@/services/comments";
 import { useLoanTeamService } from "@/services/loan-team";
 import { useDocumentsService } from "@/services/documents";
 import { useConditionsService } from "@/services/conditions";
@@ -467,7 +468,7 @@ export default function ApplicationOverviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication, getBorrower, getProperty, updateApplication, deleteApplication, getCollaborators } = useCoreService();
   const { promoteSnapshots, getLoanTermsSnapshot } = usePhaseDataService();
-  const { getComments } = useLoanTeamService();
+  const { getComments } = useCommentsService();
   const { getDocuments } = useDocumentsService();
   const { getConditions } = useConditionsService();
   const { getTasksForApplication } = useTasksService();

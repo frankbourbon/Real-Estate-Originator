@@ -2,20 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import React, { useCallback, useEffect, useState } from "react";
 
-// ─── Types: Comments ─────────────────────────────────────────────────────────
-
-/** serviceTag identifies which phase/screen this comment belongs to (optional). */
-export type Comment = {
-  id: string;
-  applicationId: string;
-  serviceTag: string;         // e.g. "inquiry", "final-credit-review", "" for general
-  parentCommentId: string | null;
-  text: string;
-  author: string;
-  createdAt: string;
-};
-
-// ─── Types: Team Members ──────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export type TeamRole =
   | "Client manager"
@@ -72,10 +59,9 @@ export type TeamMember = {
   updatedAt: string;
 };
 
-// ─── Storage Keys ─────────────────────────────────────────────────────────────
+// ─── Storage Key ──────────────────────────────────────────────────────────────
 
-const KEY_TEAM     = "svc_loan_team_v2";
-const KEY_COMMENTS = "svc_comments_v2";
+const KEY = "svc_loan_team_v2";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -87,57 +73,7 @@ function d(y: number, m: number, day: number): string {
   return new Date(y, m - 1, day).toISOString();
 }
 
-// ─── Seed Data: Comments ──────────────────────────────────────────────────────
-
-const SEED_COMMENTS: Comment[] = [
-  { id: "seed_c01a", applicationId: "seed_a01", serviceTag: "", parentCommentId: null,
-    author: "Jennifer Walsh (Sales)", createdAt: d(2026,3,14),
-    text: "Initial call with borrower went well. Strong equity position and long track record in Philly office market." },
-  { id: "seed_c02a", applicationId: "seed_a02", serviceTag: "", parentCommentId: null,
-    author: "Alan Morse (Credit Risk)", createdAt: d(2026,3,5),
-    text: "LOI issued 3/5. Waiting on borrower to review terms and execute." },
-  { id: "seed_c02b", applicationId: "seed_a02", serviceTag: "", parentCommentId: "seed_c02a",
-    author: "Jennifer Walsh (Sales)", createdAt: d(2026,3,6),
-    text: "Borrower confirmed receipt. Expects to sign by 3/12." },
-  { id: "seed_c03a", applicationId: "seed_a03", serviceTag: "", parentCommentId: null,
-    author: "Jennifer Walsh (Sales)", createdAt: d(2026,3,10),
-    text: "Deposit received 3/8. Debit auth also signed. Kicking off application package." },
-  { id: "seed_c04a", applicationId: "seed_a04", serviceTag: "processing", parentCommentId: null,
-    author: "Lisa Park (Processing)", createdAt: d(2026,3,1),
-    text: "Appraisal ordered 3/1 with Pacific Valuation Group. Est. completion 3/28." },
-  { id: "seed_c04b", applicationId: "seed_a04", serviceTag: "processing", parentCommentId: null,
-    author: "Lisa Park (Processing)", createdAt: d(2026,3,8),
-    text: "Phase I Environmental ordered. Awaiting site access confirmation." },
-  { id: "seed_c05a", applicationId: "seed_a05", serviceTag: "final-credit-review", parentCommentId: null,
-    author: "Alan Morse (Credit Risk)", createdAt: d(2026,3,18),
-    text: "Credit memo drafted and under review with CRO. Appraisal came in at $25.1M — slightly above purchase price. Good news." },
-  { id: "seed_c05b", applicationId: "seed_a05", serviceTag: "final-credit-review", parentCommentId: "seed_c05a",
-    author: "Priya Nair (CRO)", createdAt: d(2026,3,19),
-    text: "Reviewed. Floating rate exception approved. Proceeding to CL recommendation." },
-  { id: "seed_c06a", applicationId: "seed_a06", serviceTag: "closing", parentCommentId: null,
-    author: "Lisa Park (Processing)", createdAt: d(2026,3,20),
-    text: "HMDA nearly complete — missing census tract. Requesting from GIS team." },
-  { id: "seed_c07a", applicationId: "seed_a07", serviceTag: "closing", parentCommentId: null,
-    author: "Marcus Hill (Closing)", createdAt: d(2026,3,15),
-    text: "All third-party items confirmed. Title report clean. Ready to request docs." },
-  { id: "seed_c08a", applicationId: "seed_a08", serviceTag: "docs-drawn", parentCommentId: null,
-    author: "Marcus Hill (Closing)", createdAt: d(2026,3,18),
-    text: "Loan documents generated and sent to borrower's counsel. Expecting execution by 3/22." },
-  { id: "seed_c09a", applicationId: "seed_a09", serviceTag: "docs-back", parentCommentId: null,
-    author: "Marcus Hill (Closing)", createdAt: d(2026,3,20),
-    text: "Signed docs received from borrower's counsel 3/20. Title confirmed. Ready to wire." },
-  { id: "seed_c10a", applicationId: "seed_a10", serviceTag: "closing", parentCommentId: null,
-    author: "Marcus Hill (Closing)", createdAt: d(2026,3,21),
-    text: "Wire instructions verified with borrower via phone. Funding scheduled for 3/24 at 10am ET." },
-  { id: "seed_c10b", applicationId: "seed_a10", serviceTag: "closing", parentCommentId: "seed_c10a",
-    author: "Priya Nair (CRO)", createdAt: d(2026,3,21),
-    text: "Confirmed. Notify servicing team to book to portfolio once wire confirms." },
-  { id: "seed_c12a", applicationId: "seed_a12", serviceTag: "processing", parentCommentId: null,
-    author: "Lisa Park (Processing)", createdAt: d(2026,3,5),
-    text: "Appraisal ordered 3/5. Will take ~3 weeks. Borrower packaging financial statements." },
-];
-
-// ─── Seed Data: Team Members ──────────────────────────────────────────────────
+// ─── Seed Data ────────────────────────────────────────────────────────────────
 
 const SEED_TEAM: TeamMember[] = [
   // seed_a01 — Inquiry, 1200 Market Street, Philadelphia
@@ -372,32 +308,20 @@ const SEED_TEAM: TeamMember[] = [
 // ─── Context ──────────────────────────────────────────────────────────────────
 
 const [LoanTeamServiceProvider, useLoanTeamService] = createContextHook(() => {
-  const [members,  setMembers]  = useState<TeamMember[]>([]);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [loading,  setLoading]  = useState(true);
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      AsyncStorage.getItem(KEY_TEAM),
-      AsyncStorage.getItem(KEY_COMMENTS),
-    ]).then(([rawTeam, rawComments]) => {
-      if (rawTeam)     setMembers(JSON.parse(rawTeam));
-      if (rawComments) setComments(JSON.parse(rawComments));
+    AsyncStorage.getItem(KEY).then((raw) => {
+      if (raw) setMembers(JSON.parse(raw));
       setLoading(false);
     });
   }, []);
 
-  const persistTeam = useCallback(async (data: TeamMember[]) => {
+  const persist = useCallback(async (data: TeamMember[]) => {
     setMembers(data);
-    await AsyncStorage.setItem(KEY_TEAM, JSON.stringify(data));
+    await AsyncStorage.setItem(KEY, JSON.stringify(data));
   }, []);
-
-  const persistComments = useCallback(async (data: Comment[]) => {
-    setComments(data);
-    await AsyncStorage.setItem(KEY_COMMENTS, JSON.stringify(data));
-  }, []);
-
-  // ── Team Member operations ────────────────────────────────────────────────
 
   const getTeamMembers = useCallback(
     (applicationId: string) => members.filter((m) => m.applicationId === applicationId),
@@ -409,102 +333,45 @@ const [LoanTeamServiceProvider, useLoanTeamService] = createContextHook(() => {
       applicationId: string,
       data: Omit<TeamMember, "id" | "applicationId" | "createdAt" | "updatedAt">
     ): Promise<TeamMember> => {
-      const member: TeamMember = { id: uid(), applicationId, createdAt: now(), updatedAt: now(), ...data };
-      await persistTeam([...members, member]);
+      const member: TeamMember = {
+        id: uid(), applicationId, createdAt: now(), updatedAt: now(), ...data,
+      };
+      await persist([...members, member]);
       return member;
     },
-    [members, persistTeam]
+    [members, persist]
   );
 
   const updateTeamMember = useCallback(
     async (id: string, patch: Partial<Omit<TeamMember, "id" | "applicationId" | "createdAt">>) => {
-      await persistTeam(members.map((m) => (m.id === id ? { ...m, ...patch, updatedAt: now() } : m)));
+      await persist(members.map((m) => (m.id === id ? { ...m, ...patch, updatedAt: now() } : m)));
     },
-    [members, persistTeam]
+    [members, persist]
   );
 
   const removeTeamMember = useCallback(
-    async (id: string) => { await persistTeam(members.filter((m) => m.id !== id)); },
-    [members, persistTeam]
+    async (id: string) => { await persist(members.filter((m) => m.id !== id)); },
+    [members, persist]
   );
-
-  // ── Comment operations ────────────────────────────────────────────────────
-
-  const getComments = useCallback(
-    (applicationId: string, serviceTag?: string) => {
-      const appComments = comments.filter((c) => c.applicationId === applicationId);
-      if (serviceTag !== undefined) return appComments.filter((c) => c.serviceTag === serviceTag);
-      return appComments;
-    },
-    [comments]
-  );
-
-  const addComment = useCallback(
-    async (
-      applicationId: string,
-      text: string,
-      author: string,
-      parentCommentId: string | null = null,
-      serviceTag: string = ""
-    ): Promise<Comment> => {
-      const comment: Comment = { id: uid(), applicationId, serviceTag, parentCommentId, text, author, createdAt: now() };
-      await persistComments([...comments, comment]);
-      return comment;
-    },
-    [comments, persistComments]
-  );
-
-  const updateComment = useCallback(
-    async (id: string, text: string) => {
-      await persistComments(comments.map((c) => (c.id === id ? { ...c, text } : c)));
-    },
-    [comments, persistComments]
-  );
-
-  const deleteComment = useCallback(
-    async (id: string) => {
-      const toDelete = new Set<string>();
-      const queue = [id];
-      while (queue.length) {
-        const cur = queue.shift()!;
-        toDelete.add(cur);
-        comments.filter((c) => c.parentCommentId === cur).forEach((c) => queue.push(c.id));
-      }
-      await persistComments(comments.filter((c) => !toDelete.has(c.id)));
-    },
-    [comments, persistComments]
-  );
-
-  // ── Seed / Clear ──────────────────────────────────────────────────────────
 
   const loadSeedData = useCallback(async () => {
-    await Promise.all([
-      persistTeam(SEED_TEAM),
-      persistComments(SEED_COMMENTS),
-    ]);
-  }, [persistTeam, persistComments]);
+    await persist(SEED_TEAM);
+  }, [persist]);
 
   const clearData = useCallback(async () => {
-    await Promise.all([persistTeam([]), persistComments([])]);
-  }, [persistTeam, persistComments]);
+    await persist([]);
+  }, [persist]);
 
   const clearForApplication = useCallback(
     async (applicationId: string) => {
-      await Promise.all([
-        persistTeam(members.filter((m) => m.applicationId !== applicationId)),
-        persistComments(comments.filter((c) => c.applicationId !== applicationId)),
-      ]);
+      await persist(members.filter((m) => m.applicationId !== applicationId));
     },
-    [members, comments, persistTeam, persistComments]
+    [members, persist]
   );
 
   return {
     loading,
-    // team
     getTeamMembers, addTeamMember, updateTeamMember, removeTeamMember,
-    // comments
-    getComments, addComment, updateComment, deleteComment,
-    // lifecycle
     loadSeedData, clearData, clearForApplication,
   };
 });
