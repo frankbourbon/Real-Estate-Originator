@@ -45,10 +45,11 @@ function ent(
 }
 
 /**
- * 9 Phase MS groups — aligned with the actual microservice decomposition:
+ * 8 Phase MS groups — aligned with the actual microservice decomposition:
  *   Core → Inquiry → Initial Credit Review → Application → Final Credit Review
- *   → Closing → Collaboration → Documents → Loan Team
+ *   → Closing → Documents → Loan Team
  *
+ * Collaboration (comments + tasks) is owned by the Loan Team MS.
  * Borrower Profile, Property Details, Loan Terms, and Amortization Calculator
  * are instances embedded within each phase MS (not separate microservices).
  * They are exposed as screens owned by Core for master-record access.
@@ -121,15 +122,6 @@ export const MS_GROUPS: MsGroup[] = [
     ],
   },
   {
-    ms: "Collaboration", msKey: "collaboration", colorHex: "#6B7280",
-    entitlements: [
-      ent("collaboration.comments", "Collaboration", "Comments", "VIEW"),
-      ent("collaboration.comments", "Collaboration", "Comments", "EDIT"),
-      ent("collaboration.tasks",    "Collaboration", "Tasks",    "VIEW"),
-      ent("collaboration.tasks",    "Collaboration", "Tasks",    "EDIT"),
-    ],
-  },
-  {
     ms: "Documents", msKey: "documents", colorHex: "#1A5276",
     entitlements: [
       ent("documents.main", "Documents", "Documents", "VIEW"),
@@ -139,8 +131,12 @@ export const MS_GROUPS: MsGroup[] = [
   {
     ms: "Loan Team", msKey: "loan-team", colorHex: "#C75300",
     entitlements: [
-      ent("loan-team.main", "Loan Team", "Loan Team", "VIEW"),
-      ent("loan-team.main", "Loan Team", "Loan Team", "EDIT"),
+      ent("loan-team.main",         "Loan Team", "Loan Team", "VIEW"),
+      ent("loan-team.main",         "Loan Team", "Loan Team", "EDIT"),
+      ent("collaboration.comments", "Loan Team", "Comments",  "VIEW"),
+      ent("collaboration.comments", "Loan Team", "Comments",  "EDIT"),
+      ent("collaboration.tasks",    "Loan Team", "Tasks",     "VIEW"),
+      ent("collaboration.tasks",    "Loan Team", "Tasks",     "EDIT"),
     ],
   },
 ];

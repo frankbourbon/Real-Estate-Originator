@@ -1,5 +1,5 @@
 import type { Borrower, Property } from "@/services/core";
-import type { Comment } from "@/services/comments";
+import type { Comment } from "@/services/loan-team";
 
 export function formatCurrency(value: string | number): string {
   const num = typeof value === "number" ? value : parseFloat(String(value).replace(/[^0-9.]/g, ""));

@@ -9,7 +9,7 @@ import {
 } from "react-native";
 
 import Colors from "@/constants/colors";
-import type { Comment } from "@/services/comments";
+import type { Comment } from "@/services/loan-team";
 import { formatTimeAgo, getReplies } from "@/utils/formatting";
 
 type ReplyFormProps = {

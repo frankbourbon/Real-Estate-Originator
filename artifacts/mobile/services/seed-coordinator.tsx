@@ -4,7 +4,6 @@ import { useAdminService } from "@/services/admin";
 import { useApplicationDispositionService } from "@/services/application-disposition";
 import { useApplicationService } from "@/services/application";
 import { useClosingService } from "@/services/closing";
-import { useCommentsService } from "@/services/comments";
 import { useConditionsService } from "@/services/conditions";
 import { useCoreService } from "@/services/core";
 import { useDocumentsService } from "@/services/documents";
@@ -44,7 +43,6 @@ export function useSeedCoordinator() {
   const closing    = useClosingService();
   const documents  = useDocumentsService();
   const tasks      = useTasksService();
-  const comments   = useCommentsService();
   const loanTeam   = useLoanTeamService();
 
   const loadAllSeedData = useCallback(async () => {
@@ -63,11 +61,10 @@ export function useSeedCoordinator() {
       closing.loadSeedData(),
       documents.loadSeedData(),
       tasks.loadSeedData(),
-      comments.loadSeedData(),
       loanTeam.loadSeedData(),
     ]);
   }, [systemCore, admin, rbac, core, inquiry, inquiryDisposition, icr, application,
-      appDisposition, fcr, conditions, closing, documents, tasks, comments, loanTeam]);
+      appDisposition, fcr, conditions, closing, documents, tasks, loanTeam]);
 
   const clearAllData = useCallback(async () => {
     await Promise.all([
@@ -86,12 +83,10 @@ export function useSeedCoordinator() {
       closing.clearData(),
       documents.clearData(),
       tasks.clearData(),
-      comments.clearData(),
       loanTeam.clearData(),
     ]);
   }, [systemCore, admin, rbac, core, phaseData, inquiry, inquiryDisposition, icr,
-      application, appDisposition, fcr, conditions, closing, documents, tasks,
-      comments, loanTeam]);
+      application, appDisposition, fcr, conditions, closing, documents, tasks, loanTeam]);
 
   /**
    * Clears all phase-service data for a specific application (cascade delete).
@@ -111,12 +106,11 @@ export function useSeedCoordinator() {
       closing.clearForApplication(applicationId),
       documents.clearForApplication(applicationId),
       tasks.clearForApplication(applicationId),
-      comments.clearForApplication(applicationId),
       loanTeam.clearForApplication(applicationId),
     ]);
     await core.deleteApplication(applicationId);
   }, [core, phaseData, inquiry, inquiryDisposition, icr, application, appDisposition,
-      fcr, conditions, closing, documents, tasks, comments, loanTeam]);
+      fcr, conditions, closing, documents, tasks, loanTeam]);
 
   return { loadAllSeedData, clearAllData, clearForApplication };
 }

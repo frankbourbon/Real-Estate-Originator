@@ -7,14 +7,14 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { SectionScreenLayout } from "@/components/SectionScreenLayout";
 import { AccessDenied } from "@/components/AccessDenied";
 import Colors from "@/constants/colors";
-import { useCommentsService } from "@/services/comments";
+import { useLoanTeamService } from "@/services/loan-team";
 import { useCoreService } from "@/services/core";
 import { usePermission } from "@/hooks/usePermission";
 
 export default function CommentsSection() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication } = useCoreService();
-  const { getComments, addComment } = useCommentsService();
+  const { getComments, addComment } = useLoanTeamService();
   const { canView, canEdit } = usePermission("collaboration.comments");
 
   const app = getApplication(id);
