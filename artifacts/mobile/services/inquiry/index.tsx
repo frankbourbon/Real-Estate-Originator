@@ -88,6 +88,64 @@ function uid(): string {
 }
 function now(): string { return new Date().toISOString(); }
 function d(y: number, m: number, day: number): string { return new Date(y, m - 1, day).toISOString(); }
+
+/**
+ * Parse a locale-formatted numeric string (e.g. "1,234,567") → number.
+ * Only digits, dots, and minus signs are used; all other characters are stripped.
+ * This is intentionally strict so that no user-supplied string can influence
+ * the result beyond its numeric value.
+ */
+function parseNum(v: string | undefined): number {
+  if (!v) return 0;
+  return parseFloat(v.replace(/[^0-9.\-]/g, "")) || 0;
+}
+
+function fmtNum(n: number): string {
+  return n ? n.toLocaleString("en-US", { maximumFractionDigits: 0 }) : "";
+}
+
+/**
+ * Server-side computation of all derived Operating Year fields.
+ *
+ * EGI  = Gross Potential Rent − Vacancy & Credit Loss + Other Income
+ * TOE  = Σ all expense line items
+ * NOI  = EGI − TOE
+ *
+ * The caller's supplied values for effectiveGrossIncome, totalOperatingExpenses,
+ * and netOperatingIncome are ignored — only the raw input fields are used.
+ * This prevents any client-side manipulation of calculated totals from
+ * reaching persistent storage.
+ */
+export function computeOpYearCalcs(
+  data: Partial<OperatingYear>
+): Pick<OperatingYear, "effectiveGrossIncome" | "totalOperatingExpenses" | "netOperatingIncome"> {
+  // Income
+  const gpr = parseNum(data.grossPotentialRent);
+  const vac = parseNum(data.vacancyAndCreditLoss);
+  const oth = parseNum(data.otherIncome);
+  const egi = gpr - vac + oth;
+
+  // Expenses
+  const toe = [
+    parseNum(data.realEstateTaxes),
+    parseNum(data.insurance),
+    parseNum(data.utilities),
+    parseNum(data.repairsAndMaintenance),
+    parseNum(data.managementFee),
+    parseNum(data.administrative),
+    parseNum(data.replacementReserves),
+    parseNum(data.otherExpenses),
+  ].reduce((a, b) => a + b, 0);
+
+  // NOI
+  const noi = egi - toe;
+
+  return {
+    effectiveGrossIncome:    fmtNum(egi),
+    totalOperatingExpenses:  fmtNum(toe),
+    netOperatingIncome:      fmtNum(noi),
+  };
+}
 function ds(y: number, m: number, day: number): string {
   return `${String(m).padStart(2, "0")}/${String(day).padStart(2, "0")}/${y}`;
 }
@@ -381,13 +439,21 @@ const [InquiryServiceProvider, useInquiryService] = createContextHook(() => {
     opHistory.filter((y) => y.applicationId === applicationId), [opHistory]);
 
   const addYear = useCallback(async (applicationId: string, data: Omit<OperatingYear, "id" | "applicationId" | "createdAt" | "updatedAt">): Promise<OperatingYear> => {
-    const year: OperatingYear = { id: uid(), applicationId, createdAt: now(), updatedAt: now(), ...data };
+    // Always recompute derived fields server-side; ignore any client-supplied values.
+    const calcs = computeOpYearCalcs(data);
+    const year: OperatingYear = { id: uid(), applicationId, createdAt: now(), updatedAt: now(), ...data, ...calcs };
     await persistOpHistory([...opHistory, year]);
     return year;
   }, [opHistory, persistOpHistory]);
 
   const updateYear = useCallback(async (id: string, patch: Partial<OperatingYear>) => {
-    await persistOpHistory(opHistory.map((y) => y.id === id ? { ...y, ...patch, updatedAt: now() } : y));
+    await persistOpHistory(opHistory.map((y) => {
+      if (y.id !== id) return y;
+      // Merge patch with existing record, then recompute derived fields.
+      const merged = { ...y, ...patch };
+      const calcs = computeOpYearCalcs(merged);
+      return { ...merged, ...calcs, updatedAt: now() };
+    }));
   }, [opHistory, persistOpHistory]);
 
   const deleteYear = useCallback(async (id: string) => {

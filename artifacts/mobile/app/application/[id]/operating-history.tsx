@@ -66,11 +66,26 @@ function calcEGIStr(d: YearDraft): string {
   return egi.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
+/** TOE = sum of all eight expense line items */
+function calcTOE(d: YearDraft): number {
+  return [
+    d.realEstateTaxes, d.insurance, d.utilities, d.repairsAndMaintenance,
+    d.managementFee, d.administrative, d.replacementReserves, d.otherExpenses,
+  ].reduce((sum, v) => sum + parseFmt(v), 0);
+}
+
+function calcTOEStr(d: YearDraft): string {
+  const toe = calcTOE(d);
+  if (!toe) return "";
+  return toe.toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+
+/** NOI = EGI − TOE */
 function calcNOI(d: YearDraft): string {
   const egi = calcEGI(d);
-  const exp = parseFmt(d.totalOperatingExpenses);
-  if (!egi) return "";
-  return (egi - exp).toLocaleString("en-US", { maximumFractionDigits: 0 });
+  const toe = calcTOE(d);
+  if (!egi && !toe) return "";
+  return (egi - toe).toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -96,29 +111,43 @@ function annualizeYtd(year: OperatingYear): OperatingYear {
     if (!n) return "";
     return Math.round((n / months) * 12).toLocaleString("en-US", { maximumFractionDigits: 0 });
   };
-  const annGPR = ann(year.grossPotentialRent);
-  const annVac = ann(year.vacancyAndCreditLoss);
-  const annOth = ann(year.otherIncome);
+  // Annualize each raw input field individually
+  const annGPR  = ann(year.grossPotentialRent);
+  const annVac  = ann(year.vacancyAndCreditLoss);
+  const annOth  = ann(year.otherIncome);
+  const annTax  = ann(year.realEstateTaxes);
+  const annIns  = ann(year.insurance);
+  const annUtil = ann(year.utilities);
+  const annRM   = ann(year.repairsAndMaintenance);
+  const annMgmt = ann(year.managementFee);
+  const annAdm  = ann(year.administrative);
+  const annRR   = ann(year.replacementReserves);
+  const annOtEx = ann(year.otherExpenses);
+
+  // Re-derive calculated fields from annualized inputs (same formulas as service)
   const annEGI = parseFmt(annGPR) - parseFmt(annVac) + parseFmt(annOth);
-  const annEGIStr = annEGI ? annEGI.toLocaleString("en-US", { maximumFractionDigits: 0 }) : "";
+  const annTOE = [annTax, annIns, annUtil, annRM, annMgmt, annAdm, annRR, annOtEx]
+    .reduce((s, v) => s + parseFmt(v), 0);
+  const annNOI = annEGI - annTOE;
+  const fmtAnn = (n: number) => n ? n.toLocaleString("en-US", { maximumFractionDigits: 0 }) : "";
 
   return {
     ...year,
     periodType: "YTD",
-    grossPotentialRent: annGPR,
-    vacancyAndCreditLoss: annVac,
-    otherIncome: annOth,
-    effectiveGrossIncome: annEGIStr,
-    realEstateTaxes: ann(year.realEstateTaxes),
-    insurance: ann(year.insurance),
-    utilities: ann(year.utilities),
-    repairsAndMaintenance: ann(year.repairsAndMaintenance),
-    managementFee: ann(year.managementFee),
-    administrative: ann(year.administrative),
-    replacementReserves: ann(year.replacementReserves),
-    otherExpenses: ann(year.otherExpenses),
-    totalOperatingExpenses: ann(year.totalOperatingExpenses),
-    netOperatingIncome: ann(year.netOperatingIncome),
+    grossPotentialRent:     annGPR,
+    vacancyAndCreditLoss:   annVac,
+    otherIncome:            annOth,
+    effectiveGrossIncome:   fmtAnn(annEGI),
+    realEstateTaxes:        annTax,
+    insurance:              annIns,
+    utilities:              annUtil,
+    repairsAndMaintenance:  annRM,
+    managementFee:          annMgmt,
+    administrative:         annAdm,
+    replacementReserves:    annRR,
+    otherExpenses:          annOtEx,
+    totalOperatingExpenses: fmtAnn(annTOE),
+    netOperatingIncome:     fmtAnn(annNOI),
   };
 }
 
@@ -278,13 +307,25 @@ function YearForm({ draft, onChange }: { draft: YearDraft; onChange: (d: YearDra
         <LabeledInput label="Replacement Reserves" value={draft.replacementReserves} onChange={set("replacementReserves")} />
         <LabeledInput label="Other Expenses" value={draft.otherExpenses} onChange={set("otherExpenses")} />
       </View>
-      <View style={ff.row}>
-        <LabeledInput label="Total Operating Expenses" value={draft.totalOperatingExpenses} onChange={set("totalOperatingExpenses")} />
+
+      {/* Calculated TOE — read-only, sum of all eight expense line items */}
+      <View style={[ff.egiCalc, { marginTop: 2, marginBottom: 12 }]}>
+        <View>
+          <Text style={ff.egiLabel}>Total Operating Expenses</Text>
+          <Text style={ff.egiFormula}>Sum of all expense lines above</Text>
+        </View>
+        <Text style={ff.egiValue}>
+          {calcTOEStr(draft) ? `$${calcTOEStr(draft)}` : "—"}
+        </Text>
       </View>
 
+      {/* Calculated NOI — read-only, EGI − TOE */}
       <View style={ff.noiCalc}>
-        <Text style={ff.noiLabel}>Calculated NOI</Text>
-        <Text style={ff.noiValue}>${calcNOI(draft) || "—"}</Text>
+        <View>
+          <Text style={ff.noiLabel}>Net Operating Income</Text>
+          <Text style={[ff.egiFormula, { color: Colors.light.tint }]}>EGI − Total Operating Expenses</Text>
+        </View>
+        <Text style={ff.noiValue}>{calcNOI(draft) ? `$${calcNOI(draft)}` : "—"}</Text>
       </View>
     </>
   );
@@ -536,13 +577,8 @@ export default function OperatingHistoryScreen() {
   const canAdd = history.length < MAX_PERIODS;
 
   const handleAdd = async () => {
-    const egi = calcEGIStr(addDraft);
-    const noi = calcNOI(addDraft);
-    await addYear(id, {
-      ...addDraft,
-      effectiveGrossIncome: egi || addDraft.effectiveGrossIncome,
-      netOperatingIncome: noi || addDraft.netOperatingIncome,
-    });
+    // Pass raw inputs only — the service layer recomputes EGI, TOE, and NOI.
+    await addYear(id, addDraft);
     setAddModal(false);
     setAddDraft(emptyDraft());
   };
@@ -555,13 +591,8 @@ export default function OperatingHistoryScreen() {
 
   const handleEditSave = async () => {
     if (!editYear) return;
-    const egi = calcEGIStr(editDraft);
-    const noi = calcNOI(editDraft);
-    await updateYear(editYear.id, {
-      ...editDraft,
-      effectiveGrossIncome: egi || editDraft.effectiveGrossIncome,
-      netOperatingIncome: noi || editDraft.netOperatingIncome,
-    });
+    // Pass raw inputs only — the service layer recomputes EGI, TOE, and NOI.
+    await updateYear(editYear.id, editDraft);
     setEditYear(null);
   };
 
