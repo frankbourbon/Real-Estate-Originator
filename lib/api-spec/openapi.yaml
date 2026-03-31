@@ -2,21 +2,39 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 1.0.0
+  description: CRE Loan Origination System API
 servers:
-  - url: /api
-    description: Base API path
+  - url: /java-api
+    description: Spring Boot API
 tags:
   - name: health
     description: Health operations
+  - name: applications
+    description: Loan application operations
+  - name: borrowers
+    description: Borrower operations
+  - name: properties
+    description: Property operations
+  - name: loanTerms
+    description: Loan terms operations
+  - name: comments
+    description: Threaded comment operations
+  - name: documents
+    description: Document attachment operations
+  - name: users
+    description: User and admin operations
+  - name: dashboard
+    description: Dashboard and analytics
+  - name: calculator
+    description: Financial calculator
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +42,1188 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Dashboard ──────────────────────────────────────────────────────────────
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Pipeline KPIs and counts
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Recent activity feed
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Activity list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /dashboard/pipeline:
+    get:
+      operationId: getPipelineBreakdown
+      tags: [dashboard]
+      summary: Loan count and volume by pipeline phase
+      responses:
+        "200":
+          description: Pipeline breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PipelinePhase"
+
+  # ── Applications ───────────────────────────────────────────────────────────
+  /applications:
+    get:
+      operationId: listApplications
+      tags: [applications]
+      summary: List all loan applications
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: phase
+          in: query
+          schema:
+            type: string
+            enum: [Inquiry, ICR, Application, FCR, Closing, Disposed]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: rateType
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Application list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LoanApplication"
+    post:
+      operationId: createApplication
+      tags: [applications]
+      summary: Create a new loan application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApplicationRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoanApplication"
+
+  /applications/{id}:
+    get:
+      operationId: getApplication
+      tags: [applications]
+      summary: Get loan application by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Application detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoanApplicationDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    put:
+      operationId: updateApplication
+      tags: [applications]
+      summary: Update a loan application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateApplicationRequest"
+      responses:
+        "200":
+          description: Updated application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoanApplication"
+    delete:
+      operationId: deleteApplication
+      tags: [applications]
+      summary: Delete a loan application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /applications/{id}/advance-status:
+    post:
+      operationId: advanceApplicationStatus
+      tags: [applications]
+      summary: Advance application to next workflow status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdvanceStatusRequest"
+      responses:
+        "200":
+          description: Updated application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoanApplication"
+
+  # ── Loan Terms ─────────────────────────────────────────────────────────────
+  /applications/{id}/loan-terms:
+    get:
+      operationId: getLoanTerms
+      tags: [loanTerms]
+      summary: Get loan terms for an application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Loan terms
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoanTerms"
+    put:
+      operationId: updateLoanTerms
+      tags: [loanTerms]
+      summary: Update loan terms for an application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoanTerms"
+      responses:
+        "200":
+          description: Updated loan terms
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoanTerms"
+
+  # ── Comments ───────────────────────────────────────────────────────────────
+  /applications/{id}/comments:
+    get:
+      operationId: listComments
+      tags: [comments]
+      summary: List threaded comments for an application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+    post:
+      operationId: createComment
+      tags: [comments]
+      summary: Add a comment to an application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCommentRequest"
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+
+  /applications/{id}/comments/{commentId}:
+    delete:
+      operationId: deleteComment
+      tags: [comments]
+      summary: Delete a comment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Documents ──────────────────────────────────────────────────────────────
+  /applications/{id}/documents:
+    get:
+      operationId: listDocuments
+      tags: [documents]
+      summary: List documents for an application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Document"
+    post:
+      operationId: uploadDocument
+      tags: [documents]
+      summary: Add a document record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDocumentRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+
+  /applications/{id}/documents/{docId}:
+    delete:
+      operationId: deleteDocument
+      tags: [documents]
+      summary: Delete a document record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Borrowers ──────────────────────────────────────────────────────────────
+  /borrowers:
+    get:
+      operationId: listBorrowers
+      tags: [borrowers]
+      summary: List all borrowers
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Borrower list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Borrower"
+    post:
+      operationId: createBorrower
+      tags: [borrowers]
+      summary: Create a borrower
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBorrowerRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Borrower"
+
+  /borrowers/{id}:
+    get:
+      operationId: getBorrower
+      tags: [borrowers]
+      summary: Get borrower by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Borrower
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Borrower"
+    put:
+      operationId: updateBorrower
+      tags: [borrowers]
+      summary: Update a borrower
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBorrowerRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Borrower"
+
+  # ── Properties ─────────────────────────────────────────────────────────────
+  /properties:
+    get:
+      operationId: listProperties
+      tags: [properties]
+      summary: List all properties
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: propertyType
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Property list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Property"
+    post:
+      operationId: createProperty
+      tags: [properties]
+      summary: Create a property
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePropertyRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+
+  /properties/{id}:
+    get:
+      operationId: getProperty
+      tags: [properties]
+      summary: Get property by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Property
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+    put:
+      operationId: updateProperty
+      tags: [properties]
+      summary: Update a property
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePropertyRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+
+  # ── Users ──────────────────────────────────────────────────────────────────
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AppUser"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppUser"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppUser"
+    put:
+      operationId: updateUser
+      tags: [users]
+      summary: Update a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppUser"
+
+  # ── Amortization Calculator ────────────────────────────────────────────────
+  /calculator/amortize:
+    post:
+      operationId: calculateAmortization
+      tags: [calculator]
+      summary: Compute amortization schedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AmortizationRequest"
+      responses:
+        "200":
+          description: Amortization schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AmortizationResult"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    # ── Dashboard ─────────────────────────────────────────────────────────────
+    DashboardSummary:
+      type: object
+      required: [totalApplications, totalLoanVolume, inquiryCount, inReviewCount, closingCount, closedCount, avgDSCR, avgLTV]
+      properties:
+        totalApplications:
+          type: integer
+        totalLoanVolume:
+          type: number
+        inquiryCount:
+          type: integer
+        inReviewCount:
+          type: integer
+        closingCount:
+          type: integer
+        closedCount:
+          type: integer
+        avgDSCR:
+          type: number
+        avgLTV:
+          type: number
+        countByStatus:
+          type: object
+          additionalProperties:
+            type: integer
+
+    ActivityItem:
+      type: object
+      required: [id, applicationId, action, description, timestamp]
+      properties:
+        id:
+          type: string
+        applicationId:
+          type: string
+        action:
+          type: string
+        description:
+          type: string
+        userName:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    PipelinePhase:
+      type: object
+      required: [phase, count, totalVolume]
+      properties:
+        phase:
+          type: string
+        count:
+          type: integer
+        totalVolume:
+          type: number
+
+    # ── LoanApplication ───────────────────────────────────────────────────────
+    LoanApplication:
+      type: object
+      required: [id, status, borrowerId, propertyId, loanType, loanAmountUsd, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        borrowerId:
+          type: string
+        propertyId:
+          type: string
+        loanType:
+          type: string
+        loanAmountUsd:
+          type: string
+        loanTermYears:
+          type: string
+        interestType:
+          type: string
+        interestRatePct:
+          type: string
+        amortizationType:
+          type: string
+        ltvPct:
+          type: string
+        dscrRatio:
+          type: string
+        targetClosingDate:
+          type: string
+        rateType:
+          type: string
+        allInFixedRate:
+          type: string
+        proformaAdjustableAllInRate:
+          type: string
+        borrowerName:
+          type: string
+        entityName:
+          type: string
+        propertyAddress:
+          type: string
+        propertyCity:
+          type: string
+        propertyState:
+          type: string
+        propertyType:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    LoanApplicationDetail:
+      allOf:
+        - $ref: "#/components/schemas/LoanApplication"
+        - type: object
+          properties:
+            borrower:
+              $ref: "#/components/schemas/Borrower"
+            property:
+              $ref: "#/components/schemas/Property"
+            loanTerms:
+              $ref: "#/components/schemas/LoanTerms"
+            commentCount:
+              type: integer
+            documentCount:
+              type: integer
+
+    CreateApplicationRequest:
+      type: object
+      required: [borrowerId, propertyId, loanType, loanAmountUsd]
+      properties:
+        borrowerId:
+          type: string
+        propertyId:
+          type: string
+        loanType:
+          type: string
+        loanAmountUsd:
+          type: string
+        loanTermYears:
+          type: string
+        interestType:
+          type: string
+        amortizationType:
+          type: string
+        ltvPct:
+          type: string
+        dscrRatio:
+          type: string
+        targetClosingDate:
+          type: string
+
+    UpdateApplicationRequest:
+      type: object
+      properties:
+        status:
+          type: string
+        loanType:
+          type: string
+        loanAmountUsd:
+          type: string
+        loanTermYears:
+          type: string
+        interestType:
+          type: string
+        interestRatePct:
+          type: string
+        amortizationType:
+          type: string
+        ltvPct:
+          type: string
+        dscrRatio:
+          type: string
+        targetClosingDate:
+          type: string
+
+    AdvanceStatusRequest:
+      type: object
+      required: [nextStatus]
+      properties:
+        nextStatus:
+          type: string
+
+    # ── LoanTerms ─────────────────────────────────────────────────────────────
+    LoanTerms:
+      type: object
+      properties:
+        applicationId:
+          type: string
+        rateType:
+          type: string
+        baseRate:
+          type: string
+        fixedRateVariance:
+          type: string
+        indexName:
+          type: string
+        indexRate:
+          type: string
+        spreadOnFixed:
+          type: string
+        allInFixedRate:
+          type: string
+        adjustableRateVariance:
+          type: string
+        adjustableIndexName:
+          type: string
+        adjustableIndexRate:
+          type: string
+        spreadOnAdjustable:
+          type: string
+        proformaAdjustableAllInRate:
+          type: string
+        loanAmountUsd:
+          type: string
+        loanTermYears:
+          type: string
+        amortizationYears:
+          type: string
+        amortizationType:
+          type: string
+        ltvPct:
+          type: string
+        dscrRatio:
+          type: string
+        targetClosingDate:
+          type: string
+        interestOnlyPeriodMonths:
+          type: string
+        prepaymentPenaltyPct:
+          type: string
+        originationFeePct:
+          type: string
+        ecoaNoticeDate:
+          type: string
+        ecoaActionTaken:
+          type: string
+
+    # ── Comments ──────────────────────────────────────────────────────────────
+    Comment:
+      type: object
+      required: [id, applicationId, body, authorName, createdAt]
+      properties:
+        id:
+          type: string
+        applicationId:
+          type: string
+        parentCommentId:
+          type: string
+          nullable: true
+        body:
+          type: string
+        authorName:
+          type: string
+        authorSid:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+
+    CreateCommentRequest:
+      type: object
+      required: [body, authorName]
+      properties:
+        body:
+          type: string
+        authorName:
+          type: string
+        authorSid:
+          type: string
+        parentCommentId:
+          type: string
+
+    # ── Documents ─────────────────────────────────────────────────────────────
+    Document:
+      type: object
+      required: [id, applicationId, fileName, fileType, uploadedBy, uploadedAt]
+      properties:
+        id:
+          type: string
+        applicationId:
+          type: string
+        fileName:
+          type: string
+        fileType:
+          type: string
+        fileSizeBytes:
+          type: integer
+        category:
+          type: string
+        uploadedBy:
+          type: string
+        uploadedAt:
+          type: string
+          format: date-time
+        description:
+          type: string
+
+    CreateDocumentRequest:
+      type: object
+      required: [fileName, fileType, uploadedBy]
+      properties:
+        fileName:
+          type: string
+        fileType:
+          type: string
+        fileSizeBytes:
+          type: integer
+        category:
+          type: string
+        uploadedBy:
+          type: string
+        description:
+          type: string
+
+    # ── Borrower ──────────────────────────────────────────────────────────────
+    Borrower:
+      type: object
+      required: [id, firstName, lastName, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        entityName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        mailingAddress:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zipCode:
+          type: string
+        creExperienceYears:
+          type: string
+        netWorthUsd:
+          type: string
+        liquidityUsd:
+          type: string
+        creditScore:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateBorrowerRequest:
+      type: object
+      required: [firstName, lastName]
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        entityName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        mailingAddress:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zipCode:
+          type: string
+        creExperienceYears:
+          type: string
+        netWorthUsd:
+          type: string
+        liquidityUsd:
+          type: string
+        creditScore:
+          type: string
+
+    # ── Property ──────────────────────────────────────────────────────────────
+    Property:
+      type: object
+      required: [id, streetAddress, city, state, zipCode, propertyType, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        streetAddress:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zipCode:
+          type: string
+        propertyType:
+          type: string
+        grossSqFt:
+          type: string
+        numberOfUnits:
+          type: string
+        yearBuilt:
+          type: string
+        physicalOccupancyPct:
+          type: string
+        economicOccupancyPct:
+          type: string
+        latitude:
+          type: string
+        longitude:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreatePropertyRequest:
+      type: object
+      required: [streetAddress, city, state, zipCode, propertyType]
+      properties:
+        streetAddress:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zipCode:
+          type: string
+        propertyType:
+          type: string
+        grossSqFt:
+          type: string
+        numberOfUnits:
+          type: string
+        yearBuilt:
+          type: string
+        physicalOccupancyPct:
+          type: string
+        economicOccupancyPct:
+          type: string
+        latitude:
+          type: string
+        longitude:
+          type: string
+
+    # ── AppUser ───────────────────────────────────────────────────────────────
+    AppUser:
+      type: object
+      required: [id, sid, firstName, lastName, role, createdAt]
+      properties:
+        id:
+          type: string
+        sid:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        department:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateUserRequest:
+      type: object
+      required: [sid, firstName, lastName, role]
+      properties:
+        sid:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        department:
+          type: string
+
+    # ── Amortization ──────────────────────────────────────────────────────────
+    AmortizationRequest:
+      type: object
+      required: [loanAmount, annualRatePct, termMonths, amortizationMonths]
+      properties:
+        loanAmount:
+          type: number
+        annualRatePct:
+          type: number
+        termMonths:
+          type: integer
+        amortizationMonths:
+          type: integer
+        interestOnlyMonths:
+          type: integer
+          default: 0
+
+    AmortizationResult:
+      type: object
+      required: [monthlyPayment, totalInterest, totalPaid, schedule]
+      properties:
+        monthlyPayment:
+          type: number
+        totalInterest:
+          type: number
+        totalPaid:
+          type: number
+        balloonPayment:
+          type: number
+        schedule:
+          type: array
+          items:
+            $ref: "#/components/schemas/AmortizationRow"
+
+    AmortizationRow:
+      type: object
+      required: [period, payment, principal, interest, balance]
+      properties:
+        period:
+          type: integer
+        payment:
+          type: number
+        principal:
+          type: number
+        interest:
+          type: number
+        balance:
+          type: number
+
+    ApiError:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        code:
+          type: string

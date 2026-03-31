@@ -1,0 +1,16 @@
+kind = "api"
+previewPath = "/java-api"
+title = "CRE Loan Origination — Spring Boot API"
+version = "1.0.0"
+id = "artifacts/java-api"
+
+[[services]]
+localPort = 8099
+name = "java-api"
+paths = ["/java-api"]
+
+[services.development]
+run = "cd artifacts/java-api && mvn spring-boot:run -q"
+
+[services.env]
+PORT = "8099"

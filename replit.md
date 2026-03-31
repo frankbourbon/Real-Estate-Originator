@@ -152,6 +152,46 @@ Expo React Native app — LOA Origination System for commercial real estate lend
 - Every screen (all 20 under `app/application/[id]/` plus tab screens) has: `usePermission` hook call, `if (!canView) return <AccessDenied/>` guard, and `canEdit &&` / ternary gates on all add/save/delete/advance buttons
 - Permission keys: `borrower.profile`, `property.profile`, `loan.terms`, `amortization.calc`, `credit.evaluation`, `inquiry.op-history`, `inquiry.rent-roll`, `inquiry.disposition`, `commitment.letter`, `collaboration.comments`, `collaboration.tasks`, `documents.main`, `loan-team.main`, `conditions.main`, `exceptions.main`, `processing.main`, `closing.main`, `app-start.disposition`, `core.dashboard`, `core.applications`
 
+### `artifacts/java-api`
+
+Java 19 (GraalVM) + Spring Boot 3.2.3 REST API. H2 in-memory database via JPA/Hibernate. Context path: `/java-api`. Port: 8099 (reads `$PORT` env var, defaults to 8099).
+
+**Architecture**: 8 entities → 8 repositories → 9 services → 7 controllers. Includes full CORS config, Bean Validation, and an `@EventListener(ApplicationReadyEvent.class)` `DataInitializer` that seeds 3 borrowers, 3 properties, 3 applications, 8 users, 3 comments, 6 documents on every fresh start.
+
+**Key endpoints** (all prefixed `/java-api`):
+- `GET/POST /applications` — list and create loan applications; includes joined borrower/property name fields
+- `GET/PUT/DELETE /applications/{id}` — detail, update, delete
+- `POST /applications/{id}/advance-status` — phase workflow transition
+- `GET/PUT /applications/{id}/loan-terms` — loan term detail/upsert
+- `GET/POST /applications/{id}/comments` — threaded comments
+- `GET/POST /applications/{id}/documents` — document attachments
+- `GET /borrowers`, `GET/POST /properties`, `GET /users` — supporting entity CRUD
+- `GET /dashboard/summary`, `GET /dashboard/pipeline`, `GET /dashboard/recent-activity` — aggregated dashboard data
+- `POST /calculator/amortize` — amortization schedule calculation
+
+**Build**: `cd artifacts/java-api && mvn package -DskipTests` → `target/loan-origination-1.0.0.jar`
+**Run**: `java -jar /home/runner/workspace/artifacts/java-api/target/loan-origination-1.0.0.jar` (registered as workflow `artifacts/web-app: java-api`)
+
+### `artifacts/web-app` (`@workspace/web-app`)
+
+React + Vite web frontend for the CRE Loan Origination System. Dark navy sidebar (`#0D2137`), teal primary (`#1B7F9E`). Served at `/web/` (port 22965).
+
+**Pages** (`src/pages/`):
+| Route | Page |
+|---|---|
+| `/web/` | Dashboard — KPI cards, pipeline bar chart, recent activity |
+| `/web/applications` | Applications list — search, status filter, table |
+| `/web/applications/:id` | Application detail — 6 tabs: Overview, Loan Terms, Borrower, Property, Comments, Documents |
+| `/web/applications/new` | New application form |
+| `/web/borrowers` | Borrowers list |
+| `/web/properties` | Properties list — size, occupancy |
+| `/web/calculator` | Amortization calculator |
+| `/web/users` | Admin: Users — RBAC roles management |
+
+**API client**: Uses `@workspace/api-client-react` (generated React Query hooks targeting `/java-api/*` from the OpenAPI spec). Hooks: `useGetApplications`, `useGetBorrowers`, `useGetProperties`, `useGetUsers`, `useGetDashboardSummary`, `useGetDashboardPipeline`, `useGetDashboardRecentActivity`, `useCreateAmortizationSchedule`, etc.
+
+**API codegen**: `pnpm --filter @workspace/api-spec run codegen` — regenerates `lib/api-client-react/src/generated/` from `lib/api-spec/openapi.yaml` with `baseUrl: "/java-api"`.
+
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
