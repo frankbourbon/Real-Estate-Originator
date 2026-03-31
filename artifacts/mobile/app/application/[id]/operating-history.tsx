@@ -51,8 +51,23 @@ function fmt(v: string | number): string {
   return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
+/** EGI = Gross Potential Rent − Vacancy & Credit Loss + Other Income */
+function calcEGI(d: YearDraft): number {
+  const gpr = parseFmt(d.grossPotentialRent);
+  const vac = parseFmt(d.vacancyAndCreditLoss);
+  const oth = parseFmt(d.otherIncome);
+  if (!gpr && !vac && !oth) return 0;
+  return gpr - vac + oth;
+}
+
+function calcEGIStr(d: YearDraft): string {
+  const egi = calcEGI(d);
+  if (!egi) return "";
+  return egi.toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+
 function calcNOI(d: YearDraft): string {
-  const egi = parseFmt(d.effectiveGrossIncome);
+  const egi = calcEGI(d);
   const exp = parseFmt(d.totalOperatingExpenses);
   if (!egi) return "";
   return (egi - exp).toLocaleString("en-US", { maximumFractionDigits: 0 });
@@ -81,13 +96,19 @@ function annualizeYtd(year: OperatingYear): OperatingYear {
     if (!n) return "";
     return Math.round((n / months) * 12).toLocaleString("en-US", { maximumFractionDigits: 0 });
   };
+  const annGPR = ann(year.grossPotentialRent);
+  const annVac = ann(year.vacancyAndCreditLoss);
+  const annOth = ann(year.otherIncome);
+  const annEGI = parseFmt(annGPR) - parseFmt(annVac) + parseFmt(annOth);
+  const annEGIStr = annEGI ? annEGI.toLocaleString("en-US", { maximumFractionDigits: 0 }) : "";
+
   return {
     ...year,
     periodType: "YTD",
-    grossPotentialRent: ann(year.grossPotentialRent),
-    vacancyAndCreditLoss: ann(year.vacancyAndCreditLoss),
-    otherIncome: ann(year.otherIncome),
-    effectiveGrossIncome: ann(year.effectiveGrossIncome),
+    grossPotentialRent: annGPR,
+    vacancyAndCreditLoss: annVac,
+    otherIncome: annOth,
+    effectiveGrossIncome: annEGIStr,
     realEstateTaxes: ann(year.realEstateTaxes),
     insurance: ann(year.insurance),
     utilities: ann(year.utilities),
@@ -227,7 +248,17 @@ function YearForm({ draft, onChange }: { draft: YearDraft; onChange: (d: YearDra
       </View>
       <View style={ff.row}>
         <LabeledInput label="Other Income" value={draft.otherIncome} onChange={set("otherIncome")} />
-        <LabeledInput label="Effective Gross Income" value={draft.effectiveGrossIncome} onChange={set("effectiveGrossIncome")} />
+      </View>
+
+      {/* Calculated EGI — read-only, derived from the three fields above */}
+      <View style={ff.egiCalc}>
+        <View>
+          <Text style={ff.egiLabel}>Effective Gross Income (EGI)</Text>
+          <Text style={ff.egiFormula}>GPR − Vacancy + Other Income</Text>
+        </View>
+        <Text style={ff.egiValue}>
+          {calcEGIStr(draft) ? `$${calcEGIStr(draft)}` : "—"}
+        </Text>
       </View>
 
       <Text style={ff.sectionHeader}>Expenses</Text>
@@ -267,6 +298,14 @@ const ff = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: Colors.light.border, paddingBottom: 4,
   },
   row: { flexDirection: "row", gap: 10, marginBottom: 10 },
+  egiCalc: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    backgroundColor: "#F0F7FA", borderRadius: 8, borderWidth: 1, borderColor: "#C9E4EE",
+    paddingHorizontal: 14, paddingVertical: 10, marginBottom: 4,
+  },
+  egiLabel: { fontSize: 12, fontFamily: "OpenSans_700Bold", color: Colors.light.tint },
+  egiFormula: { fontSize: 10, fontFamily: "OpenSans_400Regular", color: Colors.light.textTertiary, marginTop: 1 },
+  egiValue: { fontSize: 18, fontFamily: "OpenSans_700Bold", color: Colors.light.tint },
   noiCalc: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     backgroundColor: Colors.light.tintLight, borderRadius: 8,
@@ -497,9 +536,11 @@ export default function OperatingHistoryScreen() {
   const canAdd = history.length < MAX_PERIODS;
 
   const handleAdd = async () => {
+    const egi = calcEGIStr(addDraft);
     const noi = calcNOI(addDraft);
     await addYear(id, {
       ...addDraft,
+      effectiveGrossIncome: egi || addDraft.effectiveGrossIncome,
       netOperatingIncome: noi || addDraft.netOperatingIncome,
     });
     setAddModal(false);
@@ -514,9 +555,11 @@ export default function OperatingHistoryScreen() {
 
   const handleEditSave = async () => {
     if (!editYear) return;
+    const egi = calcEGIStr(editDraft);
     const noi = calcNOI(editDraft);
     await updateYear(editYear.id, {
       ...editDraft,
+      effectiveGrossIncome: egi || editDraft.effectiveGrossIncome,
       netOperatingIncome: noi || editDraft.netOperatingIncome,
     });
     setEditYear(null);
