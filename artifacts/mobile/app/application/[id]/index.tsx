@@ -692,11 +692,18 @@ export default function ApplicationOverviewScreen() {
         <View style={styles.activityCard}>
           {([
             {
-              key: "tasks", route: `/application/${id}/tasks`,
-              label: "Tasks", icon: "check-square" as const,
-              iconColor: "#C75300", iconBg: "#FFECDC",
-              badge: taskCount,
-              desc: "Phase-by-phase task tracking",
+              key: "documents", route: `/application/${id}/documents`,
+              label: "Documents", icon: "paperclip" as const,
+              iconColor: "#5F646A", iconBg: "#E6E9EB",
+              badge: getDocuments(id).length,
+              desc: "Attached files",
+            },
+            {
+              key: "comments", route: `/application/${id}/comments`,
+              label: "Comments", icon: "message-circle" as const,
+              iconColor: "#6B46C1", iconBg: "#F3F0FF",
+              badge: getComments(id).length,
+              desc: "Threaded discussion",
             },
             {
               key: "conditions", route: `/application/${id}/conditions`,
@@ -706,11 +713,11 @@ export default function ApplicationOverviewScreen() {
               desc: "Conditions that must be satisfied before closing",
             },
             {
-              key: "comments", route: `/application/${id}/comments`,
-              label: "Comments", icon: "message-circle" as const,
-              iconColor: "#6B46C1", iconBg: "#F3F0FF",
-              badge: getComments(id).length,
-              desc: "Threaded discussion",
+              key: "tasks", route: `/application/${id}/tasks`,
+              label: "Tasks", icon: "check-square" as const,
+              iconColor: "#C75300", iconBg: "#FFECDC",
+              badge: taskCount,
+              desc: "Phase-by-phase task tracking",
             },
             {
               key: "loan-team", route: `/application/${id}/loan-team`,
@@ -725,13 +732,6 @@ export default function ApplicationOverviewScreen() {
               iconColor: "#1B7F9E", iconBg: "#DBF5F7",
               badge: collabCount,
               desc: "Users with read-only access to this loan",
-            },
-            {
-              key: "documents", route: `/application/${id}/documents`,
-              label: "Documents", icon: "paperclip" as const,
-              iconColor: "#5F646A", iconBg: "#E6E9EB",
-              badge: getDocuments(id).length,
-              desc: "Attached files",
             },
           ] as const).map((item, idx, arr) => (
             <TouchableOpacity
