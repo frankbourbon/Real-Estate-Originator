@@ -15,7 +15,7 @@ export default function AmortizationSection() {
 
   const { getApplication } = useCoreService();
   const { getLoanTermsSnapshot } = usePhaseDataService();
-  const { canView } = usePermission("amortization.calc");
+  const { canView } = usePermission(`${phase}.amortization` as any);
 
   const app = getApplication(id);
   const snap = getLoanTermsSnapshot(id, phase);

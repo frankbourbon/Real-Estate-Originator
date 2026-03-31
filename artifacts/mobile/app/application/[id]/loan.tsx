@@ -81,7 +81,7 @@ export default function LoanSection() {
 
   const { getApplication } = useCoreService();
   const { getLoanTermsSnapshot, saveLoanTermsSnapshot } = usePhaseDataService();
-  const { canView, canEdit } = usePermission("loan.terms");
+  const { canView, canEdit } = usePermission(`${phase}.loan-terms` as any);
 
   const app = getApplication(id);
   const snap = getLoanTermsSnapshot(id, phase);

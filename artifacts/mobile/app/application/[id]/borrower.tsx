@@ -425,7 +425,7 @@ export default function BorrowerSection() {
 
   const { getApplication, getBorrower } = useCoreService();
   const { getBorrowerSnapshot, saveBorrowerSnapshot } = usePhaseDataService();
-  const { canView, canEdit } = usePermission("borrower.profile");
+  const { canView, canEdit } = usePermission(`${phase}.borrower` as any);
 
   const app = getApplication(id);
   const coreBorrower = getBorrower(app?.borrowerId ?? "");

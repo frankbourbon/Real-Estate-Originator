@@ -136,7 +136,7 @@ export default function PropertySection() {
   const { getApplication, getProperty } = useCoreService();
   const { getPropertySnapshot, savePropertySnapshot } = usePhaseDataService();
   const { getRentRoll, getOpHistory } = useInquiryService();
-  const { canView, canEdit } = usePermission("property.profile");
+  const { canView, canEdit } = usePermission(`${phase}.property` as any);
 
   const app = getApplication(id);
   const coreProperty = getProperty(app?.propertyId ?? "");
