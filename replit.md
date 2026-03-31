@@ -102,20 +102,20 @@ Expo React Native app — LOA Origination System for commercial real estate lend
 **Census Integration**: `services/census/index.tsx` — lightweight hook (`useCensusData`) wrapping the **U.S. Census Bureau Geocoding API** (free, no API key). Accepts a `PropertyLocation`, calls `geographies/address` endpoint with `Public_AR_Current` benchmark + `Current_Current` vintage, returns state/county FIPS, census tract, block group, congressional district, and standardized address. Results cached in AsyncStorage under `svc_census_v1_{locationId}`. Surfaced via `CensusCard` component in the Property → Location tab (below the map per location). No Context provider needed — purely a per-component hook.
 
 **Services** (`services/`):
-| Service | Storage Key | Responsibility |
+| Service | Storage Key(s) | Responsibility |
 |---|---|---|
-| `core` | `svc_core_apps_v1` | LoanApplication, Borrower, Property, pipeline stats |
-| `inquiry` | `svc_inquiry_*_v1` | InquiryRecord, RentRollUnit (MISMO), OperatingYear (MISMO) |
-| `letter-of-interest` | `svc_loi_v1` | LOI record (credit box notes, LOI issued/expiration) |
-| `application-start` | `svc_app_start_v1` | Application Start phase data |
-| `processing` | `svc_processing_v1` | Appraisal, environmental, borrower forms |
-| `final-credit-review` | `svc_fcr_v1` | FCR record, Conditions, Exceptions |
-| `pre-close` | `svc_pre_close_v1` | HMDA compliance |
-| `ready-for-docs` | `svc_ready_for_docs_v1` | Insurance, title, escrow, flood |
-| `closing` | `svc_closing_v1` | **Closing persona (Docs Drawn + Docs Back + Wire/Booking)** — all three owned by the same Closing Team |
+| `core` | `svc_core_apps_v2`, `svc_core_borrowers_v2`, `svc_core_properties_v3` | LoanApplication (100), Borrower (70), Property (100), pipeline stats |
+| `inquiry` | `svc_inquiry_notes_v2`, `svc_inquiry_rent_roll_v2`, `svc_inquiry_op_history_v2` | 88 inquiry notes, rent roll units (MISMO), operating history years (MISMO) |
+| `initial-credit-review` | `svc_icr_v1` | ICR record per app (73 records): credit box notes, LOI issued/expiration |
+| `application` | `svc_application_v1` | Application Start + Processing: deposit, signed LOI, rate lock, appraisal, env status, borrower forms |
+| `final-credit-review` | `svc_fcr_v2`, `svc_exceptions_v2` | FCR record per app (40 records), Exceptions (12 seeded) |
+| `closing` | `svc_closing_v3` | Pre-Close (HMDA), Ready for Docs (insurance/title), Docs Drawn, Docs Back, Wire & Servicing/Booking |
+| `conditions` | `svc_conditions_v3` | Loan conditions (Pre-close checklist, conditions CRUD) |
 | `documents` | `svc_documents_v1` | Attachment metadata |
 | `tasks` | `svc_tasks_v1` | LoanTask per application+phase, seed/toggle/custom |
-| `comments` | `svc_comments_v1` | Threaded comments via parentCommentId |
+| `admin-access` | (in-memory) | Admin roles — user management |
+| `rbac` | (in-memory) | 73-test RBAC engine, profile entitlements |
+| `session` | (in-memory) | Current user identity / active persona |
 
 **Providers**: `services/providers.tsx` wraps all 12 service providers. `services/seed-coordinator.tsx` orchestrates seeding across all services.
 
