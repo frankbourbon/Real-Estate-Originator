@@ -238,6 +238,76 @@ describe("RateType — adjustable section conditional visibility", () => {
   });
 });
 
+// ─── ApplicationCard rate display logic ──────────────────────────────────────
+
+describe("ApplicationCard — rate label and value selection", () => {
+  /**
+   * Business rule (from ApplicationCard.tsx):
+   *   rateType === "Adjustable Rate"  → label "Proforma Adj.", value = proformaAdjustableAllInRate
+   *   rateType === "Fixed Rate"       → label "All In Rate",   value = allInFixedRate
+   *   rateType === "Hybrid"           → label "All In Rate",   value = allInFixedRate
+   */
+  function selectRate(
+    rateType: string,
+    allInFixedRate: string,
+    proformaAdjustableAllInRate: string,
+  ): { label: string; raw: string } {
+    const isAdjustable = rateType === "Adjustable Rate";
+    return {
+      label: isAdjustable ? "Proforma Adj." : "All In Rate",
+      raw:   isAdjustable ? proformaAdjustableAllInRate : allInFixedRate,
+    };
+  }
+
+  test("Fixed Rate → label is 'All In Rate', value from allInFixedRate", () => {
+    const { label, raw } = selectRate("Fixed Rate", "7.250000", "6.500000");
+    expect(label).toBe("All In Rate");
+    expect(raw).toBe("7.250000");
+  });
+
+  test("Hybrid → label is 'All In Rate', value from allInFixedRate", () => {
+    const { label, raw } = selectRate("Hybrid", "7.500000", "6.750000");
+    expect(label).toBe("All In Rate");
+    expect(raw).toBe("7.500000");
+  });
+
+  test("Adjustable Rate → label is 'Proforma Adj.', value from proformaAdjustableAllInRate", () => {
+    const { label, raw } = selectRate("Adjustable Rate", "7.250000", "6.500000");
+    expect(label).toBe("Proforma Adj.");
+    expect(raw).toBe("6.500000");
+  });
+
+  test("Fixed Rate with no rate data → displays '—'", () => {
+    const { raw } = selectRate("Fixed Rate", "", "");
+    const display = raw ? `${fmt3(raw)}%` : "—";
+    expect(display).toBe("—");
+  });
+
+  test("Adjustable Rate with no rate data → displays '—'", () => {
+    const { raw } = selectRate("Adjustable Rate", "", "");
+    const display = raw ? `${fmt3(raw)}%` : "—";
+    expect(display).toBe("—");
+  });
+
+  test("Fixed Rate with stored 6dp value → displays 3dp with %", () => {
+    const { raw } = selectRate("Fixed Rate", "7.625000", "");
+    const display = raw ? `${fmt3(raw)}%` : "—";
+    expect(display).toBe("7.625%");
+  });
+
+  test("Adjustable Rate with stored 6dp value → displays 3dp with %", () => {
+    const { raw } = selectRate("Adjustable Rate", "", "6.375000");
+    const display = raw ? `${fmt3(raw)}%` : "—";
+    expect(display).toBe("6.375%");
+  });
+
+  test("Hybrid with negative all-in rate → displays correctly", () => {
+    const { raw } = selectRate("Hybrid", "-0.250000", "");
+    const display = raw ? `${fmt3(raw)}%` : "—";
+    expect(display).toBe("-0.250%");
+  });
+});
+
 // ─── 6dp storage / 3dp display precision contract ─────────────────────────────
 
 describe("Precision contract — 6dp storage, 3dp display", () => {

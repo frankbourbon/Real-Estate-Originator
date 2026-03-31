@@ -16,6 +16,7 @@ import {
   getPropertyShortAddress,
   getPropertyCityState,
 } from "@/utils/formatting";
+import { fmt3 } from "@/utils/rate-calc";
 
 type Props = {
   application: LoanApplication;
@@ -30,6 +31,15 @@ export function ApplicationCard({ application }: Props) {
   const property = getProperty(application.propertyId);
   const commentCount = getComments(application.id).length;
   const documentCount = getDocuments(application.id).length;
+
+  // ── Rate Type & conditional all-in rate ─────────────────────────────────
+  const rateType = application.rateType ?? "Fixed Rate";
+  const isAdjustable = rateType === "Adjustable Rate";
+  const rateLabel = isAdjustable ? "Proforma Adj." : "All In Rate";
+  const rateRaw   = isAdjustable
+    ? application.proformaAdjustableAllInRate
+    : application.allInFixedRate;
+  const rateValue = rateRaw ? `${fmt3(rateRaw)}%` : "—";
 
   return (
     <TouchableOpacity
@@ -71,7 +81,7 @@ export function ApplicationCard({ application }: Props) {
         {/* Divider */}
         <View style={styles.divider} />
 
-        {/* Metrics row */}
+        {/* Metrics row 1: Loan Amt | Type | Updated */}
         <View style={styles.metricsRow}>
           <View style={styles.metric}>
             <Text style={styles.metricLabel}>Loan Amt</Text>
@@ -88,6 +98,21 @@ export function ApplicationCard({ application }: Props) {
           <View style={styles.metric}>
             <Text style={styles.metricLabel}>Updated</Text>
             <Text style={styles.metricValue}>{formatDate(application.updatedAt)}</Text>
+          </View>
+        </View>
+
+        {/* Metrics row 2: Rate Type | All In / Proforma Adj. Rate */}
+        <View style={styles.metricsRow2}>
+          <View style={styles.metric}>
+            <Text style={styles.metricLabel}>Rate Type</Text>
+            <Text style={styles.metricValue}>{rateType}</Text>
+          </View>
+          <View style={styles.metricSep} />
+          <View style={styles.metric}>
+            <Text style={styles.metricLabel}>{rateLabel}</Text>
+            <Text style={[styles.metricValue, rateRaw ? styles.rateHighlight : null]}>
+              {rateValue}
+            </Text>
           </View>
         </View>
 
@@ -187,6 +212,14 @@ const styles = StyleSheet.create({
   metricsRow: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  metricsRow2: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  rateHighlight: {
+    color: Colors.light.tint,
   },
   metric: {
     flex: 1,
