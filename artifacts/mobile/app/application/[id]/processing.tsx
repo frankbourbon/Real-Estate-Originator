@@ -15,14 +15,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
-import { useProcessingService } from "@/services/processing";
-import { usePreCloseService } from "@/services/pre-close";
+import { useApplicationService } from "@/services/application";
+import { useClosingService } from "@/services/closing";
 import { useCoreService } from "@/services/core";
 import { AccessDenied } from "@/components/AccessDenied";
 import { usePermission } from "@/hooks/usePermission";
 
-type EnvStatus = "" | "Ordered" | "In Progress" | "Clear" | "Issues Found";
-type FormsStatus = "" | "Not Started" | "Packaged" | "Sent for Signature" | "Received";
+import type { EnvironmentalStatus, BorrowerFormsStatus } from "@/services/application";
+
+type EnvStatus = EnvironmentalStatus;
+type FormsStatus = BorrowerFormsStatus;
 
 const ENV_OPTIONS: EnvStatus[] = ["", "Ordered", "In Progress", "Clear", "Issues Found"];
 const FORMS_OPTIONS: FormsStatus[] = ["", "Not Started", "Packaged", "Sent for Signature", "Received"];
@@ -74,22 +76,22 @@ const op = StyleSheet.create({
 export default function ProcessingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication } = useCoreService();
-  const { getOrCreateProcessing, updateProcessing } = useProcessingService();
-  const { getOrCreatePreClose, updatePreClose } = usePreCloseService();
+  const { getOrCreateApplication, updateApplication } = useApplicationService();
+  const { getOrCreateClosing, updateClosing } = useClosingService();
   const insets = useSafeAreaInsets();
   const { canView, canEdit } = usePermission("processing.main");
   const app = getApplication(id);
-  const proc = getOrCreateProcessing(id);
-  const preClose = getOrCreatePreClose(id);
+  const appRecord = getOrCreateApplication(id);
+  const closingRecord = getOrCreateClosing(id);
 
   const [activeTab, setActiveTab] = useState("appraisal");
-  const [appraisalOrderedDate, setAppraisalOrderedDate] = useState(proc.appraisalOrderedDate);
-  const [appraisalCompletedDate, setAppraisalCompletedDate] = useState(proc.appraisalCompletedDate);
-  const [appraisalValueUsd, setAppraisalValueUsd] = useState(proc.appraisalValueUsd);
-  const [environmentalStatus, setEnvironmentalStatus] = useState<EnvStatus>(proc.environmentalStatus as EnvStatus);
-  const [borrowerFormsStatus, setBorrowerFormsStatus] = useState<FormsStatus>(proc.borrowerFormsStatus as FormsStatus);
-  const [hmdaComplete, setHmdaComplete] = useState(preClose.hmdaComplete);
-  const [hmdaNotes, setHmdaNotes] = useState(preClose.hmdaNotes);
+  const [appraisalOrderedDate, setAppraisalOrderedDate] = useState(appRecord.appraisalOrderedDate);
+  const [appraisalCompletedDate, setAppraisalCompletedDate] = useState(appRecord.appraisalCompletedDate);
+  const [appraisalValueUsd, setAppraisalValueUsd] = useState(appRecord.appraisalValueUsd);
+  const [environmentalStatus, setEnvironmentalStatus] = useState<EnvStatus>(appRecord.environmentalStatus as EnvStatus);
+  const [borrowerFormsStatus, setBorrowerFormsStatus] = useState<FormsStatus>(appRecord.borrowerFormsStatus as FormsStatus);
+  const [hmdaComplete, setHmdaComplete] = useState(closingRecord.hmdaComplete);
+  const [hmdaNotes, setHmdaNotes] = useState(closingRecord.hmdaNotes);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -103,8 +105,8 @@ export default function ProcessingScreen() {
   const handleSave = async () => {
     setSaving(true);
     await Promise.all([
-      updateProcessing(id, { appraisalOrderedDate, appraisalCompletedDate, appraisalValueUsd, environmentalStatus, borrowerFormsStatus }),
-      updatePreClose(id, { hmdaComplete, hmdaNotes }),
+      updateApplication(id, { appraisalOrderedDate, appraisalCompletedDate, appraisalValueUsd, environmentalStatus, borrowerFormsStatus }),
+      updateClosing(id, { hmdaComplete, hmdaNotes }),
     ]);
     setSaving(false);
     setDirty(false);

@@ -200,7 +200,7 @@ describe("usePermission — READ ONLY profile (VIEW only)", () => {
 describe("usePermission — SYSTEM ADMIN profile (full access)", () => {
   const allGrants = [
     "loan.terms", "closing.main", "processing.main", "inquiry.notes", "core.dashboard",
-    "fcr.main", "conditions.main", "pre-close.main", "rfd.main", "documents.main",
+    "fcr.main", "conditions.main", "application.main", "commitment.letter", "documents.main",
   ].flatMap((key) => [
     { profileId: "profile_admin", entitlementId: `${key}.VIEW` },
     { profileId: "profile_admin", entitlementId: `${key}.EDIT` },

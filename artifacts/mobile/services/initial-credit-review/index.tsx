@@ -4,8 +4,11 @@ import React, { useCallback, useEffect, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-/** Letter of Interest phase data — one record per applicationId. */
-export type LOIRecord = {
+/**
+ * Initial Credit Review MS — owns the credit box evaluation and Letter of Interest
+ * issued to the borrower. One record per applicationId.
+ */
+export type ICRRecord = {
   applicationId: string;
   updatedAt: string;
   creditBoxNotes: string;
@@ -16,7 +19,7 @@ export type LOIRecord = {
 
 // ─── Storage Key ──────────────────────────────────────────────────────────────
 
-const KEY = "svc_loi_v2";
+const KEY = "svc_icr_v1";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -28,7 +31,7 @@ function ds(y: number, m: number, day: number): string {
 
 // ─── Seed Data ────────────────────────────────────────────────────────────────
 
-const SEED_RECORDS: LOIRecord[] = [
+const SEED_RECORDS: ICRRecord[] = [
   { applicationId: "seed_a02", updatedAt: d(2026,3,5),
     creditBoxNotes: "Deal fits credit box well. Cap rate of 5.2% aligns with market. Anchor tenant NNN lease provides strong debt service coverage. IO period justified given lease term remaining. Recommend LOI.",
     loiRecommended: true, loiIssuedDate: ds(2026,3,5), loiExpirationDate: ds(2026,4,5) },
@@ -63,8 +66,8 @@ const SEED_RECORDS: LOIRecord[] = [
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 
-const [LetterOfInterestServiceProvider, useLetterOfInterestService] = createContextHook(() => {
-  const [records, setRecords] = useState<LOIRecord[]>([]);
+const [ICRServiceProvider, useICRService] = createContextHook(() => {
+  const [records, setRecords] = useState<ICRRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,18 +77,18 @@ const [LetterOfInterestServiceProvider, useLetterOfInterestService] = createCont
     });
   }, []);
 
-  const persist = useCallback(async (data: LOIRecord[]) => {
+  const persist = useCallback(async (data: ICRRecord[]) => {
     setRecords(data);
     await AsyncStorage.setItem(KEY, JSON.stringify(data));
   }, []);
 
-  const getOrCreateLOI = useCallback((applicationId: string): LOIRecord => {
+  const getOrCreateICR = useCallback((applicationId: string): ICRRecord => {
     return records.find((r) => r.applicationId === applicationId) ??
       { applicationId, updatedAt: now(), creditBoxNotes: "",
         loiRecommended: false, loiIssuedDate: "", loiExpirationDate: "" };
   }, [records]);
 
-  const updateLOI = useCallback(async (applicationId: string, patch: Partial<LOIRecord>) => {
+  const updateICR = useCallback(async (applicationId: string, patch: Partial<ICRRecord>) => {
     const existing = records.find((r) => r.applicationId === applicationId);
     if (existing) {
       await persist(records.map((r) => r.applicationId === applicationId
@@ -106,9 +109,9 @@ const [LetterOfInterestServiceProvider, useLetterOfInterestService] = createCont
 
   return {
     loading,
-    getOrCreateLOI, updateLOI,
+    getOrCreateICR, updateICR,
     loadSeedData, clearData, clearForApplication,
   };
 });
 
-export { LetterOfInterestServiceProvider, useLetterOfInterestService };
+export { ICRServiceProvider, useICRService };

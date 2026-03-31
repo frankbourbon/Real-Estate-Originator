@@ -15,7 +15,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TabBar } from "@/components/TabBar";
 import Colors from "@/constants/colors";
 import { useCoreService } from "@/services/core";
-import { useReadyForDocsService } from "@/services/ready-for-docs";
 import { useClosingService } from "@/services/closing";
 import { AccessDenied } from "@/components/AccessDenied";
 import { usePermission } from "@/hooks/usePermission";
@@ -30,23 +29,21 @@ const TABS = [
 export default function ClosingDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication } = useCoreService();
-  const { getOrCreateRFD, updateRFD } = useReadyForDocsService();
   const { getOrCreateClosing, updateClosing } = useClosingService();
   const insets = useSafeAreaInsets();
   const { canView, canEdit } = usePermission("closing.main");
   const app = getApplication(id);
 
-  const rfd = getOrCreateRFD(id);
   const cl = getOrCreateClosing(id);
 
   const [activeTab, setActiveTab] = useState("third-party");
-  const [insuranceCarrier, setInsuranceCarrier] = useState(rfd.insuranceCarrier);
-  const [insurancePolicyNumber, setInsurancePolicyNumber] = useState(rfd.insurancePolicyNumber);
-  const [insuranceEffectiveDate, setInsuranceEffectiveDate] = useState(rfd.insuranceEffectiveDate);
-  const [titleCompany, setTitleCompany] = useState(rfd.titleCompany);
-  const [escrowCompany, setEscrowCompany] = useState(rfd.escrowCompany);
-  const [floodZoneDesignation, setFloodZoneDesignation] = useState(rfd.floodZoneDesignation);
-  const [titleReportDate, setTitleReportDate] = useState(rfd.titleReportDate);
+  const [insuranceCarrier, setInsuranceCarrier] = useState(cl.insuranceCarrier);
+  const [insurancePolicyNumber, setInsurancePolicyNumber] = useState(cl.insurancePolicyNumber);
+  const [insuranceEffectiveDate, setInsuranceEffectiveDate] = useState(cl.insuranceEffectiveDate);
+  const [titleCompany, setTitleCompany] = useState(cl.titleCompany);
+  const [escrowCompany, setEscrowCompany] = useState(cl.escrowCompany);
+  const [floodZoneDesignation, setFloodZoneDesignation] = useState(cl.floodZoneDesignation);
+  const [titleReportDate, setTitleReportDate] = useState(cl.titleReportDate);
   const [docsDrawnDate, setDocsDrawnDate] = useState(cl.docsDrawnDate);
   const [settlementFeesUsd, setSettlementFeesUsd] = useState(cl.settlementFeesUsd);
   const [settlementStatementDate, setSettlementStatementDate] = useState(cl.settlementStatementDate);
@@ -77,18 +74,14 @@ export default function ClosingDetailsScreen() {
 
   const handleSave = async () => {
     setSaving(true);
-    await Promise.all([
-      updateRFD(id, {
-        insuranceCarrier, insurancePolicyNumber, insuranceEffectiveDate,
-        titleCompany, escrowCompany, floodZoneDesignation, titleReportDate,
-      }),
-      updateClosing(id, {
-        docsDrawnDate, settlementFeesUsd, settlementStatementDate,
-        docsBackDate, titleConfirmationDate,
-        wireAmountUsd, wireBankName, wireAbaNumber, wireAccountNumber,
-        servicingLoanNumber, bookingDate,
-      }),
-    ]);
+    await updateClosing(id, {
+      insuranceCarrier, insurancePolicyNumber, insuranceEffectiveDate,
+      titleCompany, escrowCompany, floodZoneDesignation, titleReportDate,
+      docsDrawnDate, settlementFeesUsd, settlementStatementDate,
+      docsBackDate, titleConfirmationDate,
+      wireAmountUsd, wireBankName, wireAbaNumber, wireAccountNumber,
+      servicingLoanNumber, bookingDate,
+    });
     setSaving(false);
     setDirty(false);
   };

@@ -44,35 +44,29 @@ function ent(
   return { id: `${screenKey}.${action}`, microservice, screenKey, screenLabel, action };
 }
 
+/**
+ * 9 Phase MS groups — aligned with the actual microservice decomposition:
+ *   Core → Inquiry → Initial Credit Review → Application → Final Credit Review
+ *   → Closing → Collaboration → Documents → Loan Team
+ *
+ * Borrower Profile, Property Details, Loan Terms, and Amortization Calculator
+ * are instances embedded within each phase MS (not separate microservices).
+ * They are exposed as screens owned by Core for master-record access.
+ */
 export const MS_GROUPS: MsGroup[] = [
   {
     ms: "Core", msKey: "core", colorHex: "#1B7F9E",
     entitlements: [
-      ent("core.dashboard",    "Core", "Dashboard",    "VIEW"),
-      ent("core.applications", "Core", "Applications", "VIEW"),
-    ],
-  },
-  {
-    ms: "Borrower", msKey: "borrower", colorHex: "#2980B9",
-    entitlements: [
-      ent("borrower.profile", "Borrower", "Borrower Profile", "VIEW"),
-      ent("borrower.profile", "Borrower", "Borrower Profile", "EDIT"),
-    ],
-  },
-  {
-    ms: "Property", msKey: "property", colorHex: "#1A5276",
-    entitlements: [
-      ent("property.profile", "Property", "Property Profile", "VIEW"),
-      ent("property.profile", "Property", "Property Profile", "EDIT"),
-    ],
-  },
-  {
-    ms: "Loan", msKey: "loan", colorHex: "#0B6E4F",
-    entitlements: [
-      ent("loan.terms",        "Loan", "Loan Terms",   "VIEW"),
-      ent("loan.terms",        "Loan", "Loan Terms",   "EDIT"),
-      ent("amortization.calc", "Loan", "Amortization", "VIEW"),
-      ent("amortization.calc", "Loan", "Amortization", "EDIT"),
+      ent("core.dashboard",    "Core", "Dashboard",            "VIEW"),
+      ent("core.applications", "Core", "Applications",         "VIEW"),
+      ent("borrower.profile",  "Core", "Borrower Profile",     "VIEW"),
+      ent("borrower.profile",  "Core", "Borrower Profile",     "EDIT"),
+      ent("property.profile",  "Core", "Property Profile",     "VIEW"),
+      ent("property.profile",  "Core", "Property Profile",     "EDIT"),
+      ent("loan.terms",        "Core", "Loan Terms",           "VIEW"),
+      ent("loan.terms",        "Core", "Loan Terms",           "EDIT"),
+      ent("amortization.calc", "Core", "Amortization",         "VIEW"),
+      ent("amortization.calc", "Core", "Amortization",         "EDIT"),
     ],
   },
   {
@@ -89,65 +83,34 @@ export const MS_GROUPS: MsGroup[] = [
     ],
   },
   {
-    ms: "Letter of Interest", msKey: "loi", colorHex: "#C75300",
+    ms: "Initial Credit Review", msKey: "icr", colorHex: "#C0392B",
     entitlements: [
-      ent("loi.main", "Letter of Interest", "Initial Credit Review", "VIEW"),
-      ent("loi.main", "Letter of Interest", "Initial Credit Review", "EDIT"),
+      ent("credit.evaluation", "Initial Credit Review", "Credit Evaluation & LOI", "VIEW"),
+      ent("credit.evaluation", "Initial Credit Review", "Credit Evaluation & LOI", "EDIT"),
     ],
   },
   {
-    ms: "Application Start", msKey: "app-start", colorHex: "#9E5B1B",
+    ms: "Application", msKey: "application", colorHex: "#9E5B1B",
     entitlements: [
-      ent("app-start.main",        "Application Start", "Application Form", "VIEW"),
-      ent("app-start.main",        "Application Start", "Application Form", "EDIT"),
-      ent("app-start.disposition", "Application Start", "App Disposition",  "VIEW"),
-      ent("app-start.disposition", "Application Start", "App Disposition",  "EDIT"),
-    ],
-  },
-  {
-    ms: "Credit", msKey: "credit", colorHex: "#C0392B",
-    entitlements: [
-      ent("credit.evaluation", "Credit", "Credit Evaluation", "VIEW"),
-      ent("credit.evaluation", "Credit", "Credit Evaluation", "EDIT"),
-    ],
-  },
-  {
-    ms: "Processing", msKey: "processing", colorHex: "#1B7F9E",
-    entitlements: [
-      ent("processing.main", "Processing", "Processing", "VIEW"),
-      ent("processing.main", "Processing", "Processing", "EDIT"),
+      ent("application.main",        "Application", "Application Form",   "VIEW"),
+      ent("application.main",        "Application", "Application Form",   "EDIT"),
+      ent("application.disposition", "Application", "App Disposition",    "VIEW"),
+      ent("application.disposition", "Application", "App Disposition",    "EDIT"),
+      ent("processing.main",         "Application", "Processing",         "VIEW"),
+      ent("processing.main",         "Application", "Processing",         "EDIT"),
     ],
   },
   {
     ms: "Final Credit Review", msKey: "fcr", colorHex: "#7B3F9E",
     entitlements: [
-      ent("fcr.main",        "Final Credit Review", "Final Credit Review", "VIEW"),
-      ent("fcr.main",        "Final Credit Review", "Final Credit Review", "EDIT"),
-      ent("conditions.main", "Final Credit Review", "Conditions",          "VIEW"),
-      ent("conditions.main", "Final Credit Review", "Conditions",          "EDIT"),
-      ent("exceptions.main", "Final Credit Review", "Exceptions",          "VIEW"),
-      ent("exceptions.main", "Final Credit Review", "Exceptions",          "EDIT"),
-    ],
-  },
-  {
-    ms: "Commitment", msKey: "commitment", colorHex: "#0B6E4F",
-    entitlements: [
-      ent("commitment.letter", "Commitment", "Commitment Letter", "VIEW"),
-      ent("commitment.letter", "Commitment", "Commitment Letter", "EDIT"),
-    ],
-  },
-  {
-    ms: "Pre-Close", msKey: "pre-close", colorHex: "#2980B9",
-    entitlements: [
-      ent("pre-close.main", "Pre-Close", "Pre-Close", "VIEW"),
-      ent("pre-close.main", "Pre-Close", "Pre-Close", "EDIT"),
-    ],
-  },
-  {
-    ms: "Ready for Docs", msKey: "rfd", colorHex: "#9E5B1B",
-    entitlements: [
-      ent("rfd.main", "Ready for Docs", "Ready for Docs", "VIEW"),
-      ent("rfd.main", "Ready for Docs", "Ready for Docs", "EDIT"),
+      ent("fcr.main",          "Final Credit Review", "Final Credit Review", "VIEW"),
+      ent("fcr.main",          "Final Credit Review", "Final Credit Review", "EDIT"),
+      ent("conditions.main",   "Final Credit Review", "Conditions",          "VIEW"),
+      ent("conditions.main",   "Final Credit Review", "Conditions",          "EDIT"),
+      ent("exceptions.main",   "Final Credit Review", "Exceptions",          "VIEW"),
+      ent("exceptions.main",   "Final Credit Review", "Exceptions",          "EDIT"),
+      ent("commitment.letter", "Final Credit Review", "Commitment Letter",   "VIEW"),
+      ent("commitment.letter", "Final Credit Review", "Commitment Letter",   "EDIT"),
     ],
   },
   {
@@ -199,17 +162,17 @@ function uuid() { return `${Date.now()}_${Math.random().toString(36).slice(2, 9)
 
 const LO_EDIT_KEYS = new Set([
   "inquiry.notes", "inquiry.rent-roll", "inquiry.op-history", "inquiry.disposition",
-  "loi.main", "app-start.main", "app-start.disposition",
+  "credit.evaluation", "application.main", "application.disposition",
   "borrower.profile", "property.profile", "loan.terms", "loan-team.main",
 ]);
 
 const CA_EDIT_KEYS = new Set([
   "processing.main", "fcr.main", "conditions.main",
-  "credit.evaluation", "amortization.calc", "exceptions.main",
+  "amortization.calc", "exceptions.main",
 ]);
 
 const CO_EDIT_KEYS = new Set([
-  "pre-close.main", "rfd.main", "closing.main", "documents.main", "commitment.letter",
+  "closing.main", "documents.main", "commitment.letter",
 ]);
 
 function seedPe(profileId: string, entitlementId: string): ProfileEntitlement {

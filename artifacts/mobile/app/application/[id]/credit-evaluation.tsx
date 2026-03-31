@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
-import { useLetterOfInterestService } from "@/services/letter-of-interest";
+import { useICRService } from "@/services/initial-credit-review";
 import { useCoreService } from "@/services/core";
 import { AccessDenied } from "@/components/AccessDenied";
 import { usePermission } from "@/hooks/usePermission";
@@ -22,16 +22,16 @@ import { usePermission } from "@/hooks/usePermission";
 export default function CreditEvaluationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication } = useCoreService();
-  const { getOrCreateLOI, updateLOI } = useLetterOfInterestService();
+  const { getOrCreateICR, updateICR } = useICRService();
   const insets = useSafeAreaInsets();
   const { canView, canEdit } = usePermission("credit.evaluation");
   const app = getApplication(id);
-  const loi = getOrCreateLOI(id);
+  const icr = getOrCreateICR(id);
 
-  const [creditBoxNotes, setCreditBoxNotes] = useState(loi.creditBoxNotes);
-  const [loiRecommended, setLoiRecommended] = useState(loi.loiRecommended);
-  const [loiIssuedDate, setLoiIssuedDate] = useState(loi.loiIssuedDate);
-  const [loiExpirationDate, setLoiExpirationDate] = useState(loi.loiExpirationDate);
+  const [creditBoxNotes, setCreditBoxNotes] = useState(icr.creditBoxNotes);
+  const [loiRecommended, setLoiRecommended] = useState(icr.loiRecommended);
+  const [loiIssuedDate, setLoiIssuedDate] = useState(icr.loiIssuedDate);
+  const [loiExpirationDate, setLoiExpirationDate] = useState(icr.loiExpirationDate);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -42,7 +42,7 @@ export default function CreditEvaluationScreen() {
 
   const handleSave = async () => {
     setSaving(true);
-    await updateLOI(id, { creditBoxNotes, loiRecommended, loiIssuedDate, loiExpirationDate });
+    await updateICR(id, { creditBoxNotes, loiRecommended, loiIssuedDate, loiExpirationDate });
     setSaving(false);
     setDirty(false);
   };
