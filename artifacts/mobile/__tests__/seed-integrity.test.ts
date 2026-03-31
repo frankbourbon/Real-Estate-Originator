@@ -2,10 +2,10 @@
  * Cross-service seed data integrity tests.
  * Validates that all foreign-key references across seed datasets are valid.
  */
-import { SEED_PROFILES, SEED_USER_PROFILES }                from "@/services/system-core";
-import { ENTITLEMENTS, SEED_PROFILE_ENTITLEMENTS }         from "@/services/rbac";
-import { SEED_ADMIN_USERS }                                from "@/services/admin";
-import { APPLICATION_STATUSES, SEED_APPS, SEED_APP_RATES } from "@/services/core";
+import { SEED_PROFILES, SEED_USER_PROFILES }        from "@/services/system-core";
+import { ENTITLEMENTS, SEED_PROFILE_ENTITLEMENTS }  from "@/services/rbac";
+import { SEED_ADMIN_USERS }                         from "@/services/admin";
+import { APPLICATION_STATUSES, SEED_APPS }          from "@/services/core";
 
 // ─── Cross-service FK checks ──────────────────────────────────────────────────
 
@@ -101,132 +101,52 @@ describe("Seed datasets — no duplicate IDs", () => {
   });
 });
 
-// ─── Seed app rate data integrity ─────────────────────────────────────────────
+// ─── Seed app integrity ───────────────────────────────────────────────────────
 
-describe("SEED_APPS + SEED_APP_RATES — rate data integrity", () => {
-  const VALID_RATE_TYPES = ["Fixed Rate", "Adjustable Rate", "Hybrid"] as const;
-
-  test("SEED_APPS has exactly 100 entries", () => {
-    expect(SEED_APPS).toHaveLength(100);
+describe("SEED_APPS — single sample loan integrity", () => {
+  test("SEED_APPS has exactly 1 entry", () => {
+    expect(SEED_APPS).toHaveLength(1);
   });
 
-  test("SEED_APP_RATES has exactly 100 entries (one per seed app)", () => {
-    expect(Object.keys(SEED_APP_RATES)).toHaveLength(100);
+  test("seed app has required identity fields", () => {
+    const app = SEED_APPS[0];
+    expect(app.id).toBe("seed_a01");
+    expect(app.borrowerId).toBe("seed_b01");
+    expect(app.propertyId).toBe("seed_p01");
   });
 
-  test("every seed app ID is present in SEED_APP_RATES", () => {
-    SEED_APPS.forEach((app) => {
-      expect(SEED_APP_RATES).toHaveProperty(app.id);
-    });
+  test("seed app has a valid status", () => {
+    expect(APPLICATION_STATUSES).toContain(SEED_APPS[0].status);
   });
 
-  test("every SEED_APP_RATES entry has a valid rateType", () => {
-    Object.entries(SEED_APP_RATES).forEach(([id, rate]) => {
-      expect(VALID_RATE_TYPES).toContain(rate.rateType);
-    });
+  test("seed app has a valid rateType", () => {
+    const VALID = ["Fixed Rate", "Adjustable Rate", "Hybrid"];
+    expect(VALID).toContain(SEED_APPS[0].rateType);
   });
 
-  test("distribution includes all three rate types", () => {
-    const rates = Object.values(SEED_APP_RATES).map((r) => r.rateType);
-    expect(rates).toContain("Fixed Rate");
-    expect(rates).toContain("Adjustable Rate");
-    expect(rates).toContain("Hybrid");
+  test("seed app allInFixedRate is non-empty", () => {
+    expect(SEED_APPS[0].allInFixedRate).not.toBe("");
   });
 
-  test("Fixed Rate count is between 35 and 55 (~40–50% of 100)", () => {
-    const count = Object.values(SEED_APP_RATES).filter((r) => r.rateType === "Fixed Rate").length;
-    expect(count).toBeGreaterThanOrEqual(35);
-    expect(count).toBeLessThanOrEqual(55);
-  });
-
-  test("Adjustable Rate count is between 15 and 35 (~25% of 100)", () => {
-    const count = Object.values(SEED_APP_RATES).filter((r) => r.rateType === "Adjustable Rate").length;
-    expect(count).toBeGreaterThanOrEqual(15);
-    expect(count).toBeLessThanOrEqual(35);
-  });
-
-  test("Hybrid count is between 10 and 35 (~25% of 100)", () => {
-    const count = Object.values(SEED_APP_RATES).filter((r) => r.rateType === "Hybrid").length;
-    expect(count).toBeGreaterThanOrEqual(10);
-    expect(count).toBeLessThanOrEqual(35);
-  });
-
-  test("all active pipeline apps have non-empty allInFixedRate", () => {
-    const ACTIVE_WITH_PRICING = [
-      "seed_a01","seed_a02","seed_a03","seed_a04","seed_a05","seed_a06",
-      "seed_a07","seed_a08","seed_a09","seed_a10","seed_a12","seed_a14","seed_a15",
-    ];
-    ACTIVE_WITH_PRICING.forEach((id) => {
-      expect(SEED_APP_RATES[id].allInFixedRate).not.toBe("");
-    });
-  });
-
-  test("early-stage inquiry apps (a16–a25) have empty allInFixedRate", () => {
-    for (let i = 16; i <= 25; i++) {
-      const id = `seed_a${i}`;
-      expect(SEED_APP_RATES[id].allInFixedRate).toBe("");
-    }
-  });
-
-  test("Hybrid and Adjustable Rate entries have non-empty proformaAdjustableAllInRate when they have pricing data", () => {
-    const HYBRID_WITH_DATA = ["seed_a02","seed_a09","seed_a12","seed_a27","seed_a31","seed_a32","seed_a39","seed_a42","seed_a43"];
-    const ADJ_WITH_DATA    = ["seed_a04","seed_a05","seed_a07","seed_a14","seed_a28","seed_a29","seed_a33","seed_a34"];
-    [...HYBRID_WITH_DATA, ...ADJ_WITH_DATA].forEach((id) => {
-      expect(SEED_APP_RATES[id].proformaAdjustableAllInRate).not.toBe("");
-    });
-  });
-
-  test("Fixed Rate entries have empty adjustableRateVariance", () => {
-    Object.entries(SEED_APP_RATES)
-      .filter(([, r]) => r.rateType === "Fixed Rate")
-      .forEach(([id, r]) => {
-        expect(r.adjustableRateVariance).toBe("");
-      });
-  });
-
-  test("allInFixedRate math checks out for key presets (6dp tolerance)", () => {
+  test("seed app allInFixedRate math is correct (6dp tolerance)", () => {
+    const app = SEED_APPS[0];
     const parse = (s: string) => parseFloat(s || "0");
-    Object.values(SEED_APP_RATES).filter((r) => r.allInFixedRate).forEach((rate) => {
-      const expected = parse(rate.fixedRateVariance) + parse(rate.indexRate) + parse(rate.spreadOnFixed);
-      expect(Math.abs(parse(rate.allInFixedRate) - expected)).toBeLessThan(0.0001);
-    });
+    const expected = parse(app.baseRate) + parse(app.fixedRateVariance) + parse(app.indexRate) + parse(app.spreadOnFixed);
+    expect(Math.abs(parse(app.allInFixedRate) - expected)).toBeLessThan(0.0001);
   });
 
-  test("proformaAdjustableAllInRate math checks out for all Adjustable/Hybrid entries with data", () => {
-    const parse = (s: string) => parseFloat(s || "0");
-    Object.values(SEED_APP_RATES)
-      .filter((r) => r.rateType !== "Fixed Rate" && r.proformaAdjustableAllInRate)
-      .forEach((r) => {
-        // Formula: baseRate + adjustableRateVariance + adjustableIndexRate + spreadOnAdjustable
-        // baseRate = "0" for all seeds
-        const expected = parse(r.adjustableRateVariance) + parse(r.adjustableIndexRate) + parse(r.spreadOnAdjustable);
-        expect(Math.abs(parse(r.proformaAdjustableAllInRate) - expected)).toBeLessThan(0.0001);
-      });
+  test("Fixed Rate seed app has empty adjustable fields", () => {
+    const app = SEED_APPS[0];
+    expect(app.rateType).toBe("Fixed Rate");
+    expect(app.adjustableRateVariance).toBe("");
+    expect(app.adjustableIndexName).toBe("");
+    expect(app.adjustableIndexRate).toBe("");
+    expect(app.proformaAdjustableAllInRate).toBe("");
   });
 
-  test("Adjustable/Hybrid entries with pricing data have non-empty adjustableIndexName", () => {
-    Object.values(SEED_APP_RATES)
-      .filter((r) => r.rateType !== "Fixed Rate" && r.proformaAdjustableAllInRate)
-      .forEach((r) => {
-        expect(r.adjustableIndexName).toBeTruthy();
-      });
-  });
-
-  test("Adjustable/Hybrid entries with pricing data have non-empty adjustableIndexRate stored at 6dp", () => {
-    Object.values(SEED_APP_RATES)
-      .filter((r) => r.rateType !== "Fixed Rate" && r.proformaAdjustableAllInRate)
-      .forEach((r) => {
-        expect(r.adjustableIndexRate).not.toBe("");
-        expect(r.adjustableIndexRate.split(".")[1]).toHaveLength(6);
-      });
-  });
-
-  test("Fixed Rate entries have empty adjustableIndexName and adjustableIndexRate", () => {
-    Object.values(SEED_APP_RATES)
-      .filter((r) => r.rateType === "Fixed Rate" && r.allInFixedRate)
-      .forEach((r) => {
-        expect(r.adjustableIndexName).toBe("");
-        expect(r.adjustableIndexRate).toBe("");
-      });
+  test("seed app allInFixedRate is stored at 6dp", () => {
+    const parts = SEED_APPS[0].allInFixedRate.split(".");
+    expect(parts.length).toBe(2);
+    expect(parts[1]).toHaveLength(6);
   });
 });
