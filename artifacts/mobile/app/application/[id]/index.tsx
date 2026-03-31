@@ -568,9 +568,9 @@ export default function ApplicationOverviewScreen() {
     if (idx <= 0) return;
     const prevStatus = PHASE_ORDER[idx - 1];
     confirmDestructive(
-      "Move Back",
-      `Retreat this application from "${app.status}" to "${prevStatus}"?`,
-      "Move Back",
+      "Rollback Phase",
+      `Rollback this application from "${app.status}" to "${prevStatus}"?`,
+      "Rollback",
       async () => {
         await updateApplication(id, { status: prevStatus });
       },
