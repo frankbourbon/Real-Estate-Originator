@@ -26,6 +26,7 @@ import { useCoreService } from "@/services/core";
 import type { PhaseKey } from "@/services/phase-data";
 import { usePhaseDataService } from "@/services/phase-data";
 import { formatCurrencyFull } from "@/utils/formatting";
+import { calcAllInFixed, calcProformaAdjustable, fmt3 } from "@/utils/rate-calc";
 import { AccessDenied } from "@/components/AccessDenied";
 import { usePermission } from "@/hooks/usePermission";
 
@@ -34,23 +35,6 @@ import { usePermission } from "@/hooks/usePermission";
 const LOAN_TYPES: LoanType[] = ["Acquisition", "Refinance", "Construction", "Bridge", "Permanent"];
 const RATE_TYPES: RateType[] = ["Fixed Rate", "Adjustable Rate", "Hybrid"];
 const AMORT_TYPES: AmortizationType[] = ["Full Amortizing", "Interest Only", "Partial IO"];
-
-// ─── Rate helpers ─────────────────────────────────────────────────────────────
-
-/** Sum string rate parts; stores result at 6dp. Returns "" if all inputs are empty. */
-function calcRate(...parts: string[]): string {
-  if (parts.every((p) => p.trim() === "")) return "";
-  const result = parts.reduce((acc, p) => acc + (parseFloat(p) || 0), 0);
-  return result.toFixed(6);
-}
-
-/** Display a stored rate value naturally rounded to 3dp. */
-function fmt3(val: string): string {
-  if (!val || val.trim() === "") return "";
-  const n = parseFloat(val);
-  if (isNaN(n)) return val;
-  return n.toFixed(3);
-}
 
 // ─── Header buttons ───────────────────────────────────────────────────────────
 
@@ -167,8 +151,8 @@ export default function LoanSection() {
   const set = (key: string) => (val: string) => setForm((f) => ({ ...f, [key]: val }));
 
   // ── Live calc (client-side, from current form state) ──────────────────────
-  const liveAllInFixed = calcRate(form.baseRate, form.fixedRateVariance, form.indexRate, form.spreadOnFixed);
-  const liveProformaAdj = calcRate(form.baseRate, form.adjustableRateVariance, form.indexRate, form.spreadOnAdjustable);
+  const liveAllInFixed  = calcAllInFixed(form.baseRate, form.fixedRateVariance, form.indexRate, form.spreadOnFixed);
+  const liveProformaAdj = calcProformaAdjustable(form.baseRate, form.adjustableRateVariance, form.indexRate, form.spreadOnAdjustable);
 
   // Adjustable fields visible for Adjustable Rate and Hybrid
   const showAdjEditing = form.rateType === "Adjustable Rate" || form.rateType === "Hybrid";
@@ -191,8 +175,8 @@ export default function LoanSection() {
 
   const handleSave = async () => {
     // Server-side calc: compute and store authoritative values
-    const computedAllInFixed    = calcRate(form.baseRate, form.fixedRateVariance, form.indexRate, form.spreadOnFixed);
-    const computedProformaAdj   = calcRate(form.baseRate, form.adjustableRateVariance, form.indexRate, form.spreadOnAdjustable);
+    const computedAllInFixed  = calcAllInFixed(form.baseRate, form.fixedRateVariance, form.indexRate, form.spreadOnFixed);
+    const computedProformaAdj = calcProformaAdjustable(form.baseRate, form.adjustableRateVariance, form.indexRate, form.spreadOnAdjustable);
 
     await saveLoanTermsSnapshot(id, phase, {
       loanType:                    form.loanType,
