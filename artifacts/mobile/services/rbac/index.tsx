@@ -45,9 +45,13 @@ function ent(
 }
 
 /**
- * 10 Phase MS groups — aligned with the actual microservice decomposition:
+ * 11 Phase MS groups — aligned with the actual microservice decomposition:
  *   Core → Inquiry → Initial Credit Review → Application → Final Credit Review
- *   → Closing → Documents → Loan Team → Comments → Tasks
+ *   → Closing → Documents → Loan Team → Comments → Tasks → Collaboration
+ *
+ * Collaboration = per-loan ACL (read-only access grants by SID).
+ * Loan Team     = active originators working the deal (roles/responsibilities).
+ * These are distinct MS with separate data, screens, and entitlements.
  *
  * Borrower Profile, Property Details, Loan Terms, and Amortization Calculator
  * are instances embedded within each phase MS (not separate microservices).
@@ -146,6 +150,13 @@ export const MS_GROUPS: MsGroup[] = [
     entitlements: [
       ent("tasks.main", "Tasks", "Tasks", "VIEW"),
       ent("tasks.main", "Tasks", "Tasks", "EDIT"),
+    ],
+  },
+  {
+    ms: "Collaboration", msKey: "collaboration", colorHex: "#7C3AED",
+    entitlements: [
+      ent("collaboration.main", "Collaboration", "Collaboration", "VIEW"),
+      ent("collaboration.main", "Collaboration", "Collaboration", "EDIT"),
     ],
   },
 ];

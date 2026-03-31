@@ -234,7 +234,7 @@ export default function CollaborationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication, getProperty, getCollaborators, addCollaborator, removeCollaborator } = useCoreService();
   const insets = useSafeAreaInsets();
-  const { canView, canEdit } = usePermission("loan-team.main");
+  const { canView, canEdit } = usePermission("collaboration.main");
 
   const [addModal, setAddModal] = useState(false);
 

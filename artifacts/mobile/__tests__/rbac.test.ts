@@ -16,8 +16,8 @@ import {
 // ─── MS_GROUPS registry ───────────────────────────────────────────────────────
 
 describe("MS_GROUPS registry", () => {
-  test("defines exactly 10 microservices", () => {
-    expect(MS_GROUPS).toHaveLength(10);
+  test("defines exactly 11 microservices", () => {
+    expect(MS_GROUPS).toHaveLength(11);
   });
 
   test("every group has required fields", () => {
@@ -46,7 +46,7 @@ describe("MS_GROUPS registry", () => {
     const keys = MS_GROUPS.map((g) => g.msKey);
     const expected = [
       "core", "inquiry", "icr", "application", "fcr", "closing",
-      "documents", "loan-team", "comments", "tasks",
+      "documents", "loan-team", "comments", "tasks", "collaboration",
     ];
     expected.forEach((key) => {
       expect(keys).toContain(key);
