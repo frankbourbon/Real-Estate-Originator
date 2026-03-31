@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
-import { MS_GROUPS } from "@/services/rbac";
+import { ENTITLEMENTS, MS_GROUPS } from "@/services/rbac";
 import { useSystemCoreService } from "@/services/system-core";
 import { useAdminService } from "@/services/admin";
 import { useSessionService } from "@/services/session";
